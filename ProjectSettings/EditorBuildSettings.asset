@@ -11,4 +11,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/TourScene.unity
     guid: 16c69e0c114ac7f46b082233ce896a3a
-  m_configObjects: {}
+  m_configObjects:
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 1fecd46cf1d865c4da873414d6b91876, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 106c0ae7c37d76647bc55e00a2d74027, type: 2}

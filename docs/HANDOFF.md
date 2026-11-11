@@ -56,11 +56,9 @@ PICO Emulator: D:\PICO_Emulator\swan_rls_spaceos_oversea_K_pico_emulator_win64_2
 - Unity 种子工程创建并合并进仓库；manifest 依赖写死；SetupWizard 已放入 `Assets/Editor/`
 
 **进行中（后台）：**
-- SetupWizard 第四轮批处理（日志 `D:\unityxiangmu\MemoryCorridor\wizard4.log`）
-  - 轮次史：r1=中国源缺 xr.management 4.4.2（→4.5.3 解决，依赖解析已验证通过）；r2=脚本 4 处 API 编译错；r3=AssignLoader 4参错（4.5.3 实际 3 参，已按 PackageCache 源码修正）；r4=修复后运行
-  - **接手先查**：`grep -E "SetupWizard|error CS" /d/unityxiangmu/MemoryCorridor/wizard4.log`
-  - 期望看到：`[SetupWizard] URP OK / Scenes OK / Android OK / OpenXR OK / 完成：4 成功 / 0 失败`
-  - 若 OpenXR 阶段 FAILED 且报 AssignLoader false：多半是包导入时序问题，开一次编辑器 GUI 让它完成 import 后重跑即可
+- 无。SetupWizard **第五轮 4/0 全绿**（wizard5.log）：URP/Scenes/Android/OpenXR 全部 OK，`Assets/XR/` 下 Loader 资产已生成，activeInputHandler=2 已落盘。
+  - 轮次史（调试 5 轮，全程记录在 MEMORY.md 坑-010~015）：r1 缺包→r2 API 编译错→r3 AssignLoader 参数→r4 XR 设置资产初始化→r5 全绿+退出后 YAML 补丁。
+  - **接手直接从"任务队列"第 2 步开始**（运行时脚本进工程）。
 
 **未开始：** 运行时脚本进工程、光点预制体、射线冒烟、PICO SDK 导入、XR Device Simulator 配置。
 

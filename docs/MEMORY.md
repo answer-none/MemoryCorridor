@@ -110,6 +110,6 @@
 
 - **阶段**：W1 地基（2026-11-12 开始）
 - **已完成**：方案 V2、竞品调研、素材包 17 件（全部合规并登记）；Git 仓库（首提交 7b64e29）；种子工程合并；manifest 解析通过（坑-011→4.5.3）；SetupWizard API 修复（坑-013）；交接文档 HANDOFF.md；`_mc_seed` 已删
-- **进行中**：SetupWizard 第五轮批处理（wizard4=3/4 成功，OpenXR 阶段因 XR 设置资产未初始化失败→坑-014 已修；本轮含退出后 activeInputHandler 补丁→坑-015）
-- **下一步**：查 wizard5.log 四阶段结果 → staging 脚本进 Assets/Scripts（Core+Interaction 已写好，Media 层未写）→ 光点预制体+射线冒烟 → PICO SDK 导入 → GitHub 远端（gh 可用）
+- **进行中**：无（SetupWizard **四阶段 4/0 全绿**：URP/Scenes/Android/OpenXR，第五轮完成；XR 资产+Loader 落盘验证过；activeInputHandler=2 已落）
+- **下一步**：staging 脚本进 Assets/Scripts（Core+Interaction 已写好，Media 层未写）→ 光点预制体+射线冒烟（W1 验收）→ PICO SDK 导入 → GitHub 远端（gh 可用）
 - **待办提醒**：正式环境音手动下载（Freesound/Pixabay，ASSET_LIST §2）

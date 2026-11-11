@@ -30,6 +30,7 @@ sysinfo.txt
 *.aab
 *.unitypackage
 *.tgz
+wizard*.log
 
 # OS
 Thumbs.db
