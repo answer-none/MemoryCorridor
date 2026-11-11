@@ -87,6 +87,10 @@ namespace MemoryCorridor.EditorTools
             DestroyAll<RoutePlayer>("走读");
             DestroyAll<ReplaySequencer>("重演");
             DestroyAll<StardustBeacon>("信标");
+            DestroyAll<ConstellationWall>("星河墙");
+            DestroyAll<StarNode>("星点");
+            DestroyAll<SceneFader>("转场");
+            DestroyAll<TeleportationArea>("传送区");
 
             // 4) 全景穹顶 + 环境光（坑-022）
             Shader domeShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/PanoramaDome.shader");
@@ -150,6 +154,15 @@ namespace MemoryCorridor.EditorTools
 
             FadeController fade = new GameObject("FadeController").AddComponent<FadeController>();
 
+            // 地面 + 传送区域（XRI Teleportation；走读定点传送 W4 换 TeleportationAnchor）
+            GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            floor.name = "Floor";
+            floor.transform.position = Vector3.zero;
+            floor.transform.localScale = new Vector3(4f, 1f, 4f);
+            floor.AddComponent<TeleportationArea>();
+
+            SceneFader fader = new GameObject("SceneFader").AddComponent<SceneFader>();
+
             GameObject beacon = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             beacon.name = "StardustBeacon";
             beacon.transform.localScale = Vector3.one * 0.18f;
@@ -158,13 +171,16 @@ namespace MemoryCorridor.EditorTools
             beacon.GetComponent<MeshRenderer>().sharedMaterial = glowMat;
             beacon.AddComponent<StardustBeacon>();
 
+            ReplaySequencer sequencer = new GameObject("ReplaySequencer").AddComponent<ReplaySequencer>();
+
+            ConstellationWall wall = new GameObject("ConstellationWall").AddComponent<ConstellationWall>();
+            wall.Configure(glowMat, panel, sequencer);
+
             RoomManager roomManager = new GameObject("RoomManager").AddComponent<RoomManager>();
-            roomManager.Configure(lightPrefab, fade, ambSource, new AudioClip[] { ambEvening, ambCourtyard });
+            roomManager.Configure(lightPrefab, fade, ambSource, new AudioClip[] { ambEvening, ambCourtyard }, fader);
 
             RoutePlayer routePlayer = new GameObject("RoutePlayer").AddComponent<RoutePlayer>();
-            routePlayer.Configure(beacon, roomManager, fade);
-
-            ReplaySequencer sequencer = new GameObject("ReplaySequencer").AddComponent<ReplaySequencer>();
+            routePlayer.Configure(beacon, roomManager, fade, wall);
 
             XRIAnchorBridge bridge = new GameObject("XRIAnchorBridge").AddComponent<XRIAnchorBridge>();
             bridge.Configure(panel, routePlayer, sequencer);

@@ -154,24 +154,47 @@ namespace MemoryCorridor.Core
                 if (!pass) failedSections++;
             }
 
-            // ========== H. ImportServer HTTP ==========
+            // ========== H. 星河回顾墙 ==========
+            if (pass)
+            {
+                yield return TestConstellationWall(roomManager);
+                pass = sectionPass;
+                if (!pass) failedSections++;
+            }
+
+            // ========== I. 转场淡入淡出 ==========
+            if (pass)
+            {
+                yield return TestSceneFader(roomManager);
+                pass = sectionPass;
+                if (!pass) failedSections++;
+            }
+
+            // ========== J. 传送装配 ==========
+            if (pass)
+            {
+                pass = TestTeleportAssembly();
+                if (!pass) failedSections++;
+            }
+
+            // ========== K. ImportServer HTTP ==========
             if (pass)
             {
                 yield return new WaitForSecondsRealtime(0.6f); // 等监听线程
                 try
                 {
                     TestImportServer();
-                    Debug.Log("[SmokeProbe] H ImportServer HTTP 冒烟 OK（GET/POST 上传落盘/POST 日记入档）");
+                    Debug.Log("[SmokeProbe] K ImportServer HTTP 冒烟 OK（GET/POST 上传落盘/POST 日记入档）");
                 }
                 catch (System.Exception e)
                 {
-                    Debug.LogError("[SmokeProbe] FAIL-H: ImportServer 异常 " + FormatWebError(e));
+                    Debug.LogError("[SmokeProbe] FAIL-K: ImportServer 异常 " + FormatWebError(e));
                     pass = false; failedSections++;
                 }
             }
 
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/导入 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙/转场/传送/导入 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
 
 #if UNITY_EDITOR
@@ -418,6 +441,131 @@ namespace MemoryCorridor.Core
                 yield break;
             }
             Debug.Log("[SmokeProbe] G 回忆重演 OK（绽放→跳过→复原）");
+        }
+
+        // ---------- H ----------
+        private IEnumerator TestConstellationWall(RoomManager roomManager)
+        {
+            sectionPass = true;
+            ConstellationWall wall = FindFirst<ConstellationWall>();
+            RoutePlayer player = FindFirst<RoutePlayer>();
+            if (wall == null || player == null)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-H: 缺星河墙或走读器 (wall=" + (wall == null) + ")");
+                sectionPass = false;
+                yield break;
+            }
+
+            if (!player.StartTour())
+            {
+                Debug.LogError("[SmokeProbe] FAIL-H: 走读启动失败");
+                sectionPass = false;
+                yield break;
+            }
+
+            int guard = 0;
+            while (player.IsTouring && guard++ < 10)
+            {
+                player.Advance(); // 最后一站返回 false → EndTour → 建墙
+            }
+
+            float deadline = Time.realtimeSinceStartup + 2f;
+            while (Time.realtimeSinceStartup < deadline && !wall.IsVisible)
+            {
+                yield return null;
+            }
+            if (!wall.IsVisible || wall.StarCount != 3)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-H: 星河墙未生成 (visible=" + wall.IsVisible
+                    + " stars=" + wall.StarCount + ")");
+                sectionPass = false;
+                yield break;
+            }
+
+            // 坑-021 变体：FindObjects 顺序不保证，按稳定命名找路线首星
+            GameObject firstStarGo = GameObject.Find("Star_frag_01");
+            StarNode firstStar = firstStarGo != null ? firstStarGo.GetComponent<StarNode>() : null;
+            if (firstStar == null)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-H: 无星点");
+                sectionPass = false;
+                yield break;
+            }
+            bool starFired = false;
+            string starId = "";
+            System.Action<string> handler = delegate (string id) { starFired = true; starId = id; };
+            firstStar.OnSelected += handler;
+            firstStar.Select();
+            firstStar.OnSelected -= handler;
+            if (!starFired || starId != "frag_01")
+            {
+                Debug.LogError("[SmokeProbe] FAIL-H: 星点选择回调异常 (fired=" + starFired + " id=" + starId + ")");
+                sectionPass = false;
+                yield break;
+            }
+            Debug.Log("[SmokeProbe] H 星河回顾墙 OK（3 星连线，路线序首星=frag_01，点选回调通）");
+        }
+
+        // ---------- I ----------
+        private IEnumerator TestSceneFader(RoomManager roomManager)
+        {
+            sectionPass = true;
+            SceneFader fader = FindFirst<SceneFader>();
+            if (fader == null)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-I: 缺 SceneFader");
+                sectionPass = false;
+                yield break;
+            }
+
+            yield return fader.FadeOut(0.2f);
+            if (fader.Alpha < 0.99f)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-I: 淡出未达全黑 (alpha=" + fader.Alpha.ToString("F2") + ")");
+                sectionPass = false;
+                yield break;
+            }
+            yield return fader.FadeIn(0.2f);
+            if (fader.Alpha > 0.01f)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-I: 淡入未复原 (alpha=" + fader.Alpha.ToString("F2") + ")");
+                sectionPass = false;
+                yield break;
+            }
+
+            yield return roomManager.SwitchToRoomWithFade(1);
+            if (roomManager.CurrentRoomIndex != 1 || roomManager.SpawnedAnchorCount != 2)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-I: 带淡切房间异常 (idx=" + roomManager.CurrentRoomIndex + ")");
+                sectionPass = false;
+                yield break;
+            }
+            yield return roomManager.SwitchToRoomWithFade(0);
+            if (roomManager.CurrentRoomIndex != 0 || roomManager.SpawnedAnchorCount != 3)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-I: 带淡切返回异常");
+                sectionPass = false;
+                yield break;
+            }
+            Debug.Log("[SmokeProbe] I 转场淡入淡出 OK（黑幕 0→1→0，带淡切房间往返）");
+        }
+
+        // ---------- J ----------
+        private bool TestTeleportAssembly()
+        {
+            UnityEngine.XR.Interaction.Toolkit.TeleportationProvider[] providers =
+                FindAll<UnityEngine.XR.Interaction.Toolkit.TeleportationProvider>();
+            UnityEngine.XR.Interaction.Toolkit.TeleportationArea[] areas =
+                UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.TeleportationArea>(
+                    UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
+            if (providers.Length < 1 || areas.Length < 1)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-J: 传送装配缺失 (providers=" + providers.Length
+                    + " areas=" + areas.Length + ")");
+                return false;
+            }
+            Debug.Log("[SmokeProbe] J 传送装配 OK（TeleportationProvider + 地面 TeleportationArea）");
+            return true;
         }
 
         // ---------- 工具 ----------

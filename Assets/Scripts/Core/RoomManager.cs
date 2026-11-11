@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using MemoryCorridor.Interaction;
 using MemoryCorridor.Media;
@@ -17,6 +18,7 @@ namespace MemoryCorridor.Core
         [SerializeField] private FadeController fadeController;
         [SerializeField] private AudioSource ambientSource;
         [SerializeField] private AudioClip[] ambientClips; // 与房间索引一一对应，可缺
+        [SerializeField] private SceneFader fader;
 
         public int CurrentRoomIndex { get; private set; } = -1;
         public List<RoomData> Rooms { get; private set; }
@@ -29,12 +31,13 @@ namespace MemoryCorridor.Core
 
         /// <summary>编辑器搭建注入引用。</summary>
         public void Configure(GameObject lightPointPrefabRef, FadeController fadeRef,
-            AudioSource ambientSourceRef, AudioClip[] ambientClipsRef)
+            AudioSource ambientSourceRef, AudioClip[] ambientClipsRef, SceneFader faderRef)
         {
             lightPointPrefab = lightPointPrefabRef;
             fadeController = fadeRef;
             ambientSource = ambientSourceRef;
             ambientClips = ambientClipsRef;
+            fader = faderRef;
         }
 
         private void Start()
@@ -65,6 +68,14 @@ namespace MemoryCorridor.Core
         {
             if (Rooms == null || CurrentRoomIndex < 0 || CurrentRoomIndex >= Rooms.Count) return null;
             return Rooms[CurrentRoomIndex];
+        }
+
+        /// <summary>带淡入淡出的房间切换（§5.3 零硬切；无 fader 时退化为直切）。</summary>
+        public IEnumerator SwitchToRoomWithFade(int index)
+        {
+            if (fader != null) yield return fader.FadeOut(0.3f);
+            SwitchToRoom(index);
+            if (fader != null) yield return fader.FadeIn(0.3f);
         }
 
         private void UnloadCurrentAnchors()

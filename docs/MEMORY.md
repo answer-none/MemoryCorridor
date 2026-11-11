@@ -155,6 +155,16 @@
 - 演示数据升级 2 房间 5 碎片（room_02 老院子：村口的路+摇椅日记）。
 - smoke19 断言 11 项：房间初始态/XRI 装配/悬停/选中/褪色/排序交换恢复/走读信标两站/回访复位/房间切换（穹顶纹理+光点 3↔2+走读终止）/重演绽放跳过复原/ImportServer HTTP。
 
+### W3 备忘（2026-11-12 第 3 批，smoke23 全绿 14 断言）
+- 新增：`ConstellationWall`（星河回顾墙：走读终点弧形 60°/2.5m 排星，单 LineRenderer 连线，星点挂 XRSimpleInteractable，点星→面板+重演）、`StarNode`（星点标记件，稳定命名 Star_{fragmentId}）、`SceneFader`（ScreenSpaceOverlay 黑幕，FadeOut/FadeIn 按真实时间）、`TeleportationArea` 地面。
+- RoutePlayer：EndTour(buildWall=true) 走完建墙；OnRoomSwitched → EndTourInternal(false) 切房不建墙（防新房间浮现旧星座）；StartTour 先 Clear。
+- RoomManager：SwitchToRoomWithFade（黑幕 0→1→0 包住直切）。
+- 断言追加：H 星河墙（3 星+回调）/ I 转场（黑幕+带淡切往返）/ J 传送装配（Provider+Area）。
+
+### 坑-028 FindObjects/FindFirst 返回顺序不保证（第 3 次踩同类）
+- **现象**：探针 FindFirst<StarNode> 拿到的是 frag_03 的星（场景顺序≠生成顺序）。
+- **规避**：需要确定性对象时用稳定命名 + GameObject.Find（星点/光点均已稳定命名 Star_{id}/LP_{id}）。同类前科：坑-019（GameObject.Find 只找第一个）、坑-021（FindObjects 排除未激活）。
+
 ### W2 内容层备忘（2026-11-12，第 1 天）
 - 素材入工程：`Assets/Art/Panoramas`（2 全景）、`Assets/StreamingAssets/Media/frag_01|03`（演示照片）、`Assets/StreamingAssets/Panoramas/room_01.jpg`（穹顶用）、`Assets/Audio`（3 占位 WAV）。
 - 新增：MediaResolver（持久化→StreamingAssets 回退）、AmbienceController（2D 环境音+settings.ambientVolume）、PanoramaDome。
@@ -174,9 +184,9 @@
 
 ## 5. 当前状态（每次会话末更新）
 
-- **阶段**：W2 核心机制完成（2026-11-12 第 2 批），smoke19 全绿（11 项断言）
-- **已完成**：W2 第 1 天全部 + 房间切换 + 手动排序 + 星尘走读 + 回访复位（褪色闭环）+ 回忆重演四拍（含跳过）——**M1 闭环 alpha 的机制层全部就绪**
-- **smoke19 断言**：A 房间初始/B XRI+悬停+选中+褪色/C 排序/D 走读信标/E 回访/F 切房间/G 重演四拍/H 导入服务
-- **已跳过（勿卡住）**：① PICO SDK（被墙+GUI）② GitHub 远端（gh 未登录）③ devlog #1（GUI）④ Emulator GUI 验证 ⑤ 旁白/叙事音频（Freesound 手动）⑥ Android StreamingAssets 异步化（真机前）⑦ UGUI 磨砂面板/全屏暗幕/星河回顾墙（W4 视觉）⑧ VR 内抓取编排（W3，当前排序走数据层）
-- **下一步**：W3 叙事打磨：星河回顾墙（ConstellationWall）、传送接 XRI Teleportation、房间切换淡入淡出、先闻其声接真实旁白（素材到位后）；M1 闭环 alpha（11-23）前做一轮 Editor GUI 手动走查
-- **待办提醒**：D 盘 30GB；样本目录勿删（GUID 引用）
+- **阶段**：W3 核心机制完成（2026-11-12 第 3 批），smoke23 全绿（14 段断言）
+- **已完成**：W2 全部 + 星河回顾墙（点星重演）+ 转场淡入淡出（含带淡切房间往返）+ 传送装配（Provider+地面 Area）——**M1 闭环 alpha 全链路机制齐备**：挂→走→回访→重演→星河墙→切房间→导出链路全部有自动化断言
+- **smoke23 断言**：A 房间初始/B XRI+悬停+选中+褪色/C 排序/D 走读信标/E 回访/F 切房间/G 重演四拍/H 星河墙/I 转场/J 传送/K 导入服务
+- **已跳过（勿卡住）**：① PICO SDK（被墙+GUI）② GitHub 远端（gh 未登录）③ devlog #1（GUI）④ Emulator GUI ⑤ 旁白音频素材（Freesound 手动）⑥ Android StreamingAssets 异步化（真机前）⑦ UGUI 磨砂面板/星尘粒子墙升级/TeleportationAnchor 定点传送（W4 视觉与体验）⑧ VR 内抓取编排（W4）
+- **下一步**：W4 打磨：UGUI 磨砂面板+星尘粒子+色调映射（视觉规范 §4 全落地）、星河墙缩略图、防眩晕清单逐项过、性能预算（ASTC/分批）→ M2 内测闭环（11-29）+ 发内测收反馈
+- **待办提醒**：D 盘 30GB；M3（12-12）冻结倒计时 30 天

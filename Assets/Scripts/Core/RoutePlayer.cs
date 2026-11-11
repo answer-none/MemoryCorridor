@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using MemoryCorridor.Interaction;
+using MemoryCorridor.Media;
 using UnityEngine;
 
 namespace MemoryCorridor.Core
@@ -15,6 +16,7 @@ namespace MemoryCorridor.Core
         [SerializeField] private GameObject beacon;
         [SerializeField] private RoomManager roomManager;
         [SerializeField] private FadeController fadeController;
+        [SerializeField] private ConstellationWall constellationWall;
 
         private List<MemoryFragment> route = new List<MemoryFragment>();
         private int cursor = -1;
@@ -25,11 +27,13 @@ namespace MemoryCorridor.Core
         public int RouteCount => route.Count;
 
         /// <summary>编辑器搭建注入引用（坑-026：事件订阅不序列化，Play 期在 Start 重新挂）。</summary>
-        public void Configure(GameObject beaconRef, RoomManager roomManagerRef, FadeController fadeRef)
+        public void Configure(GameObject beaconRef, RoomManager roomManagerRef, FadeController fadeRef,
+            ConstellationWall wallRef)
         {
             beacon = beaconRef;
             roomManager = roomManagerRef;
             fadeController = fadeRef;
+            constellationWall = wallRef;
             SubscribeRoomSwitch(roomManagerRef);
         }
 
@@ -50,10 +54,10 @@ namespace MemoryCorridor.Core
 
         private void OnRoomSwitched(int roomIndex)
         {
-            EndTour();
+            EndTourInternal(false); // 切房打断不建墙
         }
 
-        /// <summary>开始走读：当前房间按 order 生成路线，信标落到第一站。</summary>
+        /// <summary>开始走读：当前房间按 order 生成路线，信标落到第一站，收起星河墙。</summary>
         public bool StartTour()
         {
             RoomData room = (roomManager != null) ? roomManager.CurrentRoom() : null;
@@ -64,6 +68,7 @@ namespace MemoryCorridor.Core
 
             cursor = 0;
             touring = true;
+            if (constellationWall != null) constellationWall.Clear();
             PlaceBeacon();
             Debug.Log("[RoutePlayer] 走读开始：" + room.title + "，" + route.Count + " 站");
             return true;
@@ -85,9 +90,20 @@ namespace MemoryCorridor.Core
 
         public void EndTour()
         {
+            EndTourInternal(true);
+        }
+
+        /// <summary>buildWall=false 用于房间切换打断（避免新房间浮现旧房间星座）。</summary>
+        private void EndTourInternal(bool buildWall)
+        {
+            bool wasTouring = touring;
             touring = false;
             cursor = -1;
             if (beacon != null) beacon.SetActive(false);
+            if (buildWall && wasTouring && constellationWall != null && route.Count > 0)
+            {
+                constellationWall.Build(route);
+            }
         }
 
         /// <summary>回访：更新 lastVisitedAt 并把该光点褪色复位（创新点"记忆褪色"的闭环）。</summary>

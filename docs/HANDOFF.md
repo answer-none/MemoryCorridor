@@ -56,9 +56,9 @@ PICO Emulator: D:\PICO_Emulator\swan_rls_spaceos_oversea_K_pico_emulator_win64_2
 - Unity 种子工程创建并合并进仓库；manifest 依赖写死；SetupWizard 已放入 `Assets/Editor/`
 
 **进行中（后台）：**
-- 无。**W2 核心机制完成，smoke19 全绿（11 项断言）**：房间切换（穹顶纹理+光点 3↔2）/手动排序（order 交换+恢复）/星尘走读（信标两站）/回访复位（褪色闭环）/回忆重演四拍（绽放→跳过→复原）/ImportServer HTTP。新增坑-025/026/027（Start 竞态懒接线/编辑期事件订阅不序列化/按 order 找交换对象）。
-- **用户指示的跳过项（勿卡住）**：PICO SDK、GitHub 远端、devlog 录屏、Emulator GUI、旁白音频素材、Android StreamingAssets 异步化（真机前）、UGUI/暗幕/星河墙（W4）、VR 内抓取编排（W3）。
-- **接手继续 W3**：星河回顾墙 + XRI 传送 + 房间切换淡入淡出 + M1 闭环 alpha（11-23）前 Editor GUI 手动走查。
+- 无。**W3 核心机制完成，smoke23 全绿（14 段断言）**：星河回顾墙（点星→面板+重演）/转场淡入淡出（带淡切房间往返）/传送装配。新增坑-028（FindFirst 顺序不保证，第 3 次同类——用稳定命名）。
+- **用户指示的跳过项（勿卡住）**：PICO SDK、GitHub 远端、devlog 录屏、Emulator GUI、旁白音频素材、Android StreamingAssets 异步化（真机前）、UGUI/星尘粒子/定点传送 Anchor（W4）、VR 内抓取编排（W4）。
+- **接手继续 W4 打磨**：视觉规范 §4 全落地（UGUI 面板/星尘粒子/色调映射/星河墙缩略图）→ M2 内测闭环（11-29）发内测收反馈。
 
 **未开始：** 运行时脚本进工程、光点预制体、射线冒烟、PICO SDK 导入、XR Device Simulator 配置。
 
