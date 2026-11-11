@@ -1,0 +1,38 @@
+using System;
+using System.Collections.Generic;
+
+namespace MemoryCorridor.Core
+{
+    /// <summary>音频与体验设置（本地持久化，V2 schema）。</summary>
+    [Serializable]
+    public class AppSettings
+    {
+        public float masterVolume = 1.0f;
+        public float narrationVolume = 1.0f;
+        public float ambientVolume = 0.6f;
+        public bool showLightPoints = true;
+        public int fadeStartDays = 30;
+        public float fadeFloor = 0.25f;
+    }
+
+    /// <summary>应用根数据：成员 + 房间 + 设置 + 导出清单。</summary>
+    [Serializable]
+    public class AppData
+    {
+        public string appVersion = "0.2";
+        public string currentMemberId = "mem_01";
+        public AppSettings settings = new AppSettings();
+        public List<MemberData> members = new List<MemberData>();
+        public List<RoomData> rooms = new List<RoomData>();
+        public ExportManifest exportManifest;
+    }
+
+    /// <summary>导出包自描述（导入时校验）。</summary>
+    [Serializable]
+    public class ExportManifest
+    {
+        public string exportedAt;
+        public List<string> memberIds = new List<string>();
+        public string contentHash;
+    }
+}

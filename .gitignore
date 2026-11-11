@@ -31,6 +31,7 @@ sysinfo.txt
 *.unitypackage
 *.tgz
 wizard*.log
+smoke*.log
 
 # OS
 Thumbs.db

@@ -56,9 +56,9 @@ PICO Emulator: D:\PICO_Emulator\swan_rls_spaceos_oversea_K_pico_emulator_win64_2
 - Unity 种子工程创建并合并进仓库；manifest 依赖写死；SetupWizard 已放入 `Assets/Editor/`
 
 **进行中（后台）：**
-- 无。SetupWizard **第五轮 4/0 全绿**（wizard5.log）：URP/Scenes/Android/OpenXR 全部 OK，`Assets/XR/` 下 Loader 资产已生成，activeInputHandler=2 已落盘。
-  - 轮次史（调试 5 轮，全程记录在 MEMORY.md 坑-010~015）：r1 缺包→r2 API 编译错→r3 AssignLoader 参数→r4 XR 设置资产初始化→r5 全绿+退出后 YAML 补丁。
-  - **接手直接从"任务队列"第 2 步开始**（运行时脚本进工程）。
+- 无。**W1 冒烟全绿**（smoke5.log）：14 个运行时脚本编译零错，自动化 Play 冒烟通过——悬停预览(frag_01) / 选中 / 褪色差异 fresh=1.00 vs faded=0.39 / appdata.json 回读 / LightPoint.prefab 落盘，且搭建器已幂等（3 光点 + 单 FadeController，重复运行不叠加）。
+  - 冒烟命令：`Unity.exe -batchmode -projectPath D:/unityxiangmu/MemoryCorridor -executeMethod MemoryCorridor.EditorTools.LightPointSceneBuilder.BuildAndSmoke -logFile …`（不传 -quit；探针 Exit(0/1)，60s 看门狗）
+  - 本段新增坑-017~019（协程 yield/非序列化字段+帧率/幂等搭建），详见 MEMORY.md §3
 
 **未开始：** 运行时脚本进工程、光点预制体、射线冒烟、PICO SDK 导入、XR Device Simulator 配置。
 
@@ -118,12 +118,14 @@ grep -E "SetupWizard|error CS|cannot be found" /d/unityxiangmu/MemoryCorridor/wi
 
 ## 七、W1 完成定义（验收清单，给下一个 agent）
 
-- [ ] wizard2.log 显示 4 个阶段全 OK
-- [ ] Assets/Scripts 三层目录（Core/Interaction/Media）编译零报错
-- [ ] EditorScene 含 ≥3 个 LightPointAnchor 光点，Editor Play 里键鼠模拟射线：悬停高亮+0.3s 预览事件、扳机 OnSelected
-- [ ] 褪色可见：300 天前的样例光点明显比新光点暗/小
-- [ ] appdata.json 能存能读（Newtonsoft，含 v2 schema 的 settings/lastVisitedAt 字段）
-- [ ] devlog #1 录屏 + git 提交 + 远端仓库建好
-- [ ] MEMORY.md 更新完毕
+- [x] wizard 全绿（URP/Scenes/Android/OpenXR）
+- [x] Assets/Scripts 三层目录（Core/Interaction/Media）编译零报错
+- [x] EditorScene 含 3 个 LightPointAnchor 光点，自动化 Play 冒烟：悬停 0.3s 预览、扳机 Select 事件（smoke5.log）
+- [x] 褪色可见：300 天样例 fade=0.39 vs 新样例 1.00（Play 时从 appdata.json 应用）
+- [x] appdata.json 能存能读（Newtonsoft，v2 schema 含 settings/lastVisitedAt）
+- [ ] devlog #1 录屏（需 GUI 手动操作）+ GitHub 远端建库（需用户账号确认）
+- [x] MEMORY.md 更新完毕（坑-010~019）
+
+**接手任务队列（原第 2~3 步已完成）**：XRI 正式接入（XR Origin/射线/Device Simulator，替换冒烟版 RayInteractor，契约 SetHighlight→TickHover→Select 不变）→ PICO SDK 导入 → GitHub 远端 → devlog 录屏。
 
 **接手后遇到方案级疑问，优先读 TECH_DESIGN_V2.md 对应节；与本文档冲突时以 V2 文档为准。**

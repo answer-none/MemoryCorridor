@@ -96,6 +96,20 @@
 - **解决**：凡手工改 ProjectSettings/*.asset，必须在 **Unity 进程完全退出后** 用 sed 改（Wizard 第 5 轮起已并入批处理尾部）。
 - **通用**：Unity 运行期间手改序列化文件 = 无效操作。
 
+### 坑-017 协程 yield 不得位于 try/catch 内（CS1626）
+- **现象**：SmokeProbe 首版把 `yield return null` 写进 try 块，编译失败。
+- **规避**：协程断言逻辑不包 try/catch；需要兜底时另起独立看门狗协程（`WaitForSecondsRealtime(60)` + `EditorApplication.Exit(1)`），批处理 Play 冒烟必须配看门狗防挂死。
+
+### 坑-018 非序列化私有字段的编辑期改值 = 空气（双杀坑）
+- **现象 A**：编辑期调用 `SetFade(0.39)` 修改非 [SerializeField] 的私有字段，场景保存后 Play 加载时重置为 1——冒烟褪色断言首跑 FAIL。
+- **规避**：**运行时状态不要在编辑期烘焙进场景**；Play 时由控制器从数据源（appdata.json）重建（FadeController.Start → ApplyAllFromDisk）。这反而让冒烟覆盖了真实数据流。
+- **现象 B**：batchmode Play 帧率不设限，"90 帧"可能只够 0.09s——悬停 0.3s 阈值按帧数等待永远不触发。
+- **规避**：批处理探针等待一律用 `Time.realtimeSinceStartup` 时间预算，不用帧数。
+
+### 坑-019 批处理场景搭建器必须幂等
+- **现象**：搭建器连跑三轮后场景里 6 个光点、2 个 FadeController（每轮叠加一次）；且 `GameObject.Find` 只返回第一个匹配，按名清理会漏删。
+- **规避**：搭建器进场景后先用 `FindObjectsByType<T>` 按类型 DestroyImmediate 全部旧实例（光点/控制器/探针），再重新布置。修改后验证：FadeController 日志应恰好出现 1 次、光点数恒为 3。
+
 ## 4. 工作规矩（每会话自查）
 
 1. 开工先读本文档 + `docs/TECH_DESIGN_V2.md` 变更记录；结束时更新本文档"当前状态"。
@@ -108,8 +122,8 @@
 
 ## 5. 当前状态（每次会话末更新）
 
-- **阶段**：W1 地基（2026-11-12 开始）
-- **已完成**：方案 V2、竞品调研、素材包 17 件（全部合规并登记）；Git 仓库（首提交 7b64e29）；种子工程合并；manifest 解析通过（坑-011→4.5.3）；SetupWizard API 修复（坑-013）；交接文档 HANDOFF.md；`_mc_seed` 已删
-- **进行中**：无（SetupWizard **四阶段 4/0 全绿**：URP/Scenes/Android/OpenXR，第五轮完成；XR 资产+Loader 落盘验证过；activeInputHandler=2 已落）
-- **下一步**：staging 脚本进 Assets/Scripts（Core+Interaction 已写好，Media 层未写）→ 光点预制体+射线冒烟（W1 验收）→ PICO SDK 导入 → GitHub 远端（gh 可用）
-- **待办提醒**：正式环境音手动下载（Freesound/Pixabay，ASSET_LIST §2）
+- **阶段**：W1 收尾（2026-11-12）
+- **已完成**：前次全部 + 14 个运行时脚本进 Assets/Scripts（Core 7 / Interaction 2 / Media 4 + SmokeProbe）+ 场景搭建器（幂等）+ **自动化 Play 冒烟 5 轮迭代后全绿**：悬停预览 OK / 选中 OK / 褪色 fresh=1.00 vs faded=0.39 / appdata.json Newtonsoft 回读校验 OK / LightPoint.prefab + 辉光材质落盘
+- **验证命令**：`Unity.exe -batchmode -projectPath D:/unityxiangmu/MemoryCorridor -executeMethod MemoryCorridor.EditorTools.LightPointSceneBuilder.BuildAndSmoke -logFile …`（不传 -quit，探针自行 Exit(0/1)，60s 看门狗兜底）
+- **下一步**：① XRI 正式接入（XR Origin + 射线 + XR Device Simulator，替换冒烟版 RayInteractor）② PICO SDK 导入（PDC 下载，download-sdk 被墙）③ GitHub 远端建库（gh 可用，需用户确认账号）④ devlog #1 录屏（需 GUI 手动）
+- **待办提醒**：正式环境音手动下载（Freesound/Pixabay）；D 盘 30GB（>20GB 不告警）
