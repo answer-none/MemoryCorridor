@@ -1,0 +1,43 @@
+# Unity generated
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]serSettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+.vsconfig
+
+# Unity meta fixups
+sysinfo.txt
+*.apk
+*.aab
+*.unitypackage
+*.tgz
+
+# OS
+Thumbs.db
+.DS_Store
+
+# AI/工具临时
+*.tmp
+node_modules/
+
+# 大体积原始素材加工中间产物（按需放开）
+assets_raw/**/processed/
