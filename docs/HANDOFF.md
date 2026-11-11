@@ -56,9 +56,9 @@ PICO Emulator: D:\PICO_Emulator\swan_rls_spaceos_oversea_K_pico_emulator_win64_2
 - Unity 种子工程创建并合并进仓库；manifest 依赖写死；SetupWizard 已放入 `Assets/Editor/`
 
 **进行中（后台）：**
-- 无。**W1 冒烟全绿**（smoke5.log）：14 个运行时脚本编译零错，自动化 Play 冒烟通过——悬停预览(frag_01) / 选中 / 褪色差异 fresh=1.00 vs faded=0.39 / appdata.json 回读 / LightPoint.prefab 落盘，且搭建器已幂等（3 光点 + 单 FadeController，重复运行不叠加）。
-  - 冒烟命令：`Unity.exe -batchmode -projectPath D:/unityxiangmu/MemoryCorridor -executeMethod MemoryCorridor.EditorTools.LightPointSceneBuilder.BuildAndSmoke -logFile …`（不传 -quit；探针 Exit(0/1)，60s 看门狗）
-  - 本段新增坑-017~019（协程 yield/非序列化字段+帧率/幂等搭建），详见 MEMORY.md §3
+- 无。**XRI 正式接入完毕，smoke8 全绿**：官方 XR Origin (XR Rig) + XR Device Simulator 进场景；光点挂 XRSimpleInteractable；XRIAnchorBridge 保持锚点契约（SetHighlight→TickHover→Select）；探针断言 origin/ray×5（含未激活，坑-021）/interactable×3/bridge + 悬停/选中/褪色。
+- **用户指示的跳过项（勿卡住，已在 MEMORY.md §5 记录）**：PICO SDK（被墙+GUI）、GitHub 远端（gh 未登录）、devlog 录屏（GUI）、模拟器手动验证（GUI）。
+- **接手从 W2 开始**：记忆面板 UGUI 化 → 全景房间布景 → Demo 素材入 Assets → ImportServer Emulator 冒烟（W2 第 1 天硬节点）。
 
 **未开始：** 运行时脚本进工程、光点预制体、射线冒烟、PICO SDK 导入、XR Device Simulator 配置。
 

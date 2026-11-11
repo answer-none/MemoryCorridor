@@ -110,6 +110,21 @@
 - **现象**：搭建器连跑三轮后场景里 6 个光点、2 个 FadeController（每轮叠加一次）；且 `GameObject.Find` 只返回第一个匹配，按名清理会漏删。
 - **规避**：搭建器进场景后先用 `FindObjectsByType<T>` 按类型 DestroyImmediate 全部旧实例（光点/控制器/探针），再重新布置。修改后验证：FadeController 日志应恰好出现 1 次、光点数恒为 3。
 
+### 坑-020 XRI 官方样本脚本在无显示批处理下抛异常（无害，勿修）
+- **现象**：Play 时 `XRDeviceSimulatorUI.Initialize` 抛 ReadOnlyArray index 越界；`StarterAssetsSampleProjectValidation.AddRules`（Editor 延迟调用）抛 NRE。
+- **结论**：都是样本自身的显示/编辑器 UI 依赖，批处理无屏幕导致，不影响核心模拟器与装配；GUI 编辑器里正常。别浪费时间修它们。
+
+### 坑-021 无 XR 设备时 XRInputModalityManager 会禁用控制器层级（Play 断言必含未激活对象）
+- **现象**：编辑期诊断 Rig 完整（Ray Interactor 全激活），Play 期探针按默认 `FindObjectsByType`（排除未激活）搜 XRRayInteractor = 0，误判"装配缺失"。
+- **真相**：无 XR 设备时 XRInputModalityManager 把 Left/Right Controller 整个 SetActive(false)——**这是正确运行时行为**（真机上设备接入会自动恢复）。
+- **规避**：装配完整性断言用 `FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None)`；交互功能验证放 GUI/模拟器步骤。
+
+### XRI 接入备忘（2026-11-12，W1 完成）
+- 官方样本已连 meta 整包拷入 `Assets/Samples/XR Interaction Toolkit/2.5.4/`（Starter Assets + XR Device Simulator，GUID 引用完整）。
+- 光点预制体挂 `XRSimpleInteractable`；`XRIAnchorBridge` 把 hoverEntered/Exited→SetHighlight、selectEntered→Select，悬停期间逐帧 TickHover——锚点契约与冒烟版 RayInteractor 一致。
+- 场景搭建器现在装配：XR Origin (XR Rig) + XR Device Simulator + FadeController + XRIAnchorBridge + 3 光点 + SmokeProbe，全程幂等。
+- 批处理冒烟命令不变（BuildAndSmoke），不传 -quit。
+
 ## 4. 工作规矩（每会话自查）
 
 1. 开工先读本文档 + `docs/TECH_DESIGN_V2.md` 变更记录；结束时更新本文档"当前状态"。
@@ -122,8 +137,8 @@
 
 ## 5. 当前状态（每次会话末更新）
 
-- **阶段**：W1 收尾（2026-11-12）
-- **已完成**：前次全部 + 14 个运行时脚本进 Assets/Scripts（Core 7 / Interaction 2 / Media 4 + SmokeProbe）+ 场景搭建器（幂等）+ **自动化 Play 冒烟 5 轮迭代后全绿**：悬停预览 OK / 选中 OK / 褪色 fresh=1.00 vs faded=0.39 / appdata.json Newtonsoft 回读校验 OK / LightPoint.prefab + 辉光材质落盘
-- **验证命令**：`Unity.exe -batchmode -projectPath D:/unityxiangmu/MemoryCorridor -executeMethod MemoryCorridor.EditorTools.LightPointSceneBuilder.BuildAndSmoke -logFile …`（不传 -quit，探针自行 Exit(0/1)，60s 看门狗兜底）
-- **下一步**：① XRI 正式接入（XR Origin + 射线 + XR Device Simulator，替换冒烟版 RayInteractor）② PICO SDK 导入（PDC 下载，download-sdk 被墙）③ GitHub 远端建库（gh 可用，需用户确认账号）④ devlog #1 录屏（需 GUI 手动）
-- **待办提醒**：正式环境音手动下载（Freesound/Pixabay）；D 盘 30GB（>20GB 不告警）
+- **阶段**：W1 完成度 ~90%（2026-11-12），XRI 正式接入完毕
+- **已完成**：前次全部 + XRI 官方样本进工程（Starter Assets/XR Device Simulator，连 meta 保 GUID）+ 光点挂 XRSimpleInteractable + XRIAnchorBridge（契约不变）+ XR Rig/模拟器/桥接进场景 + smoke8 全绿（XRI 装配 origin/ray×5/interactable×3/bridge + 悬停 + 选中 + 褪色 fresh=1.00 vs 0.39）
+- **已跳过（按用户指示，勿卡住）**：① PICO SDK 导入——download-sdk.picoxr.com 被墙，PDC 为 GUI 应用，需用户手动（或浏览器代理下 .unitypackage 给路径）② GitHub 远端建库——gh 未登录，需用户 `gh auth login` 或给仓库地址 ③ devlog #1 录屏——需 GUI 手动操作 ④ GUI 里用 XR Device Simulator 手动验证射线悬停/选中（WASD+鼠标模拟，样本自带）
+- **下一步**：W2 内容层（记忆面板 UGUI 化、全景房间布景、Demo 素材贴图入 Assets、浏览器上传链路 Emulator 冒烟）；PICO SDK 到位后立即接 PICO Loader
+- **待办提醒**：D 盘 30GB；Assets/Samples 下样本自带 .asmdef，勿删除样本目录（场景预制体引用其 GUID）

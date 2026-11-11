@@ -2,21 +2,28 @@ using System;
 using System.Collections.Generic;
 using MemoryCorridor.Core;
 using MemoryCorridor.Interaction;
+using Unity.XR.CoreUtils;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation;
 
 namespace MemoryCorridor.EditorTools
 {
     /// <summary>
-    /// W1 场景搭建器：光点预制体 + EditorScene 三个演示光点（新鲜/私密/褪色 300 天）
-    /// + appdata.json 落盘回读校验 + 进入 Play 由 SmokeProbe 自动断言并退出。
+    /// W1 场景搭建器（XRI 正式版）：光点预制体（含 XRSimpleInteractable）+ EditorScene
+    /// 三个演示光点（新鲜/私密/褪色 300 天）+ XRI XR Origin 装配 + XR Device Simulator
+    /// + XRIAnchorBridge + appdata.json 落盘回读校验 + 进入 Play 由 SmokeProbe 自动断言并退出。
     /// 用法：Unity.exe -batchmode -projectPath … -executeMethod MemoryCorridor.EditorTools.LightPointSceneBuilder.BuildAndSmoke -logFile …
     /// 注意：不传 -quit（Play 内由探针 EditorApplication.Exit 结束进程）。
+    /// 幂等：重跑前按类型清空旧光点/控制器/相机/XR 装配（坑-019）。
     /// </summary>
     public static class LightPointSceneBuilder
     {
         private static readonly Color AmberGlow = new Color(0.91f, 0.64f, 0.29f);
+        private const string RigPrefabPath = "Assets/Samples/XR Interaction Toolkit/2.5.4/Starter Assets/Prefabs/XR Origin (XR Rig).prefab";
+        private const string SimulatorPrefabPath = "Assets/Samples/XR Interaction Toolkit/2.5.4/XR Device Simulator/XR Device Simulator.prefab";
 
         [MenuItem("MemoryCorridor/W1 搭建演示场景")]
         public static void BuildAndSmoke()
@@ -39,7 +46,7 @@ namespace MemoryCorridor.EditorTools
             glowMat.SetColor("_EmissionColor", AmberGlow * 2f);
             AssetDatabase.CreateAsset(glowMat, "Assets/Prefabs/LightPointGlow.mat");
 
-            // 2) 光点预制体：球体 + 点光源 + 音源(带低通) + 锚点
+            // 2) 光点预制体：球体 + 点光源 + 音源(带低通) + 锚点 + XRI 可交互体
             GameObject proto = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             proto.name = "LightPoint";
             MeshRenderer protoRenderer = proto.GetComponent<MeshRenderer>();
@@ -53,33 +60,39 @@ namespace MemoryCorridor.EditorTools
             proto.AddComponent<AudioLowPassFilter>();
             LightPointAnchor protoAnchor = proto.AddComponent<LightPointAnchor>();
             protoAnchor.Configure(protoRenderer, protoLight);
+            proto.AddComponent<XRSimpleInteractable>();
             PrefabUtility.SaveAsPrefabAsset(proto, "Assets/Prefabs/LightPoint.prefab");
             UnityEngine.Object.DestroyImmediate(proto);
-            Debug.Log("[SceneBuilder] LightPoint.prefab OK");
+            Debug.Log("[SceneBuilder] LightPoint.prefab OK（含 XRSimpleInteractable）");
 
             // 3) 演示碎片数据（同时写 appdata.json）
             List<MemoryFragment> demo = BuildDemoFragments();
             SaveDemoAppData(demo);
 
-            // 4) 布置 EditorScene（幂等：先清旧光点/旧控制器，重跑不叠加——坑-019）
+            // 4) 布置 EditorScene（幂等：先清旧实例再布置——坑-019）
             UnityEngine.SceneManagement.Scene scene = EditorSceneManager.OpenScene("Assets/Scenes/EditorScene.unity");
-            LightPointAnchor[] staleAnchors = UnityEngine.Object.FindObjectsByType<LightPointAnchor>(UnityEngine.FindObjectsSortMode.None);
-            for (int i = 0; i < staleAnchors.Length; i++)
-            {
-                UnityEngine.Object.DestroyImmediate(staleAnchors[i].gameObject);
-            }
-            FadeController[] staleFades = UnityEngine.Object.FindObjectsByType<FadeController>(UnityEngine.FindObjectsSortMode.None);
-            for (int i = 0; i < staleFades.Length; i++)
-            {
-                UnityEngine.Object.DestroyImmediate(staleFades[i].gameObject);
-            }
+            DestroyAll<LightPointAnchor>("光点");
+            DestroyAll<FadeController>("褪色控制器");
+            DestroyAll<XROrigin>("XR Origin");
+            DestroyAll<XRInteractionManager>("交互管理器");
+            DestroyAll<XRDeviceSimulator>("设备模拟器");
+            DestroyAll<XRIAnchorBridge>("XRI桥");
+            DestroyAll<Camera>("旧相机");
 
-            Camera cam = Camera.main;
-            if (cam == null) throw new Exception("EditorScene 缺少 Main Camera");
-            cam.transform.position = new Vector3(0f, 1.2f, 0f);
-            cam.transform.rotation = Quaternion.identity;
-            if (cam.GetComponent<RayInteractor>() == null) cam.gameObject.AddComponent<RayInteractor>();
+            GameObject rigPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RigPrefabPath);
+            if (rigPrefab == null) throw new Exception("XR Origin (XR Rig).prefab 未找到: " + RigPrefabPath);
+            GameObject rig = (GameObject)PrefabUtility.InstantiatePrefab(rigPrefab);
+            rig.transform.position = Vector3.zero;
 
+            GameObject simPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SimulatorPrefabPath);
+            if (simPrefab == null) throw new Exception("XR Device Simulator.prefab 未找到: " + SimulatorPrefabPath);
+            GameObject sim = (GameObject)PrefabUtility.InstantiatePrefab(simPrefab);
+            sim.transform.position = Vector3.zero;
+
+            new GameObject("FadeController").AddComponent<FadeController>();
+            new GameObject("XRIAnchorBridge").AddComponent<XRIAnchorBridge>();
+
+            // 5) 三个演示光点
             Vector3[] positions =
             {
                 new Vector3(-0.9f, 1.2f, 2.5f),
@@ -88,9 +101,6 @@ namespace MemoryCorridor.EditorTools
             };
             string[] objectNames = { "LP_fresh_1", "LP_private_2", "LP_faded_3" };
             GameObject lightPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/LightPoint.prefab");
-
-            GameObject fadeGo = new GameObject("FadeController");
-            FadeController fade = fadeGo.AddComponent<FadeController>();
 
             for (int i = 0; i < demo.Count; i++)
             {
@@ -111,7 +121,17 @@ namespace MemoryCorridor.EditorTools
             }
 
             EditorSceneManager.SaveScene(scene, "Assets/Scenes/EditorScene.unity");
-            Debug.Log("[SceneBuilder] EditorScene 布置完成（3 光点 + 褪色样例 + 探针）");
+            Debug.Log("[SceneBuilder] EditorScene 布置完成（3 光点 + XR Rig + 模拟器 + 桥接 + 探针）");
+        }
+
+        private static void DestroyAll<T>(string label) where T : Component
+        {
+            T[] stale = UnityEngine.Object.FindObjectsByType<T>(UnityEngine.FindObjectsSortMode.None);
+            for (int i = 0; i < stale.Length; i++)
+            {
+                UnityEngine.Object.DestroyImmediate(stale[i].gameObject);
+            }
+            if (stale.Length > 0) Debug.Log($"[SceneBuilder] 清理旧{label} ×{stale.Length}");
         }
 
         private static List<MemoryFragment> BuildDemoFragments()

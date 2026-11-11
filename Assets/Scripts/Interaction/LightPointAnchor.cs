@@ -32,6 +32,8 @@ namespace MemoryCorridor.Interaction
         public string FragmentId => fragmentId;
         /// <summary>当前褪色系数（0=全暗 1=满亮），冒烟/测试读取。</summary>
         public float CurrentFade => fadeFactor;
+        /// <summary>是否处于射线悬停高亮态（XRI 桥接驱动）。</summary>
+        public bool IsHighlighted => isHighlighted;
         /// <summary>悬停 0.3s 后触发，UI 层弹出预览小卡片。</summary>
         public event Action<string> OnHoverPreview;
         public event Action<string> OnSelected;

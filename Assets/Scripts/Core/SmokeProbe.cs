@@ -24,7 +24,7 @@ namespace MemoryCorridor.Core
         private IEnumerator Start()
         {
             yield return null;
-            yield return null; // 等全部 Start 完成（含 FadeController.Start 从盘应用褪色）
+            yield return null; // 等全部 Start 完成（含 FadeController/XRIAnchorBridge 从盘装配）
 
             LightPointAnchor fresh = FindAnchor("LP_fresh_1");
             LightPointAnchor faded = FindAnchor("LP_faded_3");
@@ -34,6 +34,43 @@ namespace MemoryCorridor.Core
             {
                 Debug.LogError("[SmokeProbe] FAIL: 演示锚点缺失 (fresh=" + (fresh == null) + " faded=" + (faded == null) + ")");
                 pass = false;
+            }
+
+            // --- XRI 装配断言（W1 追加） ---
+            if (pass)
+            {
+                Unity.XR.CoreUtils.XROrigin origin = FindFirst<Unity.XR.CoreUtils.XROrigin>();
+                // 坑-021：无 XR 设备时 XRInputModalityManager 会禁用控制器层级——
+                // 装配断言必须含未激活对象（交互功能验证属 GUI/模拟器步骤）
+                UnityEngine.XR.Interaction.Toolkit.XRRayInteractor[] rays =
+                    UnityEngine.Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.XRRayInteractor>(
+                        UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
+                UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable[] interactables =
+                    FindAll<UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable>();
+                MemoryCorridor.Interaction.XRIAnchorBridge bridge =
+                    FindFirst<MemoryCorridor.Interaction.XRIAnchorBridge>();
+
+                if (origin == null)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL: 缺少 XR Origin");
+                    pass = false;
+                }
+                if (rays.Length < 1)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL: 缺少 XRRayInteractor");
+                    pass = false;
+                }
+                if (interactables.Length < 3 || bridge == null)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL: 光点 XRSimpleInteractable<3 或缺桥接器 (interactables="
+                        + interactables.Length + " bridge=" + (bridge == null) + ")");
+                    pass = false;
+                }
+                if (pass)
+                {
+                    Debug.Log("[SmokeProbe] XRI 装配 OK: origin/ray×" + rays.Length
+                        + "/interactable×" + interactables.Length + "/bridge（rays 含未激活：无设备批处理下控制器由 ModalityManager 禁用，预期）");
+                }
             }
 
             if (pass)
@@ -86,12 +123,23 @@ namespace MemoryCorridor.Core
                 }
             }
 
-            Debug.Log(pass ? "[SmokeProbe] PASS: 悬停预览/选中/褪色 全部通过" : "[SmokeProbe] 结果: FAIL");
+            Debug.Log(pass ? "[SmokeProbe] PASS: XRI 装配/悬停预览/选中/褪色 全部通过" : "[SmokeProbe] 结果: FAIL");
 
 #if UNITY_EDITOR
             yield return new WaitForSeconds(0.3f);
             UnityEditor.EditorApplication.Exit(pass ? 0 : 1);
 #endif
+        }
+
+        private static T FindFirst<T>() where T : UnityEngine.Object
+        {
+            T[] found = UnityEngine.Object.FindObjectsByType<T>(UnityEngine.FindObjectsSortMode.None);
+            return found.Length > 0 ? found[0] : null;
+        }
+
+        private static T[] FindAll<T>() where T : UnityEngine.Object
+        {
+            return UnityEngine.Object.FindObjectsByType<T>(UnityEngine.FindObjectsSortMode.None);
         }
 
         private IEnumerator Watchdog()
