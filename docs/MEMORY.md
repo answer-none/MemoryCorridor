@@ -74,6 +74,28 @@
 - **现状**：已绕过（Android 模块当时已装好）。
 - **规避**：以后补装 Unity 模块若再遇 ECONNRESET，检查代理/重试，不要重复下载已完整的模块。
 
+### 坑-010 中国包源的版本探测方法全不可信（2026-11-12 实测）
+- **现象**：`https://packages.unity.cn/{pkg}/{version}` 一律假 404（真实存在的版本也 404）；`/{pkg}` 列表端点能用但数据不全（URP 只显示 ≤10.x，实际 14.0.11 可解析）。
+- **规避**：**唯一权威判据 = UPM 的报错日志**（"Project has invalid dependencies" 只列真正缺失的包）。别用 curl 探测版本存在性。
+
+### 坑-011 中国源缺 com.unity.xr.management@4.4.2（已解决）
+- **解决**：manifest 改 `4.5.3` → 第二轮批处理依赖解析全过（openxr 1.9.1 / XRI 2.5.4 / inputsystem 1.7.0 / URP 14.0.11 / newtonsoft 3.2.1 中国源都有）。
+
+### 坑-013 Unity API 凭记忆写必翻车——本地源码/XML 是唯一权威（2026-11-12 实测 5 连错）
+- **现象**：SetupWizard 连错 5 个 API：`PlayerSettings.Android.internetAccess`（不存在→`forceInternetPermission`）、`PlayerSettings.activeInputHandler`（本版本全无→直改 ProjectSettings.asset YAML）、`SwitchActiveBuildTarget` 返回 bool 不是 BuildReport、`AssignLoader` 先猜 4 参又错（4.5.3 实际 3 参）。
+- **规避**：写编辑器 API 前先 grep 包缓存源码 `Library/PackageCache/<包>@<版本>/…/*.cs`（最权威）；编辑器自带 API 用 `Editor/Data/Managed/UnityEngine/UnityEditor.CoreModule.xml` 按 `"M:命名空间.类.方法"` 模式搜；**直接 grep .dll 没用**（元数据压缩，连存在的字符串都搜不到）。在线文档与 c1 中国版可能不一致，以本机为准。
+- **已沉淀**：SetupWizard.cs 头注释写明全部正确用法。
+
+### 坑-014 XR Plug-in Management 4.5.3 批处理初始化（已解决）
+- **现象**：批处理里 `XRGeneralSettingsForBuildTarget(Android)` 返回 null——XR 设置资产（`Assets/XR/Settings/XRGeneralSettingsPerBuildTarget.asset`）首次不存在。
+- **解决**（已写进 SetupWizard）：反射调 internal `XRGeneralSettingsPerBuildTarget.GetOrCreate()` 建容器 → 公开方法 `CreateDefaultSettingsForBuildTarget(Android)` + `CreateDefaultManagerSettingsForBuildTarget(Android)` → 再 `AssignLoader(settings.Manager, "UnityEngine.XR.OpenXR.OpenXRLoader", Android)`（3 参）。
+- **方法论**：包源码就在 `Library/PackageCache/<包>@<版本>/`，先列公开方法（grep "public \|internal "）再写代码，别猜。
+
+### 坑-015 Unity 退出时会覆写手工编辑的 ProjectSettings.asset（已解决）
+- **现象**：向导运行中把 `activeInputHandler: 0→2` 写进 YAML，Unity 退出序列化时又按内存值（0）覆写回去。
+- **解决**：凡手工改 ProjectSettings/*.asset，必须在 **Unity 进程完全退出后** 用 sed 改（Wizard 第 5 轮起已并入批处理尾部）。
+- **通用**：Unity 运行期间手改序列化文件 = 无效操作。
+
 ## 4. 工作规矩（每会话自查）
 
 1. 开工先读本文档 + `docs/TECH_DESIGN_V2.md` 变更记录；结束时更新本文档"当前状态"。
@@ -87,7 +109,7 @@
 ## 5. 当前状态（每次会话末更新）
 
 - **阶段**：W1 地基（2026-11-12 开始）
-- **已完成**：方案 V2、竞品调研、素材包（2 全景/10 照片/3 占位音频/字体下载中）
-- **进行中**：Unity 工程创建（D:\unityxiangmu\MemoryCorridor）、Git 初始化
-- **下一步**：manifest 包配置 → SetupWizard（URP/OpenXR/XRI）→ 光点预制体 → 射线交互冒烟
-- **待办提醒**：正式环境音需手动下载（Freesound/Pixabay，见 ASSET_LIST §2）
+- **已完成**：方案 V2、竞品调研、素材包 17 件（全部合规并登记）；Git 仓库（首提交 7b64e29）；种子工程合并；manifest 解析通过（坑-011→4.5.3）；SetupWizard API 修复（坑-013）；交接文档 HANDOFF.md；`_mc_seed` 已删
+- **进行中**：SetupWizard 第五轮批处理（wizard4=3/4 成功，OpenXR 阶段因 XR 设置资产未初始化失败→坑-014 已修；本轮含退出后 activeInputHandler 补丁→坑-015）
+- **下一步**：查 wizard5.log 四阶段结果 → staging 脚本进 Assets/Scripts（Core+Interaction 已写好，Media 层未写）→ 光点预制体+射线冒烟 → PICO SDK 导入 → GitHub 远端（gh 可用）
+- **待办提醒**：正式环境音手动下载（Freesound/Pixabay，ASSET_LIST §2）
