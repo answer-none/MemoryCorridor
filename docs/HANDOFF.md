@@ -56,9 +56,9 @@ PICO Emulator: D:\PICO_Emulator\swan_rls_spaceos_oversea_K_pico_emulator_win64_2
 - Unity 种子工程创建并合并进仓库；manifest 依赖写死；SetupWizard 已放入 `Assets/Editor/`
 
 **进行中（后台）：**
-- 无。**W4 视觉第一梯队完成，smoke25 全绿（16 段断言）**：UGUI 磨砂面板（TMP 动态字体）/星尘粒子场/星河墙缩略图。新增坑-029（TMP 3.0.9 API 偏差——enableWordWrapping/RawImage 无 preserveAspect）。
-- **用户指示的跳过项（勿卡住）**：PICO SDK（**M2 内测包阻塞项**）、GitHub 远端、devlog 录屏、Emulator GUI、旁白音频、Android StreamingAssets 异步化、VR 内抓取/定点 Anchor、视觉 GUI 目检。
-- **接手继续 M2 冲刺（11-29）**：催 PICO SDK → GUI 走查 → 叙事文案补齐 → Android 打包验证（可批处理试 Build）。
+- 无。**Demo 叙事包定稿，smoke26 全绿（17 段断言）**：2 房间 8 碎片（含褪色样例×2、私密样例×1、纯日记×1），frag_02 补配图，新增 frag_06/07/08；H2 段验证房间二星河墙分类（日记星无缩略图）。ASSET_LIST 已更新实装映射。
+- **用户指示的跳过项（勿卡住）**：**Android 打包验证（依赖 PICO SDK，用户侧）**、GitHub 远端、devlog 录屏、Emulator GUI、旁白音频、Android StreamingAssets 异步化、VR 内抓取/定点 Anchor、视觉 GUI 目检。
+- **接手**：M2 冲刺余量（TeleportationAnchor/VR 抓取/星河墙文案牌/devlog 脚本）；用户侧四件事（PICO SDK/GitHub/GUI 目检/旁白素材）到位即闭环。
 
 **未开始：** 运行时脚本进工程、光点预制体、射线冒烟、PICO SDK 导入、XR Device Simulator 配置。
 

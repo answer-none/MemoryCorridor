@@ -27,21 +27,22 @@
 
 ### 1.3 演示照片（assets_raw/photos/，均 1024 宽，Pexels License 免费商用无需署名）
 
-| 文件 | 内容 | 叙事位 |
+| 文件 | 内容 | 叙事位（2026-11-12 实装） |
 |---|---|---|
-| `pexels_38295274.jpg` | 老奶奶缝纫（黑白） | 碎片①缝纫机·主记忆 |
-| `pexels_40483933.jpg` | 缝纫机特写（黑白） | 碎片①配图 |
-| `pexels_17729627.jpg` | 缝纫机与布料（黑白） | 碎片①配图 |
-| `pexels_38295277.jpg` | 缝纫中的手 | 碎片①配图 |
-| `pexels_8847262.jpg` | 老式留声机+收音机 | 碎片②老收音机 |
-| `pexels_9254536.jpg` | 老收音机上的花瓶 | 碎片②配图 |
-| `pexels_12040699.jpg` | 男孩们骑自行车（黑白） | 碎片③童年自行车 |
-| `pexels_39485339.jpg` | 乡村两个孩子骑车 | 碎片③配图 |
-| `pexels_18608502.jpg` | 屋前骑车男孩 | 碎片③配图 |
-| `pexels_3975852.jpg` | 扶着自行车的女孩 | 碎片③配图 |
+| `pexels_38295274.jpg` | 老奶奶缝纫（黑白） | ✅ frag_01 缝纫机 → `Media/frag_01/sewing.jpg` |
+| `pexels_40483933.jpg` | 缝纫机特写（黑白） | 备用（未入包） |
+| `pexels_17729627.jpg` | 缝纫机与布料（黑白） | 备用（未入包） |
+| `pexels_38295277.jpg` | 缝纫中的手 | 备用（未入包） |
+| `pexels_8847262.jpg` | 老式留声机+收音机 | ✅ frag_02 老收音机 → `Media/frag_02/radio.jpg` |
+| `pexels_9254536.jpg` | 老收音机上的花瓶 | ✅ frag_06 窗台的花瓶 → `Media/frag_06/vase.jpg` |
+| `pexels_12040699.jpg` | 男孩们骑自行车（黑白） | ✅ frag_03 童年自行车 → `Media/frag_03/bike.jpg` |
+| `pexels_39485339.jpg` | 乡村两个孩子骑车 | ✅ frag_04 村口的路 → `Media/frag_04/road.jpg` |
+| `pexels_18608502.jpg` | 屋前骑车男孩 | ✅ frag_07 屋前的自行车 → `Media/frag_07/frontyard.jpg` |
+| `pexels_3975852.jpg` | 扶着自行车的女孩 | ✅ frag_08 妹妹学车 → `Media/frag_08/learner.jpg` |
 
 > 对应页面 ID 已含在文件名中，可在 pexels.com/photos/{id} 溯源。
-> 分层伪 3D 素材（fg/mg/bg 三层 PNG）将从这些照片人工/AI 抠图分层，W2 处理。
+> Demo 包现状：2 房间 8 碎片（image×5 / audio+图×1 / mixed×1 / diary×1；褪色样例×2（frag_03 300 天、frag_07 180 天）；私密样例×1（frag_02））。
+> 分层伪 3D 素材（fg/mg/bg 三层 PNG）将从这些照片人工/AI 抠图分层（W4 余量）。
 
 ### 1.4 占位音频（assets_raw/audio/，自制 = 无版权风险，正式版后续替换）
 

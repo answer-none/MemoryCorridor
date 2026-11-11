@@ -36,7 +36,7 @@ namespace MemoryCorridor.Core
             LightPointAnchor faded = FindAnchor("LP_frag_03");
             PanoramaDome dome = FindFirst<PanoramaDome>();
 
-            if (roomManager == null || roomManager.CurrentRoomIndex != 0 || roomManager.SpawnedAnchorCount != 3)
+            if (roomManager == null || roomManager.CurrentRoomIndex != 0 || roomManager.SpawnedAnchorCount != 4)
             {
                 Debug.LogError("[SmokeProbe] FAIL-A: 房间初始态异常 (mgr=" + (roomManager == null)
                     + " idx=" + (roomManager != null ? roomManager.CurrentRoomIndex : -99)
@@ -55,7 +55,7 @@ namespace MemoryCorridor.Core
             }
             if (pass)
             {
-                Debug.Log("[SmokeProbe] A 房间初始态 OK（room0×3 光点，穹顶已加载）");
+                Debug.Log("[SmokeProbe] A 房间初始态 OK（room0×4 光点，穹顶已加载）");
             }
 
             // ========== B. XRI 装配 + 悬停预览 + 选中 + 褪色 ==========
@@ -162,6 +162,14 @@ namespace MemoryCorridor.Core
                 if (!pass) failedSections++;
             }
 
+            // ========== H2. 房间二星河墙（日记星无缩略图） ==========
+            if (pass)
+            {
+                yield return TestConstellationWallRoom2(roomManager);
+                pass = sectionPass;
+                if (!pass) failedSections++;
+            }
+
             // ========== I. 转场淡入淡出 ==========
             if (pass)
             {
@@ -210,7 +218,7 @@ namespace MemoryCorridor.Core
             }
 
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙/转场/传送/面板/星尘/导入 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
 
 #if UNITY_EDITOR
@@ -280,7 +288,7 @@ namespace MemoryCorridor.Core
                 return false;
             }
 
-            if (!player.StartTour() || !player.IsTouring || player.RouteCount != 3)
+            if (!player.StartTour() || !player.IsTouring || player.RouteCount != 4)
             {
                 Debug.LogError("[SmokeProbe] FAIL-D: StartTour 异常 (touring=" + player.IsTouring
                     + " count=" + player.RouteCount + ")");
@@ -347,7 +355,7 @@ namespace MemoryCorridor.Core
                 : null;
 
             if (!roomManager.SwitchToRoom(1) || roomManager.CurrentRoomIndex != 1
-                || roomManager.SpawnedAnchorCount != 2)
+                || roomManager.SpawnedAnchorCount != 4)
             {
                 Debug.LogError("[SmokeProbe] FAIL-F: 切房间异常 (idx=" + roomManager.CurrentRoomIndex
                     + " count=" + roomManager.SpawnedAnchorCount + ")");
@@ -382,13 +390,13 @@ namespace MemoryCorridor.Core
                 yield break;
             }
 
-            if (!roomManager.SwitchToRoom(0) || roomManager.SpawnedAnchorCount != 3)
+            if (!roomManager.SwitchToRoom(0) || roomManager.SpawnedAnchorCount != 4)
             {
                 Debug.LogError("[SmokeProbe] FAIL-F: 切回房间异常");
                 sectionPass = false;
                 yield break;
             }
-            Debug.Log("[SmokeProbe] F 房间切换 OK（穹顶纹理已换，光点 3↔2，走读自动终止）");
+            Debug.Log("[SmokeProbe] F 房间切换 OK（穹顶纹理已换，光点 4↔4，走读自动终止）");
         }
 
         // ---------- G ----------
@@ -490,7 +498,7 @@ namespace MemoryCorridor.Core
             {
                 yield return null;
             }
-            if (!wall.IsVisible || wall.StarCount != 3)
+            if (!wall.IsVisible || wall.StarCount != 4)
             {
                 Debug.LogError("[SmokeProbe] FAIL-H: 星河墙未生成 (visible=" + wall.IsVisible
                     + " stars=" + wall.StarCount + ")");
@@ -520,21 +528,89 @@ namespace MemoryCorridor.Core
                 yield break;
             }
 
-            // 缩略图断言：图星有卡片、音星纯光球
-            GameObject starF1 = GameObject.Find("Star_frag_01");
-            Transform thumbF1 = starF1 != null ? starF1.transform.Find("Thumb") : null;
-            bool thumb1Ok = thumbF1 != null && thumbF1.GetComponent<MeshRenderer>() != null
-                && thumbF1.GetComponent<MeshRenderer>().material.mainTexture != null;
-            GameObject starF2 = GameObject.Find("Star_frag_02");
-            Transform thumbF2 = starF2 != null ? starF2.transform.Find("Thumb") : null;
-            if (!thumb1Ok || thumbF2 != null)
+            // 缩略图断言：room_01 四星全带卡片（全为 image/图+音/mixed 类型）
+            string[] room1Stars = { "Star_frag_01", "Star_frag_02", "Star_frag_03", "Star_frag_06" };
+            for (int i = 0; i < room1Stars.Length; i++)
             {
-                Debug.LogError("[SmokeProbe] FAIL-H: 缩略图异常 (图星有卡=" + thumb1Ok
-                    + " 音星误加=" + (thumbF2 != null) + ")");
+                GameObject starGo = GameObject.Find(room1Stars[i]);
+                Transform thumb = starGo != null ? starGo.transform.Find("Thumb") : null;
+                bool hasThumb = thumb != null && thumb.GetComponent<MeshRenderer>() != null
+                    && thumb.GetComponent<MeshRenderer>().material.mainTexture != null;
+                if (!hasThumb)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-H: " + room1Stars[i] + " 缩略图缺失");
+                    sectionPass = false;
+                    yield break;
+                }
+            }
+            Debug.Log("[SmokeProbe] H 星河回顾墙 OK（4 星连线+首星回调+四缩略图）");
+        }
+
+        // ---------- H2 ----------
+        private IEnumerator TestConstellationWallRoom2(RoomManager roomManager)
+        {
+            sectionPass = true;
+            ConstellationWall wall = FindFirst<ConstellationWall>();
+            RoutePlayer player = FindFirst<RoutePlayer>();
+            if (wall == null || player == null)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-H2: 缺星河墙或走读器");
                 sectionPass = false;
                 yield break;
             }
-            Debug.Log("[SmokeProbe] H 星河回顾墙 OK（3 星连线+首星回调+缩略图：图星有/音星无）");
+
+            // 切房间二：日记星（frag_05）应无缩略图，图星（frag_07 褪色样例）应有
+            if (!roomManager.SwitchToRoom(1))
+            {
+                Debug.LogError("[SmokeProbe] FAIL-H2: 切房间失败");
+                sectionPass = false;
+                yield break;
+            }
+            if (!player.StartTour())
+            {
+                Debug.LogError("[SmokeProbe] FAIL-H2: 房间二走读启动失败");
+                sectionPass = false;
+                yield break;
+            }
+            int guard2 = 0;
+            while (player.IsTouring && guard2++ < 10)
+            {
+                player.Advance();
+            }
+            float deadline2 = Time.realtimeSinceStartup + 2f;
+            while (Time.realtimeSinceStartup < deadline2 && !wall.IsVisible)
+            {
+                yield return null;
+            }
+            if (!wall.IsVisible || wall.StarCount != 4)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-H2: 房间二星河墙异常 (visible=" + wall.IsVisible
+                    + " stars=" + wall.StarCount + ")");
+                sectionPass = false;
+                yield break;
+            }
+
+            GameObject diaryStar = GameObject.Find("Star_frag_05");
+            Transform diaryThumb = diaryStar != null ? diaryStar.transform.Find("Thumb") : null;
+            GameObject photoStar = GameObject.Find("Star_frag_07");
+            Transform photoThumb = photoStar != null ? photoStar.transform.Find("Thumb") : null;
+            bool photoThumbOk = photoThumb != null && photoThumb.GetComponent<MeshRenderer>() != null
+                && photoThumb.GetComponent<MeshRenderer>().material.mainTexture != null;
+            if (diaryThumb != null || !photoThumbOk)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-H2: 缩略图分类异常 (日记星误加=" + (diaryThumb != null)
+                    + " 图星缺失=" + !photoThumbOk + ")");
+                sectionPass = false;
+                yield break;
+            }
+
+            if (!roomManager.SwitchToRoom(0))
+            {
+                Debug.LogError("[SmokeProbe] FAIL-H2: 切回失败");
+                sectionPass = false;
+                yield break;
+            }
+            Debug.Log("[SmokeProbe] H2 房间二星河墙 OK（日记星纯光球/图星带卡+切回）");
         }
 
         // ---------- I ----------
@@ -565,14 +641,14 @@ namespace MemoryCorridor.Core
             }
 
             yield return roomManager.SwitchToRoomWithFade(1);
-            if (roomManager.CurrentRoomIndex != 1 || roomManager.SpawnedAnchorCount != 2)
+            if (roomManager.CurrentRoomIndex != 1 || roomManager.SpawnedAnchorCount != 4)
             {
                 Debug.LogError("[SmokeProbe] FAIL-I: 带淡切房间异常 (idx=" + roomManager.CurrentRoomIndex + ")");
                 sectionPass = false;
                 yield break;
             }
             yield return roomManager.SwitchToRoomWithFade(0);
-            if (roomManager.CurrentRoomIndex != 0 || roomManager.SpawnedAnchorCount != 3)
+            if (roomManager.CurrentRoomIndex != 0 || roomManager.SpawnedAnchorCount != 4)
             {
                 Debug.LogError("[SmokeProbe] FAIL-I: 带淡切返回异常");
                 sectionPass = false;

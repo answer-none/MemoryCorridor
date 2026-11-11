@@ -175,6 +175,12 @@
 - 星河墙缩略图：图片碎片星点挂 Thumb 子 Quad（URP/Lit+贴图），音/日记星纯光球。
 - 探针新增 L（面板照片+标题+显隐）/ M（星尘发射）段，H 段加缩略图断言（图星有/音星无）。
 
+### W4 续备忘（2026-11-12 第 5 批，smoke26 全绿 17 段断言）
+- Demo 包定稿：**2 房间 8 碎片**——room_01（缝纫机/老收音机·私密/童年自行车·褪色300天/窗台花瓶）+ room_02（村口的路/摇椅日记·纯diary/屋前自行车·褪色180天/妹妹学车）。
+- frag_02 补 radio.jpg（私密碎片也可见可看）；新增 frag_06/07/08 均有图有文案；日记文案润色（"跑调也不许我们笑"/"车把上挂着一网兜汽水瓶"等细节句）。
+- 探针连锁更新：4 光点/4 星全缩略图（room_01 全带图）；**新增 H2 段**（切房间二建墙：日记星纯光球、图星带卡、褪色样例星）。
+- ASSET_LIST.md §1.3 已更新为实装映射（4 张备用照片留在 raw）。
+
 ### W2 内容层备忘（2026-11-12，第 1 天）
 - 素材入工程：`Assets/Art/Panoramas`（2 全景）、`Assets/StreamingAssets/Media/frag_01|03`（演示照片）、`Assets/StreamingAssets/Panoramas/room_01.jpg`（穹顶用）、`Assets/Audio`（3 占位 WAV）。
 - 新增：MediaResolver（持久化→StreamingAssets 回退）、AmbienceController（2D 环境音+settings.ambientVolume）、PanoramaDome。
@@ -194,9 +200,8 @@
 
 ## 5. 当前状态（每次会话末更新）
 
-- **阶段**：W4 视觉第一梯队完成（2026-11-12 第 4 批），smoke25 全绿（16 段断言）
-- **已完成**：W3 全部 + UGUI 磨砂面板 + 星尘粒子 + 星河墙缩略图——**M2 内测闭环（11-29）的机制+视觉主件齐备**，评分表"视觉15+交互15"的主要载体已落地
-- **smoke25 断言**：A 房间初始/B XRI+悬停+选中+褪色/C 排序/D 走读信标/E 回访/F 切房间/G 重演四拍/H 星河墙+缩略图/I 转场/J 传送/L UGUI 面板/M 星尘/K 导入服务
-- **已跳过（勿卡住）**：① PICO SDK（被墙+GUI，**M2 内测包必须先解决**）② GitHub 远端（gh 未登录）③ devlog #2（GUI）④ Emulator GUI ⑤ 旁白音频（Freesound 手动）⑥ Android StreamingAssets 异步化（真机前）⑦ VR 内抓取编排/定点传送 Anchor/星河墙文案牌（体验打磨余量）⑧ 面板朝向/磨砂质感的 GUI 目检（批处理无法验证视觉效果）
-- **下一步**：M2 内测闭环冲刺（11-29）：①催办 PICO SDK 导入（用户侧）②Editor GUI 手动走查+修视觉细节 ③demo 叙事文案补齐（frag_02/05 配图缺失）④打包流程验证（Android Switch + Build,批处理可试）⑤发 2–3 位朋友收反馈
+- **阶段**：Demo 包内容定稿（2026-11-12 第 5 批），smoke26 全绿（17 段断言）
+- **已完成**：W4 全部 + **2 房间 8 碎片叙事包**（图5/音+图1/混合1/纯日记1，褪色样例×2，私密样例×1）+ 房间二星河墙验证段（H2）
+- **已跳过（勿卡住）**：① **Android 打包验证——依赖 PICO SDK（用户侧被墙/GUI），SDK 到位即试 Build** ② GitHub 远端（gh 未登录）③ devlog（GUI）④ Emulator GUI ⑤ 旁白音频（Freesound 手动）⑥ Android StreamingAssets 异步化（真机前）⑦ VR 内抓取/定点 Anchor ⑧ 视觉 GUI 目检
+- **下一步（M2 冲刺，11-29）**：用户侧四件事（PICO SDK/GitHub 登录/GUI 目检/旁白素材）；agent 侧余量：TeleportationAnchor 定点传送、VR 内抓取编排、星河墙文案牌、devlog 脚本撰写
 - **待办提醒**：D 盘 30GB；M3（12-12）冻结倒计时 30 天；比赛提交 12-19 09:00

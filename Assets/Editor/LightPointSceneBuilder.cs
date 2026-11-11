@@ -68,7 +68,7 @@ namespace MemoryCorridor.EditorTools
             // 2) 演示数据（两房间五碎片，写 appdata.json）
             AppData demo = BuildDemoAppData();
             SaveDataService.SaveAppData(demo);
-            Debug.Log("[SceneBuilder] appdata.json 已写（2 房间 5 碎片）: " + SaveDataService.AppDataFilePath);
+            Debug.Log("[SceneBuilder] appdata.json 已写（2 房间 8 碎片）: " + SaveDataService.AppDataFilePath);
 
             // 3) 布置场景（幂等）
             UnityEngine.SceneManagement.Scene scene = EditorSceneManager.OpenScene("Assets/Scenes/EditorScene.unity");
@@ -253,9 +253,10 @@ namespace MemoryCorridor.EditorTools
                 visibility = "private",
                 createdAt = "2026-11-12T09:10:00+08:00",
                 lastVisitedAt = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                diary = new DiaryEntry { date = "2015-10-01", text = "戏曲频道永远开到最大声。" },
+                diary = new DiaryEntry { date = "2015-10-01", text = "戏曲频道永远开到最大声，她跟着哼，跑调也不许我们笑。" },
                 mediaItems = new List<MediaItem>
                 {
+                    new MediaItem { kind = "image", path = "Media/frag_02/radio.jpg", caption = "五斗柜上的红灯牌收音机" },
                     new MediaItem { kind = "audio", path = "Media/frag_02/radio.wav", caption = "收音机里的一段戏" },
                 },
                 anchor = new FragmentAnchor { position = new float[] { 0f, 1.2f, 2.5f } },
@@ -278,6 +279,24 @@ namespace MemoryCorridor.EditorTools
                     new MediaItem { kind = "audio", path = "Media/frag_03/bell.wav", caption = "车铃声" },
                 },
                 anchor = new FragmentAnchor { position = new float[] { 0.9f, 1.2f, 2.5f } },
+            });
+            room1.fragments.Add(new MemoryFragment
+            {
+                id = "frag_06",
+                title = "窗台的花瓶",
+                type = "image",
+                ownerMemberId = "mem_01",
+                roomId = "room_01",
+                order = 3,
+                visibility = "public",
+                createdAt = "2026-11-12T09:50:00+08:00",
+                lastVisitedAt = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                diary = new DiaryEntry { date = "2018-04-05", text = "清明前后她总在窗台插一束新折的栀子，满屋都是香的。" },
+                mediaItems = new List<MediaItem>
+                {
+                    new MediaItem { kind = "image", path = "Media/frag_06/vase.jpg", caption = "窗台上的木框与花瓶" },
+                },
+                anchor = new FragmentAnchor { position = new float[] { -1.6f, 1.2f, 1.6f } },
             });
             data.rooms.Add(room1);
 
@@ -323,6 +342,42 @@ namespace MemoryCorridor.EditorTools
                 diary = new DiaryEntry { date = "2020-08-15", text = "傍晚坐在摇椅上，蒲扇摇啊摇，槐花落了一地。" },
                 anchor = new FragmentAnchor { position = new float[] { 0.5f, 1.2f, 2.0f } },
             });
+            room2.fragments.Add(new MemoryFragment
+            {
+                id = "frag_07",
+                title = "屋前的自行车",
+                type = "image",
+                ownerMemberId = "mem_01",
+                roomId = "room_02",
+                order = 2,
+                visibility = "public",
+                createdAt = "2026-11-12T09:45:00+08:00",
+                lastVisitedAt = "2026-05-15T10:00:00Z", // ≈180 天前 → 房间二褪色对照
+                diary = new DiaryEntry { date = "2010-06-01", text = "二八大杠停在枣树下，车把上挂着一网兜汽水瓶。" },
+                mediaItems = new List<MediaItem>
+                {
+                    new MediaItem { kind = "image", path = "Media/frag_07/frontyard.jpg", caption = "屋前骑车" },
+                },
+                anchor = new FragmentAnchor { position = new float[] { -1.6f, 1.2f, 1.2f } },
+            });
+            room2.fragments.Add(new MemoryFragment
+            {
+                id = "frag_08",
+                title = "妹妹学车",
+                type = "image",
+                ownerMemberId = "mem_01",
+                roomId = "room_02",
+                order = 3,
+                visibility = "public",
+                createdAt = "2026-11-12T09:50:00+08:00",
+                lastVisitedAt = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                diary = new DiaryEntry { date = "2011-09-12", text = "她扶着车把不敢蹬，我在后面扶了整个暑假，撒手那天比她还高兴。" },
+                mediaItems = new List<MediaItem>
+                {
+                    new MediaItem { kind = "image", path = "Media/frag_08/learner.jpg", caption = "扶着车的妹妹" },
+                },
+                anchor = new FragmentAnchor { position = new float[] { 1.6f, 1.2f, 1.2f } },
+            });
             data.rooms.Add(room2);
 
             return data;
@@ -333,11 +388,13 @@ namespace MemoryCorridor.EditorTools
         {
             AppData loaded = SaveDataService.LoadAppData();
             bool ok = loaded.rooms.Count == 2
-                && loaded.rooms[0].fragments.Count == 3
-                && loaded.rooms[1].fragments.Count == 2
+                && loaded.rooms[0].fragments.Count == 4
+                && loaded.rooms[1].fragments.Count == 4
                 && loaded.settings.fadeStartDays == 30
                 && loaded.rooms[0].fragments[2].lastVisitedAt == "2026-01-15T10:00:00Z"
+                && loaded.rooms[1].fragments[2].lastVisitedAt == "2026-05-15T10:00:00Z"
                 && loaded.rooms[0].fragments[1].visibility == "private"
+                && loaded.rooms[0].fragments[1].mediaItems.Count == 2
                 && loaded.rooms[1].fragments[1].type == "diary";
 
             if (!ok)
@@ -345,7 +402,7 @@ namespace MemoryCorridor.EditorTools
                 Debug.LogError("[SceneBuilder] FAIL: appdata.json 回读校验不通过");
                 throw new Exception("appdata.json 回读校验失败");
             }
-            Debug.Log("[SceneBuilder] appdata.json 回读校验 OK（2 房间/5 碎片/褪色日期/私密标记/日记类型）");
+            Debug.Log("[SceneBuilder] appdata.json 回读校验 OK（2 房间/8 碎片/双褪色样例/私密样例/组合媒体/日记类型）");
         }
     }
 }
