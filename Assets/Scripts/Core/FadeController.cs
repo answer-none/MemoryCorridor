@@ -17,14 +17,8 @@ namespace MemoryCorridor.Core
         [SerializeField] private float fadeFloor = 0.25f;
         [SerializeField] private float fullFadeDays = 365f; // 衰减到地板值的天数
 
-        /// <summary>
-        /// Play 启动即从 appdata.json 读取全部碎片并应用褪色（fadeFactor 非序列化字段，
-        /// 编辑期烘焙无效——坑-018；运行时数据流：appdata → ComputeFadeFactor → 锚点）。
-        /// </summary>
-        private void Start()
-        {
-            ApplyAllFromDisk();
-        }
+        // 褪色应用时机归 RoomManager（spawn 时逐光点 Apply）；
+        // 坑-025：Start 自动应用与 spawn 存在时序竞态，已移除。ApplyAllFromDisk 保留为工具方法。
 
         /// <summary>从盘上 appdata.json 读取碎片，按 FragmentId 匹配场景内锚点并应用褪色。</summary>
         public int ApplyAllFromDisk()

@@ -8,26 +8,30 @@ namespace MemoryCorridor.Interaction
 {
     /// <summary>
     /// XRI 事件 → 光点契约桥：XRSimpleInteractable 的 hoverEntered/Exited 驱动
-    /// SetHighlight，selectEntered 驱动 Select 并弹出记忆面板；悬停期间逐帧 TickHover。
-    /// 无论射线来自 XRI 手柄还是 XR Device Simulator，锚点契约保持一致（HANDOFF 决策）。
+    /// SetHighlight，selectEntered 驱动 Select + 回访记录 + 回忆重演 + 记忆面板。
+    /// 坑-025：RoomManager 在 Start 动态生成光点，与本项目 Start 顺序存在竞态——
+    /// 改为 Update 懒接线（已接线的锚点进 HashSet 去重，房间切换后自动接新光点）。
     /// </summary>
     public class XRIAnchorBridge : MonoBehaviour
     {
         [SerializeField] private MemoryPanel panel;
+        [SerializeField] private RoutePlayer routePlayer;
+        [SerializeField] private ReplaySequencer replaySequencer;
 
-        private LightPointAnchor[] anchors;
+        private readonly HashSet<LightPointAnchor> wired = new HashSet<LightPointAnchor>();
         private Dictionary<string, MemoryFragment> fragmentsById;
+        private int wiredLoggedCount = -1;
 
-        /// <summary>编辑器场景搭建注入面板引用。</summary>
-        public void Configure(MemoryPanel panelRef)
+        /// <summary>编辑器搭建注入引用。</summary>
+        public void Configure(MemoryPanel panelRef, RoutePlayer routePlayerRef, ReplaySequencer replayRef)
         {
             panel = panelRef;
+            routePlayer = routePlayerRef;
+            replaySequencer = replayRef;
         }
 
         private void Start()
         {
-            anchors = FindObjectsByType<LightPointAnchor>(FindObjectsSortMode.None);
-
             fragmentsById = new Dictionary<string, MemoryFragment>();
             AppData data = SaveDataService.LoadAppData();
             if (data != null && data.rooms != null)
@@ -42,11 +46,24 @@ namespace MemoryCorridor.Interaction
                     }
                 }
             }
+        }
 
-            int wired = 0;
+        private void Update()
+        {
+            EnsureWired();
+            TickHoveredAnchors();
+        }
+
+        /// <summary>为尚未接线的新光点补接线（房间切换后自动生效）。</summary>
+        private void EnsureWired()
+        {
+            LightPointAnchor[] anchors = FindObjectsByType<LightPointAnchor>(FindObjectsSortMode.None);
+            int newWired = 0;
             for (int i = 0; i < anchors.Length; i++)
             {
                 LightPointAnchor anchor = anchors[i];
+                if (wired.Contains(anchor)) continue;
+
                 XRSimpleInteractable interactable = anchor.GetComponent<XRSimpleInteractable>();
                 if (interactable == null)
                 {
@@ -64,32 +81,48 @@ namespace MemoryCorridor.Interaction
                 });
                 interactable.selectEntered.AddListener(delegate (SelectEnterEventArgs args)
                 {
-                    captured.Select();
-                    ShowPanelFor(captured.FragmentId);
+                    OnFragmentSelected(captured.FragmentId);
                 });
-                wired++;
+                wired.Add(anchor);
+                newWired++;
             }
-            Debug.Log("[XRIAnchorBridge] 已桥接 " + wired + " 个光点（面板=" + (panel != null) + "，碎片表=" + fragmentsById.Count + "）");
+
+            if (newWired > 0 && wired.Count != wiredLoggedCount)
+            {
+                wiredLoggedCount = wired.Count;
+                Debug.Log("[XRIAnchorBridge] 已桥接 " + wired.Count + " 个光点（面板="
+                    + (panel != null) + "，走读=" + (routePlayer != null) + "，重演="
+                    + (replaySequencer != null) + "）");
+            }
         }
 
-        private void ShowPanelFor(string fragmentId)
+        private void OnFragmentSelected(string fragmentId)
         {
-            if (panel == null) return;
             MemoryFragment fragment;
-            if (fragmentsById != null && fragmentsById.TryGetValue(fragmentId, out fragment))
+            fragmentsById.TryGetValue(fragmentId, out fragment);
+
+            if (routePlayer != null) routePlayer.MarkVisited(fragmentId);
+            if (replaySequencer != null && fragment != null)
+            {
+                GameObject anchorGo = GameObject.Find("LP_" + fragmentId);
+                Vector3 anchorPosition = (anchorGo != null)
+                    ? anchorGo.transform.position
+                    : Vector3.zero;
+                replaySequencer.Play(fragment, anchorPosition);
+            }
+            if (panel != null && fragment != null)
             {
                 panel.Show(fragment);
             }
         }
 
-        private void Update()
+        private void TickHoveredAnchors()
         {
-            if (anchors == null) return;
-            for (int i = 0; i < anchors.Length; i++)
+            foreach (LightPointAnchor anchor in wired)
             {
-                if (anchors[i] != null && anchors[i].IsHighlighted)
+                if (anchor != null && anchor.IsHighlighted)
                 {
-                    anchors[i].TickHover();
+                    anchor.TickHover();
                 }
             }
         }

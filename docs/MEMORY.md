@@ -138,6 +138,23 @@
 - **解决**：`SaveDataService.WarmCache()`（主线程入口调用一次）缓存静态字段；后台线程读 `SaveDataService.PersistentRoot/StreamingRoot`；MediaResolver 已切换。
 - **通用**：Unity Application.* 路径属性在 Thread/ThreadPool 里都是雷，模式=主线程预热+静态缓存。
 
+### 坑-025 Start 顺序竞态：动态生成的对象不能被别的 Start 缓存
+- **现象**：桥接器 Start 缓存光点数组，但 RoomManager.Start 才生成光点——谁先谁后不确定，先到者拿空集。
+- **解决**：桥接器改 Update 懒接线（HashSet 去重，每帧补接新光点，房间切换后自动生效）；RoomManager 光点命名固定 `LP_{fragmentId}` 供定位。
+
+### 坑-026 编辑期 C# 事件订阅不序列化（域重载即丢）
+- **现象**：搭建器在编辑期 Configure 里给 RoomManager.OnRoomSwitched 挂 RoutePlayer 订阅 → 进 Play 域重载全丢 → 房间切换后走读不终止。
+- **规避**：跨对象事件订阅必须在 **Play 期的 Start/Awake** 里做（编辑期 Configure 只序列化字段引用）；订阅用 `-=` 再 `+=` 防重复。
+
+### 坑-027 顺序移动要按 order 值找交换对象，不是列表下标
+- **现象**：MoveFragment 按"列表位置+delta"找邻居——列表顺序≠order 顺序（交换后立刻错位），前移出界。
+- **规避**：先取 self.order，按 `order+delta` 查交换对象；这也是为什么探针要"交换+恢复"两次验证。
+
+### W2 续备忘（2026-11-12 第 2 批，smoke19 全绿）
+- 新增：`RouteEditor`（手动排序，order 交换落盘）、`RoomManager`（两房间切换：卸载/生成光点+穹顶 SetPanorama+环境音换 clip）、`RoutePlayer`（走读路线+星尘信标+MarkVisited 回访复位褪色）、`ReplaySequencer`（四拍：环境光压暗→LayeredPhoto 展开→旁白位→复原；SkipToEnd 跳过；OnDisable 兜底复原）、`StardustBeacon`（信标标记件）。
+- 演示数据升级 2 房间 5 碎片（room_02 老院子：村口的路+摇椅日记）。
+- smoke19 断言 11 项：房间初始态/XRI 装配/悬停/选中/褪色/排序交换恢复/走读信标两站/回访复位/房间切换（穹顶纹理+光点 3↔2+走读终止）/重演绽放跳过复原/ImportServer HTTP。
+
 ### W2 内容层备忘（2026-11-12，第 1 天）
 - 素材入工程：`Assets/Art/Panoramas`（2 全景）、`Assets/StreamingAssets/Media/frag_01|03`（演示照片）、`Assets/StreamingAssets/Panoramas/room_01.jpg`（穹顶用）、`Assets/Audio`（3 占位 WAV）。
 - 新增：MediaResolver（持久化→StreamingAssets 回退）、AmbienceController（2D 环境音+settings.ambientVolume）、PanoramaDome。
@@ -157,9 +174,9 @@
 
 ## 5. 当前状态（每次会话末更新）
 
-- **阶段**：W2 内容层第 1 天完成（2026-11-12），冒烟 smoke13 全绿
-- **已完成**：W1 全部 + 素材入工程 + 全景穹顶（自研 shader，appdata 数据流）+ 环境音 + 记忆面板接真实素材 + 选中开面板 + **ImportServer HTTP 三连冒烟通过（上传落盘/日记入档实证）**
-- **smoke13 断言清单**：XRI 装配（origin/ray×5/interactable×3/bridge）/ 悬停预览 / 选中 / 褪色 fresh=1.00 vs 0.39 / 全景穹顶加载 / ImportServer GET+POST×2
-- **已跳过（勿卡住）**：① PICO SDK（被墙+GUI）② GitHub 远端（gh 未登录）③ devlog #1（GUI）④ Emulator 内 GUI 验证（HTTP 链路已批处理验证，Emulator 留到 APK 级验证）⑤ 旁白/叙事音频素材（Freesound 手动，见 ASSET_LIST §2）⑥ Android StreamingAssets 需 UnityWebRequest 异步化（真机前处理，编辑器 File 直读可用）⑦ 记忆面板 UGUI 磨砂化（W4 视觉打磨）
-- **下一步**：W2 续：走读路线（星尘路径+排序）、RoomManager 房间切换（穹顶已支持 SetPanorama）、ReplaySequencer 四拍时序；然后 M1 闭环 alpha（11-23）
+- **阶段**：W2 核心机制完成（2026-11-12 第 2 批），smoke19 全绿（11 项断言）
+- **已完成**：W2 第 1 天全部 + 房间切换 + 手动排序 + 星尘走读 + 回访复位（褪色闭环）+ 回忆重演四拍（含跳过）——**M1 闭环 alpha 的机制层全部就绪**
+- **smoke19 断言**：A 房间初始/B XRI+悬停+选中+褪色/C 排序/D 走读信标/E 回访/F 切房间/G 重演四拍/H 导入服务
+- **已跳过（勿卡住）**：① PICO SDK（被墙+GUI）② GitHub 远端（gh 未登录）③ devlog #1（GUI）④ Emulator GUI 验证 ⑤ 旁白/叙事音频（Freesound 手动）⑥ Android StreamingAssets 异步化（真机前）⑦ UGUI 磨砂面板/全屏暗幕/星河回顾墙（W4 视觉）⑧ VR 内抓取编排（W3，当前排序走数据层）
+- **下一步**：W3 叙事打磨：星河回顾墙（ConstellationWall）、传送接 XRI Teleportation、房间切换淡入淡出、先闻其声接真实旁白（素材到位后）；M1 闭环 alpha（11-23）前做一轮 Editor GUI 手动走查
 - **待办提醒**：D 盘 30GB；样本目录勿删（GUID 引用）

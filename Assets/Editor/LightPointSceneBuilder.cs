@@ -14,12 +14,9 @@ using UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation;
 namespace MemoryCorridor.EditorTools
 {
     /// <summary>
-    /// W1 场景搭建器（XRI 正式版）：光点预制体（含 XRSimpleInteractable）+ EditorScene
-    /// 三个演示光点（新鲜/私密/褪色 300 天）+ XRI XR Origin 装配 + XR Device Simulator
-    /// + XRIAnchorBridge + appdata.json 落盘回读校验 + 进入 Play 由 SmokeProbe 自动断言并退出。
-    /// 用法：Unity.exe -batchmode -projectPath … -executeMethod MemoryCorridor.EditorTools.LightPointSceneBuilder.BuildAndSmoke -logFile …
-    /// 注意：不传 -quit（Play 内由探针 EditorApplication.Exit 结束进程）。
-    /// 幂等：重跑前按类型清空旧光点/控制器/相机/XR 装配（坑-019）。
+    /// W2 场景搭建器 v4：两房间演示（奶奶的客厅/老院子）+ XRI 装配 + 星尘信标 +
+    /// RoomManager/RoutePlayer/ReplaySequencer/记忆面板/导入服务，幂等可重跑。
+    /// 用法：Unity.exe -batchmode -projectPath … -executeMethod …BuildAndSmoke -logFile …（不传 -quit）。
     /// </summary>
     public static class LightPointSceneBuilder
     {
@@ -27,7 +24,7 @@ namespace MemoryCorridor.EditorTools
         private const string RigPrefabPath = "Assets/Samples/XR Interaction Toolkit/2.5.4/Starter Assets/Prefabs/XR Origin (XR Rig).prefab";
         private const string SimulatorPrefabPath = "Assets/Samples/XR Interaction Toolkit/2.5.4/XR Device Simulator/XR Device Simulator.prefab";
 
-        [MenuItem("MemoryCorridor/W1 搭建演示场景")]
+        [MenuItem("MemoryCorridor/W2 搭建演示场景")]
         public static void BuildAndSmoke()
         {
             BuildPrefabAndScene();
@@ -40,15 +37,16 @@ namespace MemoryCorridor.EditorTools
         {
             if (!AssetDatabase.IsValidFolder("Assets/Prefabs"))
                 AssetDatabase.CreateFolder("Assets", "Prefabs");
+            if (!AssetDatabase.IsValidFolder("Assets/Materials"))
+                AssetDatabase.CreateFolder("Assets", "Materials"); // 坑-023
 
-            // 1) 光点辉光材质资产（URP Lit + 自发光）
+            // 1) 光点辉光材质 + 预制体（球体+点光+音源+低通+锚点+XRI可交互体）
             Material glowMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             glowMat.EnableKeyword("_EMISSION");
             glowMat.SetColor("_BaseColor", AmberGlow * 0.4f);
             glowMat.SetColor("_EmissionColor", AmberGlow * 2f);
             AssetDatabase.CreateAsset(glowMat, "Assets/Prefabs/LightPointGlow.mat");
 
-            // 2) 光点预制体：球体 + 点光源 + 音源(带低通) + 锚点 + XRI 可交互体
             GameObject proto = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             proto.name = "LightPoint";
             MeshRenderer protoRenderer = proto.GetComponent<MeshRenderer>();
@@ -63,15 +61,16 @@ namespace MemoryCorridor.EditorTools
             LightPointAnchor protoAnchor = proto.AddComponent<LightPointAnchor>();
             protoAnchor.Configure(protoRenderer, protoLight);
             proto.AddComponent<XRSimpleInteractable>();
-            PrefabUtility.SaveAsPrefabAsset(proto, "Assets/Prefabs/LightPoint.prefab");
+            GameObject lightPrefab = PrefabUtility.SaveAsPrefabAsset(proto, "Assets/Prefabs/LightPoint.prefab");
             UnityEngine.Object.DestroyImmediate(proto);
             Debug.Log("[SceneBuilder] LightPoint.prefab OK（含 XRSimpleInteractable）");
 
-            // 3) 演示碎片数据（同时写 appdata.json）
-            List<MemoryFragment> demo = BuildDemoFragments();
-            SaveDemoAppData(demo);
+            // 2) 演示数据（两房间五碎片，写 appdata.json）
+            AppData demo = BuildDemoAppData();
+            SaveDataService.SaveAppData(demo);
+            Debug.Log("[SceneBuilder] appdata.json 已写（2 房间 5 碎片）: " + SaveDataService.AppDataFilePath);
 
-            // 4) 布置 EditorScene（幂等：先清旧实例再布置——坑-019）
+            // 3) 布置场景（幂等）
             UnityEngine.SceneManagement.Scene scene = EditorSceneManager.OpenScene("Assets/Scenes/EditorScene.unity");
             DestroyAll<LightPointAnchor>("光点");
             DestroyAll<FadeController>("褪色控制器");
@@ -83,13 +82,15 @@ namespace MemoryCorridor.EditorTools
             DestroyAll<ImportServer>("导入服务");
             DestroyAll<AmbienceController>("环境音");
             DestroyAll<MemoryPanel>("记忆面板");
-
-            // 4.5) 暮色氛围：全景穹顶 + 环境光（坑-022：URP 下内置 Skybox/Panorama 不可用，改自研穹顶）
-            if (!AssetDatabase.IsValidFolder("Assets/Materials"))
-                AssetDatabase.CreateFolder("Assets", "Materials"); // 坑-023：CreateAsset 不会自动建父目录
             DestroyAll<PanoramaDome>("全景穹顶");
+            DestroyAll<RoomManager>("房间管理");
+            DestroyAll<RoutePlayer>("走读");
+            DestroyAll<ReplaySequencer>("重演");
+            DestroyAll<StardustBeacon>("信标");
+
+            // 4) 全景穹顶 + 环境光（坑-022）
             Shader domeShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/PanoramaDome.shader");
-            if (domeShader == null) throw new Exception("PanoramaDome.shader 未找到（检查 Assets/Shaders）");
+            if (domeShader == null) throw new Exception("PanoramaDome.shader 未找到");
             GameObject dome = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             dome.name = "PanoramaDome";
             dome.transform.position = Vector3.zero;
@@ -102,19 +103,20 @@ namespace MemoryCorridor.EditorTools
             domeRenderer.sharedMaterial = domeMat;
             dome.AddComponent<PanoramaDome>();
             RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.24f, 0.19f, 0.21f); // 暮色暖基调
+            RenderSettings.ambientLight = new Color(0.24f, 0.19f, 0.21f);
 
+            // 5) XR 装配
             GameObject rigPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RigPrefabPath);
-            if (rigPrefab == null) throw new Exception("XR Origin (XR Rig).prefab 未找到: " + RigPrefabPath);
+            if (rigPrefab == null) throw new Exception("XR Origin (XR Rig).prefab 未找到");
             GameObject rig = (GameObject)PrefabUtility.InstantiatePrefab(rigPrefab);
             rig.transform.position = Vector3.zero;
 
             GameObject simPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SimulatorPrefabPath);
-            if (simPrefab == null) throw new Exception("XR Device Simulator.prefab 未找到: " + SimulatorPrefabPath);
+            if (simPrefab == null) throw new Exception("XR Device Simulator.prefab 未找到");
             GameObject sim = (GameObject)PrefabUtility.InstantiatePrefab(simPrefab);
             sim.transform.position = Vector3.zero;
 
-            // 4.7) 记忆面板（W2 版：Quad + TextMesh，W4 换 UGUI）
+            // 6) 记忆面板（W2 版）
             GameObject panelRoot = GameObject.CreatePrimitive(PrimitiveType.Quad);
             panelRoot.name = "MemoryPanel";
             Collider panelCollider = panelRoot.GetComponent<Collider>();
@@ -127,70 +129,45 @@ namespace MemoryCorridor.EditorTools
             panelRenderer.sharedMaterial = panelMat;
 
             Font builtinFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            GameObject titleGo = new GameObject("Title");
-            titleGo.transform.SetParent(panelRoot.transform, false);
-            titleGo.transform.localPosition = new Vector3(0f, 0.42f, -0.01f);
-            MeshRenderer titleRenderer = titleGo.AddComponent<MeshRenderer>();
-            TextMesh titleTm = titleGo.AddComponent<TextMesh>();
-            titleTm.font = builtinFont;
-            titleRenderer.sharedMaterial = builtinFont.material;
-            titleTm.fontSize = 64;
-            titleTm.characterSize = 0.09f;
-            titleTm.anchor = TextAnchor.MiddleCenter;
-            titleTm.alignment = TextAlignment.Center;
-            titleTm.color = new Color(0.91f, 0.64f, 0.29f);
-
-            GameObject bodyGo = new GameObject("Body");
-            bodyGo.transform.SetParent(panelRoot.transform, false);
-            bodyGo.transform.localPosition = new Vector3(0f, -0.12f, -0.01f);
-            MeshRenderer bodyRenderer = bodyGo.AddComponent<MeshRenderer>();
-            TextMesh bodyTm = bodyGo.AddComponent<TextMesh>();
-            bodyTm.font = builtinFont;
-            bodyRenderer.sharedMaterial = builtinFont.material;
-            bodyTm.fontSize = 48;
-            bodyTm.characterSize = 0.075f;
-            bodyTm.anchor = TextAnchor.UpperCenter;
-            bodyTm.alignment = TextAlignment.Center;
-            bodyTm.color = new Color(0.92f, 0.88f, 0.82f);
+            TextMesh titleTm = BuildTextMesh(panelRoot.transform, "Title", new Vector3(0f, 0.42f, -0.01f),
+                builtinFont, 64, 0.09f, TextAnchor.MiddleCenter, new Color(0.91f, 0.64f, 0.29f));
+            TextMesh bodyTm = BuildTextMesh(panelRoot.transform, "Body", new Vector3(0f, -0.12f, -0.01f),
+                builtinFont, 48, 0.075f, TextAnchor.UpperCenter, new Color(0.92f, 0.88f, 0.82f));
 
             MemoryPanel panel = panelRoot.AddComponent<MemoryPanel>();
             panel.Configure(panelRenderer, titleTm, bodyTm);
-            panelRoot.SetActive(false); // 选中光点时才弹出
+            panelRoot.SetActive(false);
 
-            // 4.8) 环境音（appdata settings.ambientVolume 控制）与导入服务
-            AudioClip ambClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/amb_evening_roomtone.wav");
+            // 7) 环境 / 服务 / 控制器
+            AudioClip ambEvening = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/amb_evening_roomtone.wav");
+            AudioClip ambCourtyard = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/amb_courtyard_dusk.wav");
             GameObject ambience = new GameObject("Ambience");
-            ambience.AddComponent<AudioSource>().clip = ambClip;
+            AudioSource ambSource = ambience.AddComponent<AudioSource>();
+            ambSource.clip = ambEvening;
             ambience.AddComponent<AmbienceController>();
+
             new GameObject("ImportServer").AddComponent<ImportServer>();
 
-            GameObject bridgeGo = new GameObject("XRIAnchorBridge");
-            XRIAnchorBridge bridgeComp = bridgeGo.AddComponent<XRIAnchorBridge>();
-            bridgeComp.Configure(panel);
+            FadeController fade = new GameObject("FadeController").AddComponent<FadeController>();
 
-            new GameObject("FadeController").AddComponent<FadeController>();
+            GameObject beacon = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            beacon.name = "StardustBeacon";
+            beacon.transform.localScale = Vector3.one * 0.18f;
+            Collider beaconCollider = beacon.GetComponent<Collider>();
+            if (beaconCollider != null) UnityEngine.Object.DestroyImmediate(beaconCollider);
+            beacon.GetComponent<MeshRenderer>().sharedMaterial = glowMat;
+            beacon.AddComponent<StardustBeacon>();
 
-            // 5) 三个演示光点
-            Vector3[] positions =
-            {
-                new Vector3(-0.9f, 1.2f, 2.5f),
-                new Vector3(0f, 1.2f, 2.5f),
-                new Vector3(0.9f, 1.2f, 2.5f),
-            };
-            string[] objectNames = { "LP_fresh_1", "LP_private_2", "LP_faded_3" };
-            GameObject lightPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/LightPoint.prefab");
+            RoomManager roomManager = new GameObject("RoomManager").AddComponent<RoomManager>();
+            roomManager.Configure(lightPrefab, fade, ambSource, new AudioClip[] { ambEvening, ambCourtyard });
 
-            for (int i = 0; i < demo.Count; i++)
-            {
-                MemoryFragment fragment = demo[i];
-                GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(lightPrefab);
-                instance.name = objectNames[i];
-                instance.transform.position = positions[i];
-                LightPointAnchor anchor = instance.GetComponent<LightPointAnchor>();
-                anchor.BindFragment(fragment.id, fragment.visibility == "private");
-                // 褪色不在编辑期烘焙（fadeFactor 非序列化，坑-018）：
-                // Play 时由 FadeController.Start → ApplyAllFromDisk 从 appdata.json 应用
-            }
+            RoutePlayer routePlayer = new GameObject("RoutePlayer").AddComponent<RoutePlayer>();
+            routePlayer.Configure(beacon, roomManager, fade);
+
+            ReplaySequencer sequencer = new GameObject("ReplaySequencer").AddComponent<ReplaySequencer>();
+
+            XRIAnchorBridge bridge = new GameObject("XRIAnchorBridge").AddComponent<XRIAnchorBridge>();
+            bridge.Configure(panel, routePlayer, sequencer);
 
             if (GameObject.Find("SmokeProbe") == null)
             {
@@ -199,7 +176,25 @@ namespace MemoryCorridor.EditorTools
             }
 
             EditorSceneManager.SaveScene(scene, "Assets/Scenes/EditorScene.unity");
-            Debug.Log("[SceneBuilder] EditorScene 布置完成（3 光点 + XR Rig + 模拟器 + 桥接 + 探针）");
+            Debug.Log("[SceneBuilder] EditorScene 布置完成（穹顶 + XR Rig + 两房间管理 + 走读 + 重演 + 面板 + 导入服务 + 探针）");
+        }
+
+        private static TextMesh BuildTextMesh(Transform parent, string name, Vector3 localPos,
+            Font font, int fontSize, float charSize, TextAnchor anchor, Color color)
+        {
+            GameObject go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            MeshRenderer renderer = go.AddComponent<MeshRenderer>();
+            TextMesh tm = go.AddComponent<TextMesh>();
+            tm.font = font;
+            renderer.sharedMaterial = font.material;
+            tm.fontSize = fontSize;
+            tm.characterSize = charSize;
+            tm.anchor = anchor;
+            tm.alignment = TextAlignment.Center;
+            tm.color = color;
+            return tm;
         }
 
         private static void DestroyAll<T>(string label) where T : Component
@@ -212,11 +207,23 @@ namespace MemoryCorridor.EditorTools
             if (stale.Length > 0) Debug.Log($"[SceneBuilder] 清理旧{label} ×{stale.Length}");
         }
 
-        private static List<MemoryFragment> BuildDemoFragments()
+        private static AppData BuildDemoAppData()
         {
-            List<MemoryFragment> fragments = new List<MemoryFragment>();
+            AppData data = new AppData();
+            data.currentMemberId = "mem_01";
+            data.members.Add(new MemberData { id = "mem_01", name = "我", role = "owner" });
 
-            MemoryFragment f1 = new MemoryFragment
+            // —— 房间一：奶奶的客厅（3 碎片）——
+            RoomData room1 = new RoomData
+            {
+                id = "room_01",
+                title = "奶奶的客厅",
+                panoramaPath = "Panoramas/room_01.jpg",
+                theme = "amber",
+                ambientPath = "Audio/amb_evening_roomtone.wav",
+                visibility = "public",
+            };
+            room1.fragments.Add(new MemoryFragment
             {
                 id = "frag_01",
                 title = "缝纫机",
@@ -232,11 +239,9 @@ namespace MemoryCorridor.EditorTools
                 {
                     new MediaItem { kind = "image", path = "Media/frag_01/sewing.jpg", caption = "窗边的缝纫机" },
                 },
-            };
-            f1.anchor.position = new float[] { -0.9f, 1.2f, 2.5f };
-            fragments.Add(f1);
-
-            MemoryFragment f2 = new MemoryFragment
+                anchor = new FragmentAnchor { position = new float[] { -0.9f, 1.2f, 2.5f } },
+            });
+            room1.fragments.Add(new MemoryFragment
             {
                 id = "frag_02",
                 title = "老收音机",
@@ -252,11 +257,9 @@ namespace MemoryCorridor.EditorTools
                 {
                     new MediaItem { kind = "audio", path = "Media/frag_02/radio.wav", caption = "收音机里的一段戏" },
                 },
-            };
-            f2.anchor.position = new float[] { 0f, 1.2f, 2.5f };
-            fragments.Add(f2);
-
-            MemoryFragment f3 = new MemoryFragment
+                anchor = new FragmentAnchor { position = new float[] { 0f, 1.2f, 2.5f } },
+            });
+            room1.fragments.Add(new MemoryFragment
             {
                 id = "frag_03",
                 title = "童年自行车",
@@ -273,49 +276,75 @@ namespace MemoryCorridor.EditorTools
                     new MediaItem { kind = "image", path = "Media/frag_03/bike.jpg", caption = "院子里学车" },
                     new MediaItem { kind = "audio", path = "Media/frag_03/bell.wav", caption = "车铃声" },
                 },
-            };
-            f3.anchor.position = new float[] { 0.9f, 1.2f, 2.5f };
-            fragments.Add(f3);
+                anchor = new FragmentAnchor { position = new float[] { 0.9f, 1.2f, 2.5f } },
+            });
+            data.rooms.Add(room1);
 
-            return fragments;
-        }
-
-        private static void SaveDemoAppData(List<MemoryFragment> fragments)
-        {
-            AppData data = new AppData();
-            data.currentMemberId = "mem_01";
-            data.members.Add(new MemberData { id = "mem_01", name = "我", role = "owner" });
-            RoomData room = new RoomData
+            // —— 房间二：老院子（2 碎片）——
+            RoomData room2 = new RoomData
             {
-                id = "room_01",
-                title = "奶奶的客厅",
-                panoramaPath = "Panoramas/room_01.jpg",
-                theme = "amber",
-                ambientPath = "Audio/amb_evening_roomtone.wav",
+                id = "room_02",
+                title = "老院子",
+                panoramaPath = "Panoramas/room_02.jpg",
+                theme = "dusk",
+                ambientPath = "Audio/amb_courtyard_dusk.wav",
                 visibility = "public",
             };
-            room.fragments.AddRange(fragments);
-            data.rooms.Add(room);
-            SaveDataService.SaveAppData(data);
-            Debug.Log("[SceneBuilder] appdata.json 已写: " + SaveDataService.AppDataFilePath);
+            room2.fragments.Add(new MemoryFragment
+            {
+                id = "frag_04",
+                title = "村口的路",
+                type = "image",
+                ownerMemberId = "mem_01",
+                roomId = "room_02",
+                order = 0,
+                visibility = "public",
+                createdAt = "2026-11-12T09:30:00+08:00",
+                lastVisitedAt = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                diary = new DiaryEntry { date = "2009-05-01", text = "放学回家的路，土路晴天也带泥。" },
+                mediaItems = new List<MediaItem>
+                {
+                    new MediaItem { kind = "image", path = "Media/frag_04/road.jpg", caption = "乡间的路" },
+                },
+                anchor = new FragmentAnchor { position = new float[] { -0.5f, 1.2f, 2.0f } },
+            });
+            room2.fragments.Add(new MemoryFragment
+            {
+                id = "frag_05",
+                title = "摇椅日记",
+                type = "diary",
+                ownerMemberId = "mem_01",
+                roomId = "room_02",
+                order = 1,
+                visibility = "public",
+                createdAt = "2026-11-12T09:40:00+08:00",
+                lastVisitedAt = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                diary = new DiaryEntry { date = "2020-08-15", text = "傍晚坐在摇椅上，蒲扇摇啊摇，槐花落了一地。" },
+                anchor = new FragmentAnchor { position = new float[] { 0.5f, 1.2f, 2.0f } },
+            });
+            data.rooms.Add(room2);
+
+            return data;
         }
 
         /// <summary>appdata.json 落盘回读校验（Newtonsoft 路径回归）。</summary>
         private static void VerifySaveRoundtrip()
         {
             AppData loaded = SaveDataService.LoadAppData();
-            bool ok = loaded.rooms.Count == 1
+            bool ok = loaded.rooms.Count == 2
                 && loaded.rooms[0].fragments.Count == 3
+                && loaded.rooms[1].fragments.Count == 2
                 && loaded.settings.fadeStartDays == 30
                 && loaded.rooms[0].fragments[2].lastVisitedAt == "2026-01-15T10:00:00Z"
-                && loaded.rooms[0].fragments[1].visibility == "private";
+                && loaded.rooms[0].fragments[1].visibility == "private"
+                && loaded.rooms[1].fragments[1].type == "diary";
 
             if (!ok)
             {
                 Debug.LogError("[SceneBuilder] FAIL: appdata.json 回读校验不通过");
                 throw new Exception("appdata.json 回读校验失败");
             }
-            Debug.Log("[SceneBuilder] appdata.json 回读校验 OK（3 碎片/褪色日期/私密标记/设置默认值）");
+            Debug.Log("[SceneBuilder] appdata.json 回读校验 OK（2 房间/5 碎片/褪色日期/私密标记/日记类型）");
         }
     }
 }

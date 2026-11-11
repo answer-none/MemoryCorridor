@@ -56,9 +56,9 @@ PICO Emulator: D:\PICO_Emulator\swan_rls_spaceos_oversea_K_pico_emulator_win64_2
 - Unity 种子工程创建并合并进仓库；manifest 依赖写死；SetupWizard 已放入 `Assets/Editor/`
 
 **进行中（后台）：**
-- 无。**W2 内容层第 1 天完成，smoke13 全绿**：全景穹顶（自研 shader，从 appdata 加载）+ 环境音 + 记忆面板（视线前方 1.5m，真实素材）+ 选中开面板 + **ImportServer HTTP 三连冒烟（上传落盘/日记入档实证）**。新增坑-022/023/024（URP 天空盒失效/CreateAsset 父目录/persistentDataPath 主线程限制）。
-- **用户指示的跳过项（勿卡住）**：PICO SDK、GitHub 远端、devlog 录屏、Emulator GUI 验证、旁白音频素材、Android StreamingAssets 异步化（真机前）、UGUI 面板（W4）。
-- **接手继续 W2**：星尘路径走读 + 手动排序 + RoomManager 房间切换（dome.SetPanorama 已备）+ ReplaySequencer 四拍时序 → M1 闭环 alpha（11-23）。
+- 无。**W2 核心机制完成，smoke19 全绿（11 项断言）**：房间切换（穹顶纹理+光点 3↔2）/手动排序（order 交换+恢复）/星尘走读（信标两站）/回访复位（褪色闭环）/回忆重演四拍（绽放→跳过→复原）/ImportServer HTTP。新增坑-025/026/027（Start 竞态懒接线/编辑期事件订阅不序列化/按 order 找交换对象）。
+- **用户指示的跳过项（勿卡住）**：PICO SDK、GitHub 远端、devlog 录屏、Emulator GUI、旁白音频素材、Android StreamingAssets 异步化（真机前）、UGUI/暗幕/星河墙（W4）、VR 内抓取编排（W3）。
+- **接手继续 W3**：星河回顾墙 + XRI 传送 + 房间切换淡入淡出 + M1 闭环 alpha（11-23）前 Editor GUI 手动走查。
 
 **未开始：** 运行时脚本进工程、光点预制体、射线冒烟、PICO SDK 导入、XR Device Simulator 配置。
 
