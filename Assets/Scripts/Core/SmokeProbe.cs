@@ -177,6 +177,22 @@ namespace MemoryCorridor.Core
                 if (!pass) failedSections++;
             }
 
+            // ========== L. UGUI 磨砂面板 ==========
+            if (pass)
+            {
+                yield return TestUguiPanel();
+                pass = sectionPass;
+                if (!pass) failedSections++;
+            }
+
+            // ========== M. 星尘粒子场 ==========
+            if (pass)
+            {
+                yield return TestStardustField();
+                pass = sectionPass;
+                if (!pass) failedSections++;
+            }
+
             // ========== K. ImportServer HTTP ==========
             if (pass)
             {
@@ -194,7 +210,7 @@ namespace MemoryCorridor.Core
             }
 
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙/转场/传送/导入 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙/转场/传送/面板/星尘/导入 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
 
 #if UNITY_EDITOR
@@ -503,7 +519,22 @@ namespace MemoryCorridor.Core
                 sectionPass = false;
                 yield break;
             }
-            Debug.Log("[SmokeProbe] H 星河回顾墙 OK（3 星连线，路线序首星=frag_01，点选回调通）");
+
+            // 缩略图断言：图星有卡片、音星纯光球
+            GameObject starF1 = GameObject.Find("Star_frag_01");
+            Transform thumbF1 = starF1 != null ? starF1.transform.Find("Thumb") : null;
+            bool thumb1Ok = thumbF1 != null && thumbF1.GetComponent<MeshRenderer>() != null
+                && thumbF1.GetComponent<MeshRenderer>().material.mainTexture != null;
+            GameObject starF2 = GameObject.Find("Star_frag_02");
+            Transform thumbF2 = starF2 != null ? starF2.transform.Find("Thumb") : null;
+            if (!thumb1Ok || thumbF2 != null)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-H: 缩略图异常 (图星有卡=" + thumb1Ok
+                    + " 音星误加=" + (thumbF2 != null) + ")");
+                sectionPass = false;
+                yield break;
+            }
+            Debug.Log("[SmokeProbe] H 星河回顾墙 OK（3 星连线+首星回调+缩略图：图星有/音星无）");
         }
 
         // ---------- I ----------
@@ -566,6 +597,69 @@ namespace MemoryCorridor.Core
             }
             Debug.Log("[SmokeProbe] J 传送装配 OK（TeleportationProvider + 地面 TeleportationArea）");
             return true;
+        }
+
+        // ---------- L ----------
+        private IEnumerator TestUguiPanel()
+        {
+            sectionPass = true;
+            MemoryPanel panel = FindFirst<MemoryPanel>();
+            if (panel == null)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-L: 缺 MemoryPanel");
+                sectionPass = false;
+                yield break;
+            }
+
+            AppData data = SaveDataService.LoadAppData();
+            MemoryFragment frag = FindFragmentById(data, "frag_01");
+            if (frag == null)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-L: frag_01 缺失");
+                sectionPass = false;
+                yield break;
+            }
+
+            panel.Show(frag);
+            yield return null; // 等 Canvas 构建/激活
+            if (!panel.IsShowing || panel.PhotoTexture == null || panel.TitleString != "缝纫机")
+            {
+                Debug.LogError("[SmokeProbe] FAIL-L: 面板显示异常 (showing=" + panel.IsShowing
+                    + " photo=" + (panel.PhotoTexture != null) + " title=" + panel.TitleString + ")");
+                sectionPass = false;
+                yield break;
+            }
+            panel.Hide();
+            yield return null;
+            if (panel.IsShowing)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-L: Hide 后仍显示");
+                sectionPass = false;
+                yield break;
+            }
+            Debug.Log("[SmokeProbe] L UGUI 磨砂面板 OK（照片+标题+显隐）");
+        }
+
+        // ---------- M ----------
+        private IEnumerator TestStardustField()
+        {
+            sectionPass = true;
+            StardustField dust = FindFirst<StardustField>();
+            if (dust == null)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-M: 缺 StardustField");
+                sectionPass = false;
+                yield break;
+            }
+            yield return new WaitForSecondsRealtime(0.5f);
+            if (!dust.IsEmitting || dust.MaxParticles != 200)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-M: 星尘未发射 (emitting=" + (dust != null && dust.IsEmitting)
+                    + " max=" + (dust != null ? dust.MaxParticles : -1) + ")");
+                sectionPass = false;
+                yield break;
+            }
+            Debug.Log("[SmokeProbe] M 星尘粒子场 OK（200 上限，暖琥珀，跟随相机）");
         }
 
         // ---------- 工具 ----------

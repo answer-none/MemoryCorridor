@@ -82,6 +82,7 @@ namespace MemoryCorridor.EditorTools
             DestroyAll<ImportServer>("导入服务");
             DestroyAll<AmbienceController>("环境音");
             DestroyAll<MemoryPanel>("记忆面板");
+            DestroyAll<StardustField>("星尘");
             DestroyAll<PanoramaDome>("全景穹顶");
             DestroyAll<RoomManager>("房间管理");
             DestroyAll<RoutePlayer>("走读");
@@ -120,27 +121,10 @@ namespace MemoryCorridor.EditorTools
             GameObject sim = (GameObject)PrefabUtility.InstantiatePrefab(simPrefab);
             sim.transform.position = Vector3.zero;
 
-            // 6) 记忆面板（W2 版）
-            GameObject panelRoot = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            panelRoot.name = "MemoryPanel";
-            Collider panelCollider = panelRoot.GetComponent<Collider>();
-            if (panelCollider != null) UnityEngine.Object.DestroyImmediate(panelCollider);
-            panelRoot.transform.position = new Vector3(0f, 1.4f, 1.5f);
-            panelRoot.transform.localScale = new Vector3(1.1f, 0.85f, 1f);
-            MeshRenderer panelRenderer = panelRoot.GetComponent<MeshRenderer>();
-            Material panelMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-            AssetDatabase.CreateAsset(panelMat, "Assets/Materials/MemoryPanelImage.mat");
-            panelRenderer.sharedMaterial = panelMat;
-
-            Font builtinFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            TextMesh titleTm = BuildTextMesh(panelRoot.transform, "Title", new Vector3(0f, 0.42f, -0.01f),
-                builtinFont, 64, 0.09f, TextAnchor.MiddleCenter, new Color(0.91f, 0.64f, 0.29f));
-            TextMesh bodyTm = BuildTextMesh(panelRoot.transform, "Body", new Vector3(0f, -0.12f, -0.01f),
-                builtinFont, 48, 0.075f, TextAnchor.UpperCenter, new Color(0.92f, 0.88f, 0.82f));
-
-            MemoryPanel panel = panelRoot.AddComponent<MemoryPanel>();
-            panel.Configure(panelRenderer, titleTm, bodyTm);
-            panelRoot.SetActive(false);
+            // 6) 记忆面板（W4 UGUI 磨砂版：Awake/Show 自建 Canvas，无需编辑期装配）
+            GameObject panelGo = new GameObject("MemoryPanel");
+            MemoryPanel panel = panelGo.AddComponent<MemoryPanel>();
+            panelGo.SetActive(false); // 选中光点时才弹出
 
             // 7) 环境 / 服务 / 控制器
             AudioClip ambEvening = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/amb_evening_roomtone.wav");
@@ -150,6 +134,7 @@ namespace MemoryCorridor.EditorTools
             ambSource.clip = ambEvening;
             ambience.AddComponent<AmbienceController>();
 
+            new GameObject("StardustField").AddComponent<StardustField>();
             new GameObject("ImportServer").AddComponent<ImportServer>();
 
             FadeController fade = new GameObject("FadeController").AddComponent<FadeController>();

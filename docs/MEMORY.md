@@ -165,6 +165,16 @@
 - **现象**：探针 FindFirst<StarNode> 拿到的是 frag_03 的星（场景顺序≠生成顺序）。
 - **规避**：需要确定性对象时用稳定命名 + GameObject.Find（星点/光点均已稳定命名 Star_{id}/LP_{id}）。同类前科：坑-019（GameObject.Find 只找第一个）、坑-021（FindObjects 排除未激活）。
 
+### 坑-029 TMP 3.0.9 / UGUI API 记忆偏差（第 N 次验证坑-013 纪律正确）
+- **现象**：`TMP_Text.textWrappingMode`/`TextWrappingModes` 在 TMP 3.0.9 不存在（是 `enableWordWrapping` bool）；`RawImage` 没有 `preserveAspect`（那是 `Image` 的）。
+- **规避**：写 API 前 grep 包源码已两次救场（TMP_FontAsset.CreateFontAsset 第 432 行确认存在才敢用）。在线文档/记忆 ≠ 本机版本。
+
+### W4 备忘（2026-11-12 第 4 批，smoke25 全绿 16 断言）
+- `MemoryPanel` 重写为 **UGUI 磨砂面板**：WorldSpace Canvas（620×460px，scale 0.0016≈1.0×0.74m）、暮色半透明底+琥珀描边（Outline）、照片 RawImage、TMP 标题/正文（`TMP_FontAsset.CreateFontAsset(builtinFont)` 动态字体，CJK 按需填充）；EnsureBuilt 惰性构建；Show 定位视线前方 1.5m 固定。Show/Hide 契约不变，桥接器/星河墙零改动。
+- `StardustField` 星尘粒子：Shuriken 程序化（200 上限/暖琥珀/Box 4×2.5×4m/跟随相机）；粒子材质复用已加载的 URP/Lit（坑-022 同源：URP 粒子专用 shader 不可靠）。
+- 星河墙缩略图：图片碎片星点挂 Thumb 子 Quad（URP/Lit+贴图），音/日记星纯光球。
+- 探针新增 L（面板照片+标题+显隐）/ M（星尘发射）段，H 段加缩略图断言（图星有/音星无）。
+
 ### W2 内容层备忘（2026-11-12，第 1 天）
 - 素材入工程：`Assets/Art/Panoramas`（2 全景）、`Assets/StreamingAssets/Media/frag_01|03`（演示照片）、`Assets/StreamingAssets/Panoramas/room_01.jpg`（穹顶用）、`Assets/Audio`（3 占位 WAV）。
 - 新增：MediaResolver（持久化→StreamingAssets 回退）、AmbienceController（2D 环境音+settings.ambientVolume）、PanoramaDome。
@@ -184,9 +194,9 @@
 
 ## 5. 当前状态（每次会话末更新）
 
-- **阶段**：W3 核心机制完成（2026-11-12 第 3 批），smoke23 全绿（14 段断言）
-- **已完成**：W2 全部 + 星河回顾墙（点星重演）+ 转场淡入淡出（含带淡切房间往返）+ 传送装配（Provider+地面 Area）——**M1 闭环 alpha 全链路机制齐备**：挂→走→回访→重演→星河墙→切房间→导出链路全部有自动化断言
-- **smoke23 断言**：A 房间初始/B XRI+悬停+选中+褪色/C 排序/D 走读信标/E 回访/F 切房间/G 重演四拍/H 星河墙/I 转场/J 传送/K 导入服务
-- **已跳过（勿卡住）**：① PICO SDK（被墙+GUI）② GitHub 远端（gh 未登录）③ devlog #1（GUI）④ Emulator GUI ⑤ 旁白音频素材（Freesound 手动）⑥ Android StreamingAssets 异步化（真机前）⑦ UGUI 磨砂面板/星尘粒子墙升级/TeleportationAnchor 定点传送（W4 视觉与体验）⑧ VR 内抓取编排（W4）
-- **下一步**：W4 打磨：UGUI 磨砂面板+星尘粒子+色调映射（视觉规范 §4 全落地）、星河墙缩略图、防眩晕清单逐项过、性能预算（ASTC/分批）→ M2 内测闭环（11-29）+ 发内测收反馈
-- **待办提醒**：D 盘 30GB；M3（12-12）冻结倒计时 30 天
+- **阶段**：W4 视觉第一梯队完成（2026-11-12 第 4 批），smoke25 全绿（16 段断言）
+- **已完成**：W3 全部 + UGUI 磨砂面板 + 星尘粒子 + 星河墙缩略图——**M2 内测闭环（11-29）的机制+视觉主件齐备**，评分表"视觉15+交互15"的主要载体已落地
+- **smoke25 断言**：A 房间初始/B XRI+悬停+选中+褪色/C 排序/D 走读信标/E 回访/F 切房间/G 重演四拍/H 星河墙+缩略图/I 转场/J 传送/L UGUI 面板/M 星尘/K 导入服务
+- **已跳过（勿卡住）**：① PICO SDK（被墙+GUI，**M2 内测包必须先解决**）② GitHub 远端（gh 未登录）③ devlog #2（GUI）④ Emulator GUI ⑤ 旁白音频（Freesound 手动）⑥ Android StreamingAssets 异步化（真机前）⑦ VR 内抓取编排/定点传送 Anchor/星河墙文案牌（体验打磨余量）⑧ 面板朝向/磨砂质感的 GUI 目检（批处理无法验证视觉效果）
+- **下一步**：M2 内测闭环冲刺（11-29）：①催办 PICO SDK 导入（用户侧）②Editor GUI 手动走查+修视觉细节 ③demo 叙事文案补齐（frag_02/05 配图缺失）④打包流程验证（Android Switch + Build,批处理可试）⑤发 2–3 位朋友收反馈
+- **待办提醒**：D 盘 30GB；M3（12-12）冻结倒计时 30 天；比赛提交 12-19 09:00

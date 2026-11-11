@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using MemoryCorridor.Core;
 using UnityEngine;
 using UnityEngine.UI;
@@ -77,6 +78,23 @@ namespace MemoryCorridor.Media
                 node.FragmentId = orderedFragments[i].id;
                 node.OnSelected += OnStarPicked;
 
+                // 缩略图：图片碎片贴小卡片；音/日记星保持纯光球（W4 §3.3）
+                Texture2D thumbTexture = LoadFirstImageTexture(orderedFragments[i]);
+                if (thumbTexture != null)
+                {
+                    GameObject thumb = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                    thumb.name = "Thumb";
+                    Collider thumbCollider = thumb.GetComponent<Collider>();
+                    if (thumbCollider != null) Destroy(thumbCollider);
+                    thumb.transform.SetParent(star.transform, false);
+                    thumb.transform.localPosition = new Vector3(0f, 0f, 0.06f);
+                    thumb.transform.localScale = new Vector3(1.6f, 1.2f, 1f);
+                    MeshRenderer thumbRenderer = thumb.GetComponent<MeshRenderer>();
+                    Material thumbMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                    thumbMat.mainTexture = thumbTexture;
+                    thumbRenderer.material = thumbMat;
+                }
+
                 XRSimpleInteractable interactable = star.AddComponent<XRSimpleInteractable>();
                 StarNode captured = node;
                 interactable.selectEntered.AddListener(delegate (SelectEnterEventArgs args)
@@ -134,6 +152,21 @@ namespace MemoryCorridor.Media
                 }
                 break;
             }
+        }
+
+        private static Texture2D LoadFirstImageTexture(MemoryFragment fragment)
+        {
+            if (fragment.mediaItems == null) return null;
+            for (int i = 0; i < fragment.mediaItems.Count; i++)
+            {
+                MediaItem item = fragment.mediaItems[i];
+                if (item.kind != "image" || string.IsNullOrEmpty(item.path)) continue;
+                string resolved = MediaResolver.ResolveExisting(item.path);
+                if (resolved == null) continue;
+                Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                if (texture.LoadImage(File.ReadAllBytes(resolved))) return texture;
+            }
+            return null;
         }
     }
 }
