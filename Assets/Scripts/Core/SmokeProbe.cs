@@ -123,7 +123,33 @@ namespace MemoryCorridor.Core
                 }
             }
 
-            Debug.Log(pass ? "[SmokeProbe] PASS: XRI 装配/悬停预览/选中/褪色 全部通过" : "[SmokeProbe] 结果: FAIL");
+            // --- ImportServer HTTP 冒烟（W2 第 1 天硬节点，批处理替代 Emulator GUI） ---
+            if (pass)
+            {
+                yield return new WaitForSecondsRealtime(0.6f); // 等监听线程就绪
+                // 同步 HTTP 无 yield，可安全包 try/catch（坑-017）
+                try
+                {
+                    TestImportServer();
+                    Debug.Log("[SmokeProbe] ImportServer HTTP 冒烟 OK（GET 首页/POST 上传落盘/POST 日记入档）");
+                }
+            catch (System.Exception e)
+            {
+                string detail = e.Message;
+                System.Net.WebException webEx = e as System.Net.WebException;
+                if (webEx != null && webEx.Response != null)
+                {
+                    using (System.IO.StreamReader reader = new System.IO.StreamReader(webEx.Response.GetResponseStream()))
+                    {
+                        detail = detail + " | body: " + reader.ReadToEnd();
+                    }
+                }
+                Debug.LogError("[SmokeProbe] FAIL: ImportServer HTTP 冒烟异常 " + detail);
+                pass = false;
+            }
+            }
+
+            Debug.Log(pass ? "[SmokeProbe] PASS: XRI 装配/悬停预览/选中/褪色/导入服务 全部通过" : "[SmokeProbe] 结果: FAIL");
 
 #if UNITY_EDITOR
             yield return new WaitForSeconds(0.3f);
@@ -140,6 +166,85 @@ namespace MemoryCorridor.Core
         private static T[] FindAll<T>() where T : UnityEngine.Object
         {
             return UnityEngine.Object.FindObjectsByType<T>(UnityEngine.FindObjectsSortMode.None);
+        }
+
+        /// <summary>ImportServer 三连测：GET 首页、POST 上传落盘、POST 日记写档。失败抛异常。</summary>
+        private static void TestImportServer()
+        {
+            const string baseUrl = "http://127.0.0.1:8899";
+
+            // 1) GET 首页
+            System.Net.HttpWebResponse home = Request("GET", baseUrl + "/", null, null);
+            if (home.StatusCode != System.Net.HttpStatusCode.OK)
+            {
+                throw new System.Exception("首页状态码 " + (int)home.StatusCode);
+            }
+            home.Close();
+
+            // 2) POST 上传（伪 JPEG 字节流；服务端不做格式校验，落盘即验）
+            byte[] fakeJpeg = { 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46 };
+            System.Net.HttpWebResponse up = Request("POST",
+                baseUrl + "/upload?fragmentId=frag_01&name=smoke_test.jpg",
+                "application/octet-stream", fakeJpeg);
+            if (up.StatusCode != System.Net.HttpStatusCode.OK)
+            {
+                throw new System.Exception("上传状态码 " + (int)up.StatusCode);
+            }
+            up.Close();
+            string saved = System.IO.Path.Combine(Application.persistentDataPath,
+                System.IO.Path.Combine("Media", System.IO.Path.Combine("frag_01", "smoke_test.jpg")));
+            if (!System.IO.File.Exists(saved))
+            {
+                throw new System.Exception("上传文件未落盘: " + saved);
+            }
+
+            // 3) POST 日记 → appdata.json 更新
+            byte[] diaryBody = System.Text.Encoding.UTF8.GetBytes(
+                "{\"fragmentId\":\"frag_01\",\"date\":\"2026-11-12\",\"text\":\"冒烟日记\"}");
+            System.Net.HttpWebResponse diary = Request("POST", baseUrl + "/diary",
+                "application/json", diaryBody);
+            if (diary.StatusCode != System.Net.HttpStatusCode.OK)
+            {
+                throw new System.Exception("日记状态码 " + (int)diary.StatusCode);
+            }
+            diary.Close();
+
+            AppData reloaded = SaveDataService.LoadAppData();
+            MemoryFragment frag01 = FindFragmentById(reloaded, "frag_01");
+            if (frag01 == null || frag01.diary == null || frag01.diary.text != "冒烟日记")
+            {
+                throw new System.Exception("日记未写回 appdata.json");
+            }
+        }
+
+        private static System.Net.HttpWebResponse Request(string method, string url, string contentType, byte[] body)
+        {
+            System.Net.HttpWebRequest req = (System.Net.HttpWebRequest)System.Net.WebRequest.Create(url);
+            req.Method = method;
+            if (body != null)
+            {
+                req.ContentType = contentType;
+                req.ContentLength = body.Length;
+                using (System.IO.Stream stream = req.GetRequestStream())
+                {
+                    stream.Write(body, 0, body.Length);
+                }
+            }
+            return (System.Net.HttpWebResponse)req.GetResponse();
+        }
+
+        private static MemoryFragment FindFragmentById(AppData data, string id)
+        {
+            if (data == null || data.rooms == null) return null;
+            for (int r = 0; r < data.rooms.Count; r++)
+            {
+                if (data.rooms[r].fragments == null) continue;
+                for (int f = 0; f < data.rooms[r].fragments.Count; f++)
+                {
+                    if (data.rooms[r].fragments[f].id == id) return data.rooms[r].fragments[f];
+                }
+            }
+            return null;
         }
 
         private IEnumerator Watchdog()

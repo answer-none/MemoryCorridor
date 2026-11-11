@@ -7,8 +7,9 @@ namespace MemoryCorridor.Media
 {
     /// <summary>
     /// 记忆面板：射线点开光点后弹出，按碎片类型呈现图片/录音/日记。
-    /// W1 冒烟版：WorldSpace Quad 显示图片 + TextMesh 显示标题与日记；
-    /// W4 视觉打磨时替换为 UGUI 磨砂卡片（TECH_DESIGN_V2 §4.2），对外方法签名保持不变。
+    /// W2 版：素材经 MediaResolver 解析（持久化目录优先、随包 Demo 回退）；
+    /// 显示时定位于视线前方 1.5m（TECH_DESIGN_V2 §5.3 防眩晕：不随头转）。
+    /// W4 视觉打磨时替换为 UGUI 磨砂卡片（§4.2），对外方法签名保持不变。
     /// </summary>
     public class MemoryPanel : MonoBehaviour
     {
@@ -19,10 +20,20 @@ namespace MemoryCorridor.Media
         private Texture2D loadedTexture;
         private Material imageMaterial;
 
-        /// <summary>按碎片内容刷新面板并显示。</summary>
+        /// <summary>编辑器场景搭建注入引用（运行时直接使用）。</summary>
+        public void Configure(Renderer rendererRef, TextMesh titleRef, TextMesh bodyRef)
+        {
+            imageRenderer = rendererRef;
+            titleText = titleRef;
+            bodyText = bodyRef;
+        }
+
+        /// <summary>按碎片内容刷新面板并显示于视线前方。</summary>
         public void Show(MemoryFragment fragment)
         {
             if (fragment == null) return;
+
+            PositionInFrontOfGaze();
 
             if (titleText != null)
             {
@@ -38,6 +49,16 @@ namespace MemoryCorridor.Media
         public void Hide()
         {
             gameObject.SetActive(false);
+        }
+
+        /// <summary>定位于视线前方 1.5m；面板本身不跟随头部（防眩晕 §5.3）。</summary>
+        private void PositionInFrontOfGaze()
+        {
+            Camera cam = Camera.main;
+            if (cam != null)
+            {
+                transform.position = cam.transform.position + cam.transform.forward * 1.5f;
+            }
         }
 
         private void ShowDiary(MemoryFragment fragment)
@@ -71,7 +92,7 @@ namespace MemoryCorridor.Media
             }
             if (!loadedTexture.LoadImage(bytes))
             {
-                Debug.LogWarning($"[MemoryPanel] 图片解码失败: {imagePath}");
+                Debug.LogWarning("[MemoryPanel] 图片解码失败: " + imagePath);
                 imageRenderer.enabled = false;
                 return;
             }
@@ -91,15 +112,16 @@ namespace MemoryCorridor.Media
             {
                 MediaItem item = fragment.mediaItems[i];
                 if (item.kind != "image" || string.IsNullOrEmpty(item.path)) continue;
-                string fullPath = Path.Combine(Application.persistentDataPath, item.path);
-                if (File.Exists(fullPath)) return fullPath;
+                string resolved = MediaResolver.ResolveExisting(item.path);
+                if (resolved != null) return resolved;
+                Debug.LogWarning("[MemoryPanel] 素材缺失: " + MediaResolver.DescribeMiss(item.path));
             }
             return null;
         }
 
         private void Update()
         {
-            // W1 冒烟：面向主相机；真机阶段改为"固定于触发时视线前方 1.5m"（防眩晕清单 §5.3）
+            // 仅做面向（不改变位置）；位置只在 Show 时刻固定
             Camera cam = Camera.main;
             if (cam != null)
             {

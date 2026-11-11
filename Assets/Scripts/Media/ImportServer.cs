@@ -28,6 +28,7 @@ namespace MemoryCorridor.Media
 
         private void Start()
         {
+            SaveDataService.WarmCache(); // 坑-024：主线程预热路径缓存，后台线程只读缓存
             running = true;
             listenerThread = new Thread(ListenLoop);
             listenerThread.IsBackground = true;
@@ -111,6 +112,9 @@ namespace MemoryCorridor.Media
             }
             catch (Exception e)
             {
+                statusQueue.Enqueue("处理 " + ctx.Request.HttpMethod + " " + ctx.Request.Url.AbsolutePath
+                    + " 失败: " + e.GetType().Name + ": " + e.Message
+                    + (e.InnerException != null ? " | inner: " + e.InnerException.Message : ""));
                 try { WriteResponse(ctx, 500, "text/plain", Encoding.UTF8.GetBytes("error: " + e.Message)); }
                 catch (Exception) { /* 响应已断开 */ }
             }

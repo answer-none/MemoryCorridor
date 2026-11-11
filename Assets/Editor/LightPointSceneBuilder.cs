@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using MemoryCorridor.Core;
 using MemoryCorridor.Interaction;
+using MemoryCorridor.Media;
 using Unity.XR.CoreUtils;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation;
 
@@ -78,6 +80,29 @@ namespace MemoryCorridor.EditorTools
             DestroyAll<XRDeviceSimulator>("设备模拟器");
             DestroyAll<XRIAnchorBridge>("XRI桥");
             DestroyAll<Camera>("旧相机");
+            DestroyAll<ImportServer>("导入服务");
+            DestroyAll<AmbienceController>("环境音");
+            DestroyAll<MemoryPanel>("记忆面板");
+
+            // 4.5) 暮色氛围：全景穹顶 + 环境光（坑-022：URP 下内置 Skybox/Panorama 不可用，改自研穹顶）
+            if (!AssetDatabase.IsValidFolder("Assets/Materials"))
+                AssetDatabase.CreateFolder("Assets", "Materials"); // 坑-023：CreateAsset 不会自动建父目录
+            DestroyAll<PanoramaDome>("全景穹顶");
+            Shader domeShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/PanoramaDome.shader");
+            if (domeShader == null) throw new Exception("PanoramaDome.shader 未找到（检查 Assets/Shaders）");
+            GameObject dome = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            dome.name = "PanoramaDome";
+            dome.transform.position = Vector3.zero;
+            dome.transform.localScale = Vector3.one * 60f;
+            Collider domeCollider = dome.GetComponent<Collider>();
+            if (domeCollider != null) UnityEngine.Object.DestroyImmediate(domeCollider);
+            MeshRenderer domeRenderer = dome.GetComponent<MeshRenderer>();
+            Material domeMat = new Material(domeShader);
+            AssetDatabase.CreateAsset(domeMat, "Assets/Materials/PanoramaDome.mat");
+            domeRenderer.sharedMaterial = domeMat;
+            dome.AddComponent<PanoramaDome>();
+            RenderSettings.ambientMode = AmbientMode.Flat;
+            RenderSettings.ambientLight = new Color(0.24f, 0.19f, 0.21f); // 暮色暖基调
 
             GameObject rigPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RigPrefabPath);
             if (rigPrefab == null) throw new Exception("XR Origin (XR Rig).prefab 未找到: " + RigPrefabPath);
@@ -89,8 +114,61 @@ namespace MemoryCorridor.EditorTools
             GameObject sim = (GameObject)PrefabUtility.InstantiatePrefab(simPrefab);
             sim.transform.position = Vector3.zero;
 
+            // 4.7) 记忆面板（W2 版：Quad + TextMesh，W4 换 UGUI）
+            GameObject panelRoot = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            panelRoot.name = "MemoryPanel";
+            Collider panelCollider = panelRoot.GetComponent<Collider>();
+            if (panelCollider != null) UnityEngine.Object.DestroyImmediate(panelCollider);
+            panelRoot.transform.position = new Vector3(0f, 1.4f, 1.5f);
+            panelRoot.transform.localScale = new Vector3(1.1f, 0.85f, 1f);
+            MeshRenderer panelRenderer = panelRoot.GetComponent<MeshRenderer>();
+            Material panelMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            AssetDatabase.CreateAsset(panelMat, "Assets/Materials/MemoryPanelImage.mat");
+            panelRenderer.sharedMaterial = panelMat;
+
+            Font builtinFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            GameObject titleGo = new GameObject("Title");
+            titleGo.transform.SetParent(panelRoot.transform, false);
+            titleGo.transform.localPosition = new Vector3(0f, 0.42f, -0.01f);
+            MeshRenderer titleRenderer = titleGo.AddComponent<MeshRenderer>();
+            TextMesh titleTm = titleGo.AddComponent<TextMesh>();
+            titleTm.font = builtinFont;
+            titleRenderer.sharedMaterial = builtinFont.material;
+            titleTm.fontSize = 64;
+            titleTm.characterSize = 0.09f;
+            titleTm.anchor = TextAnchor.MiddleCenter;
+            titleTm.alignment = TextAlignment.Center;
+            titleTm.color = new Color(0.91f, 0.64f, 0.29f);
+
+            GameObject bodyGo = new GameObject("Body");
+            bodyGo.transform.SetParent(panelRoot.transform, false);
+            bodyGo.transform.localPosition = new Vector3(0f, -0.12f, -0.01f);
+            MeshRenderer bodyRenderer = bodyGo.AddComponent<MeshRenderer>();
+            TextMesh bodyTm = bodyGo.AddComponent<TextMesh>();
+            bodyTm.font = builtinFont;
+            bodyRenderer.sharedMaterial = builtinFont.material;
+            bodyTm.fontSize = 48;
+            bodyTm.characterSize = 0.075f;
+            bodyTm.anchor = TextAnchor.UpperCenter;
+            bodyTm.alignment = TextAlignment.Center;
+            bodyTm.color = new Color(0.92f, 0.88f, 0.82f);
+
+            MemoryPanel panel = panelRoot.AddComponent<MemoryPanel>();
+            panel.Configure(panelRenderer, titleTm, bodyTm);
+            panelRoot.SetActive(false); // 选中光点时才弹出
+
+            // 4.8) 环境音（appdata settings.ambientVolume 控制）与导入服务
+            AudioClip ambClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/amb_evening_roomtone.wav");
+            GameObject ambience = new GameObject("Ambience");
+            ambience.AddComponent<AudioSource>().clip = ambClip;
+            ambience.AddComponent<AmbienceController>();
+            new GameObject("ImportServer").AddComponent<ImportServer>();
+
+            GameObject bridgeGo = new GameObject("XRIAnchorBridge");
+            XRIAnchorBridge bridgeComp = bridgeGo.AddComponent<XRIAnchorBridge>();
+            bridgeComp.Configure(panel);
+
             new GameObject("FadeController").AddComponent<FadeController>();
-            new GameObject("XRIAnchorBridge").AddComponent<XRIAnchorBridge>();
 
             // 5) 三个演示光点
             Vector3[] positions =

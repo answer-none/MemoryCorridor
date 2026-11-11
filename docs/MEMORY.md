@@ -125,6 +125,26 @@
 - 场景搭建器现在装配：XR Origin (XR Rig) + XR Device Simulator + FadeController + XRIAnchorBridge + 3 光点 + SmokeProbe，全程幂等。
 - 批处理冒烟命令不变（BuildAndSmoke），不传 -quit。
 
+### 坑-022 URP 工程里 Skybox/Panorama 内置天空盒不可靠（已解决，自研穹顶）
+- **现象**：`Shader.Find("Skybox/Panorama")` 在 URP 工程批处理里返回 null（内置 shader 未被引用不加载）。
+- **解决**：自研 `Assets/Shaders/PanoramaDome.shader`（倒置球 Cull Front + 等距柱状 UV）+ `PanoramaDome.cs`（Start 从 appdata.panoramaPath 经 MediaResolver 加载贴图，真实数据流）。W3 房间切换只需 dome.SetPanorama(texture)。
+
+### 坑-023 AssetDatabase.CreateAsset 不自动创建父目录
+- **现象**：`CreateAsset("Assets/Materials/…")` 在目录不存在时直接 UnityException。
+- **规避**：编辑器脚本写资产前 `if (!IsValidFolder) CreateFolder(...)`。
+
+### 坑-024 Application.persistentDataPath / streamingAssetsPath 只能主线程调用（重要）
+- **现象**：ImportServer 后台线程调 `Application.persistentDataPath` → UnityException，HTTP 500。
+- **解决**：`SaveDataService.WarmCache()`（主线程入口调用一次）缓存静态字段；后台线程读 `SaveDataService.PersistentRoot/StreamingRoot`；MediaResolver 已切换。
+- **通用**：Unity Application.* 路径属性在 Thread/ThreadPool 里都是雷，模式=主线程预热+静态缓存。
+
+### W2 内容层备忘（2026-11-12，第 1 天）
+- 素材入工程：`Assets/Art/Panoramas`（2 全景）、`Assets/StreamingAssets/Media/frag_01|03`（演示照片）、`Assets/StreamingAssets/Panoramas/room_01.jpg`（穹顶用）、`Assets/Audio`（3 占位 WAV）。
+- 新增：MediaResolver（持久化→StreamingAssets 回退）、AmbienceController（2D 环境音+settings.ambientVolume）、PanoramaDome。
+- MemoryPanel：Show 定位于视线前方 1.5m 固定不随头（§5.3），素材缺失警告不炸。
+- XRIAnchorBridge：selectEntered → anchor.Select() + panel.Show(fragment)。
+- **ImportServer HTTP 冒烟（W2 第 1 天硬节点）批处理全绿**：GET 首页 / POST 上传落盘 / POST 日记写回 appdata（探针 TestImportServer）。
+
 ## 4. 工作规矩（每会话自查）
 
 1. 开工先读本文档 + `docs/TECH_DESIGN_V2.md` 变更记录；结束时更新本文档"当前状态"。
@@ -137,8 +157,9 @@
 
 ## 5. 当前状态（每次会话末更新）
 
-- **阶段**：W1 完成度 ~90%（2026-11-12），XRI 正式接入完毕
-- **已完成**：前次全部 + XRI 官方样本进工程（Starter Assets/XR Device Simulator，连 meta 保 GUID）+ 光点挂 XRSimpleInteractable + XRIAnchorBridge（契约不变）+ XR Rig/模拟器/桥接进场景 + smoke8 全绿（XRI 装配 origin/ray×5/interactable×3/bridge + 悬停 + 选中 + 褪色 fresh=1.00 vs 0.39）
-- **已跳过（按用户指示，勿卡住）**：① PICO SDK 导入——download-sdk.picoxr.com 被墙，PDC 为 GUI 应用，需用户手动（或浏览器代理下 .unitypackage 给路径）② GitHub 远端建库——gh 未登录，需用户 `gh auth login` 或给仓库地址 ③ devlog #1 录屏——需 GUI 手动操作 ④ GUI 里用 XR Device Simulator 手动验证射线悬停/选中（WASD+鼠标模拟，样本自带）
-- **下一步**：W2 内容层（记忆面板 UGUI 化、全景房间布景、Demo 素材贴图入 Assets、浏览器上传链路 Emulator 冒烟）；PICO SDK 到位后立即接 PICO Loader
-- **待办提醒**：D 盘 30GB；Assets/Samples 下样本自带 .asmdef，勿删除样本目录（场景预制体引用其 GUID）
+- **阶段**：W2 内容层第 1 天完成（2026-11-12），冒烟 smoke13 全绿
+- **已完成**：W1 全部 + 素材入工程 + 全景穹顶（自研 shader，appdata 数据流）+ 环境音 + 记忆面板接真实素材 + 选中开面板 + **ImportServer HTTP 三连冒烟通过（上传落盘/日记入档实证）**
+- **smoke13 断言清单**：XRI 装配（origin/ray×5/interactable×3/bridge）/ 悬停预览 / 选中 / 褪色 fresh=1.00 vs 0.39 / 全景穹顶加载 / ImportServer GET+POST×2
+- **已跳过（勿卡住）**：① PICO SDK（被墙+GUI）② GitHub 远端（gh 未登录）③ devlog #1（GUI）④ Emulator 内 GUI 验证（HTTP 链路已批处理验证，Emulator 留到 APK 级验证）⑤ 旁白/叙事音频素材（Freesound 手动，见 ASSET_LIST §2）⑥ Android StreamingAssets 需 UnityWebRequest 异步化（真机前处理，编辑器 File 直读可用）⑦ 记忆面板 UGUI 磨砂化（W4 视觉打磨）
+- **下一步**：W2 续：走读路线（星尘路径+排序）、RoomManager 房间切换（穹顶已支持 SetPanorama）、ReplaySequencer 四拍时序；然后 M1 闭环 alpha（11-23）
+- **待办提醒**：D 盘 30GB；样本目录勿删（GUID 引用）

@@ -56,9 +56,9 @@ PICO Emulator: D:\PICO_Emulator\swan_rls_spaceos_oversea_K_pico_emulator_win64_2
 - Unity 种子工程创建并合并进仓库；manifest 依赖写死；SetupWizard 已放入 `Assets/Editor/`
 
 **进行中（后台）：**
-- 无。**XRI 正式接入完毕，smoke8 全绿**：官方 XR Origin (XR Rig) + XR Device Simulator 进场景；光点挂 XRSimpleInteractable；XRIAnchorBridge 保持锚点契约（SetHighlight→TickHover→Select）；探针断言 origin/ray×5（含未激活，坑-021）/interactable×3/bridge + 悬停/选中/褪色。
-- **用户指示的跳过项（勿卡住，已在 MEMORY.md §5 记录）**：PICO SDK（被墙+GUI）、GitHub 远端（gh 未登录）、devlog 录屏（GUI）、模拟器手动验证（GUI）。
-- **接手从 W2 开始**：记忆面板 UGUI 化 → 全景房间布景 → Demo 素材入 Assets → ImportServer Emulator 冒烟（W2 第 1 天硬节点）。
+- 无。**W2 内容层第 1 天完成，smoke13 全绿**：全景穹顶（自研 shader，从 appdata 加载）+ 环境音 + 记忆面板（视线前方 1.5m，真实素材）+ 选中开面板 + **ImportServer HTTP 三连冒烟（上传落盘/日记入档实证）**。新增坑-022/023/024（URP 天空盒失效/CreateAsset 父目录/persistentDataPath 主线程限制）。
+- **用户指示的跳过项（勿卡住）**：PICO SDK、GitHub 远端、devlog 录屏、Emulator GUI 验证、旁白音频素材、Android StreamingAssets 异步化（真机前）、UGUI 面板（W4）。
+- **接手继续 W2**：星尘路径走读 + 手动排序 + RoomManager 房间切换（dome.SetPanorama 已备）+ ReplaySequencer 四拍时序 → M1 闭环 alpha（11-23）。
 
 **未开始：** 运行时脚本进工程、光点预制体、射线冒烟、PICO SDK 导入、XR Device Simulator 配置。
 
