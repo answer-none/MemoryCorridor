@@ -1,82 +1,78 @@
-# 回响长廊 · Memory Corridor
+# 回响长廊 · MemoryCorridor
 
-> PICO Space Program 2026 · 最佳沉浸内容创作赛道
-> 把家的记忆挂回真实的房间——基于 Unity + OpenXR 的 MR 记忆策展体验
+> PICO Space Program 2026 · 最佳沉浸内容创作赛道（Unity OpenXR）
+> 把家的记忆挂回真实的房间——MR 个人与家庭记忆策展空间
 
 ## 一句话
 
 在真实物品上挂一粒萤火般的光点，走近它先听见当年的声音，光点绽放成那一刻的回忆；太久不去看，记忆会慢慢褪色，直到你再次点亮它。走完生成一面星河回顾墙；整个房间打包成 zip 发给家人，隐私记忆永远留在本地。
 
-## 核心体验闭环（5 分钟可完整演示）
+## 核心机制
 
-**挂**（手机浏览器传照片/录音/日记 → 光点挂上老物件）→ **走**（星尘路径引导、先闻其声、回忆重演）→ **传**（星河回顾 + zip 导出导入，隐私过滤）。
+| 机制 | 说明 | 自动化断言 |
+|---|---|---|
+| 记忆褪色 | 未回访记忆光点变暗、声音隔时间（低通）；回访即点亮 | B 段 fresh=1.00 vs faded=0.39 |
+| 回忆重演 | 四拍时序：现实退后→回忆绽放（分层伪 3D）→重返当时→温柔收回；可跳过 | G 段 |
+| 星河回顾 | 走读终点碎片连成星座，点星即重演（含缩略图+标题标签） | H/H2 段 |
+| 先闻其声 | 光点 3m 内空间音频渐近；悬停 0.3s 出预览小卡 | B 段预览卡 |
+| 类型配色 | 图=琥珀 / 音=青蓝 / 日记=米白 / 混合=暖橙 / 私密=暖红 | B 段配色 |
+| 隐私导出 | 私密记忆不进导出包、他人视角无光点；zip 导出导入 | K 段链路 |
+| 欢迎引导 | 入口告示牌，首条记忆选中后收起 | P 段 |
+| 录音播放 | 面板内 UnityWebRequest 异步加载 WAV/MP3 | L 段 |
+| 音量服务 | master→AudioListener / narration→录音 / ambient→环境音 | Q 段 |
 
-## 签名机制（创新点）
-
-| 机制 | 说明 |
-|---|---|
-| 记忆褪色 | 超过阈值天数未回访的记忆，光点变暗、声音加低通像隔着时间；回访即点亮 |
-| 回忆重演 | 四拍时序：现实退后 → 回忆绽放（分层伪 3D）→ 重返当时（空间音频+日记字幕）→ 温柔收回 |
-| 星河回顾 | 走读终点，碎片缩略图连成星座，按路线发光连线，点击即重演 |
-
-## 功能分级（V2 收敛后）
-
-| 级别 | 功能 |
-|---|---|
-| P0（MVP） | 光点锚定+悬停预览、图片/录音/日记、全景房间×2、手动排序+走读路线、浏览器局域网上传、公开/隐私+zip 导出导入、记忆褪色 |
-| P1（争取） | 视频记忆（低码率）、家庭本地多档案合并、多维排序、光点显隐开关、手势辅助 |
-| P2（二期） | 全景替换、云端家庭同步、链接分享、实时共创、3DGS |
+**质量保障**：批处理一键回归 `smoke`（23 段断言）+ Android 构建回归，任何改动不破坏现有功能。
 
 ## 环境（本机实测）
 
 | 项 | 值 |
 |---|---|
-| Unity | 2022.3.62f3c1 LTS（含 Android Build Support / OpenJDK / SDK / NDK），`D:\unityanzhuang1\` |
-| Unity Hub | 3.3.7，`D:\unity\Unity Hub` |
-| IDE | VS2022 Community（含 Unity 工作负载） |
-| PICO Developer Center | v1.5.0，`D:\pico\PICO Developer Center\` |
-| PICO Emulator | 0.10.0-preview，`D:\PICO_Emulator\…\start-emulator.bat` |
-| 硬件 | Win11 / i9-12900H / RTX 3060 Laptop 6GB / 16GB（注意 D 盘可用仅 ~32GB） |
+| Unity | 2022.3.62f3c1 中国版 LTS（含 Android Build Support），`D:\unityanzhuang1\` |
+| SDK | PICO Integration SDK v3.3.3（嵌入 `Packages/com.unity.xr.picoxr`）+ OpenXR 1.9.1 + XRI 2.5.4 + URP 14.0.11 |
+| 设备链 | PICO 4 Ultra（真机）/ PICO Emulator 0.10.0-preview / Editor Play（XR Device Simulator） |
+| 硬件 | Win11 / i9-12900H / RTX 3060 6GB / 16GB |
 
 ## 快速开始
 
 1. Unity Hub 打开本工程（Editor 2022.3.62f3c1）。
-2. Package Manager 确认：`com.unity.xr.openxr`、`com.unity.nuget.newtonsoft-json`、PICO Unity Integration SDK、`com.unity.render-pipelines.universal`。
-3. 日常开发：Editor Play（OpenXR Mock / XR Device Simulator）。
-4. 每周验证：Emulator 安装 APK 跑一遍。
-5. 场景：`Assets/Scenes/EditorScene.unity`（编排）/ `TourScene.unity`（走读）。
-6. Demo 素材：`Assets/Art/Panoramas`、`Assets/Audio`；用户素材落 `PersistentDataPath/Media`。
+2. 场景：`Assets/Scenes/EditorScene.unity` → 按 ▶️ → WASD 移动 / 鼠标视角 / 空格或左键选中。
+3. 无素材时可玩内置 Demo：2 房间 8 碎片（含褪色对照×2、私密样例×1、纯日记×1）。
+4. 手机浏览器传素材：应用启动后访问 `http://<设备IP>:8899/`（局域网 HTTP 导入服务）。
 
-## 目录结构
+## 构建与测试
 
-```
-Assets/
-├── Scripts/
-│   ├── Core/        # 数据模型(Newtonsoft)、存档、褪色、星河回顾、房间管理、编排与走读
-│   ├── Interaction/ # 射线拾取、传送、光点锚点（悬停预览）
-│   └── Media/       # ImportServer(HTTP)、分层伪3D、回忆重演时序、空间音频、记忆面板
-├── Scenes/  ├── Prefabs/  ├── Art/Panoramas/  └── Audio/
-docs/
-├── TECH_DESIGN_V2.md        # 当前有效设计文档
-├── RESEARCH_COMPETITORS.md  # 竞品调研与差异化
-├── ASSET_LIST.md            # 素材清单与授权记录
-└── devlogs/                 # 每周进展录屏（路演与申报素材）
-assets_raw/                  # 素材暂存区（全景/字体/照片/音频，见 ASSET_LIST.md）
-scripts/                     # 工具脚本（占位音频生成等）
+```bash
+# 一键回归（23 段断言，PASS→退出码 0）
+Unity.exe -batchmode -projectPath D:/unityxiangmu/MemoryCorridor \
+  -executeMethod MemoryCorridor.EditorTools.LightPointSceneBuilder.BuildAndSmoke -logFile smoke.log
+
+# Android APK（IL2CPP/ARM64/ASTC/Linear → D:/unityxiangmu/_builds/）
+Unity.exe -batchmode -projectPath D:/unityxiangmu/MemoryCorridor \
+  -executeMethod MemoryCorridor.EditorTools.AndroidBuildScript.Build -logFile build.log
 ```
 
-## 排期（38 天，双里程碑）
+## 目录
 
 ```
-W1 地基 → W2 内容 → W3 叙事 → M2 内测闭环(11-29) → W4 打磨 → W5 冲刺 → M3 特性冻结(12-12) → W6 提交(12-19 09:00)
+Assets/Scripts/Core/        # 数据模型(Newtonsoft)/房间/走读/排序/褪色/音量服务/冒烟探针
+Assets/Scripts/Interaction/ # 光点锚点/XRI 桥接器/射线
+Assets/Scripts/Media/       # 面板/预览卡/星河墙/重演/穹顶/粒子/导入服务/告示牌
+Assets/Editor/              # SetupWizard / LightPointSceneBuilder / AndroidBuildScript
+Assets/Samples/XR Interaction Toolkit/2.5.4/  # 官方 XR Rig + 设备模拟器（勿删，GUID 引用）
+Packages/com.unity.xr.picoxr/ # PICO Integration SDK v3.3.3（本地嵌入包）
+assets_raw/                 # 素材暂存（授权登记见 docs/ASSET_LIST.md）
+docs/                       # TECH_DESIGN_V2 / TEAM_PLAN / RESEARCH_COMPETITORS / ASSET_LIST
+                            # / MEMORY(踩坑) / HANDOFF(交接) / APPLICATION(申报) / DEVLOG_SCRIPT
 ```
 
-细节、风险预案、路演剧本见 [`docs/TECH_DESIGN_V2.md`](docs/TECH_DESIGN_V2.md)。
+## 排期
+
+W1 地基 → W2 机制+内容 → W3 叙事 → R1/R2 团队化迭代（交互闭环+音频引导）→ **M2 内测包已就绪** → R3 交付材料 → M3 冻结（12-12）→ 提交（12-19 09:00）→ 决赛路演（12-26 北京）。
 
 ## 提交清单
 
-- [ ] GitHub 仓库（本工程 + README + 数据格式文档）
-- [ ] Emulator 可运行 APK / 工程包
-- [ ] 3–5 分钟演示视频
-- [ ] 申报文档与开发日志（引用 devlogs 周录屏）
-- [ ] Demo 素材包（2 全景 + 8–12 碎片，含褪色与私密样例）+ 导出/导入示例 zip
+- [ ] GitHub 仓库（本工程 + 文档套件）
+- [ ] APK（`_builds/MemoryCorridor_M2.apk`，42.9MB）
+- [ ] 演示视频 3–5 分钟（脚本就绪 `docs/DEVLOG_SCRIPT.md`）
+- [ ] 申报文档（骨架就绪 `docs/APPLICATION.md`，待填团队/日志链接）
+- [ ] Demo 素材包 + 导出/导入示例 zip

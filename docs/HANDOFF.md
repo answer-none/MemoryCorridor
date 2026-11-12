@@ -56,11 +56,10 @@ PICO Emulator: D:\PICO_Emulator\swan_rls_spaceos_oversea_K_pico_emulator_win64_2
 - Unity 种子工程创建并合并进仓库；manifest 依赖写死；SetupWizard 已放入 `Assets/Editor/`
 
 **进行中（后台）：**
-- 无。**首个 Android APK 打包成功**：`D:\unityxiangmu\_builds\MemoryCorridor_M2.apk`（42MB，IL2CPP/ARM64/ASTC/Linear/PICO TOBAPI/包名验证）。5 轮构建调试（坑-031 Exit 宏/坑-032 shader 移动端 const/坑-033 libopenxr_loader.so 撞库→Android 仅留 PXR/坑-034 RemoveLoader NRE），构建入口 AndroidBuildScript.Build。
-- **用户侧待办**：GitHub 登录、devlog 录屏、旁白素材、GUI 目检、Emulator/真机装 APK（PDC 应用管理或 adb）。
-- **接手**：模拟器/真机验证 → M2 内测（11-29）→ M3 冻结（12-12）→ 提交（12-19）。
-
-**未开始：** 运行时脚本进工程、光点预制体、射线冒烟、PICO SDK 导入、XR Device Simulator 配置。
+- 无。**R3 交付材料完成**（TEAM_PLAN 轮次表 R0-R3 齐全）：APPLICATION.md 申报骨架 / DEVLOG_SCRIPT.md 录制分镜 / README 重写（机制×断言对照）/ PERF_AUDIT.md 性能基线（62.5fps/403MB/粒子 200；工具 PerformanceAudit.Run 批处理可复跑）。
+- **里程碑状态**：M2 内测包就绪（APK 42.9MB + 23 段断言全绿）；M3 冻结 12-12；提交 12-19 09:00。
+- **用户侧待办**：GitHub 登录建库、按 DEVLOG_SCRIPT 录制、旁白素材、GUI 目检、申报【待填】项、Emulator/真机装 APK（PDC 应用管理或 adb）。
+- **接手**：R4 = M2 内测反馈消化（发内测→收反馈→P0 修复）。
 
 ## 四、任务队列（按序执行，含精确命令）
 

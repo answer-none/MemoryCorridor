@@ -225,8 +225,8 @@
 
 ## 5. 当前状态（每次会话末更新）
 
-- **阶段**：团队化 R2 完成（2026-11-13），smoke31 全绿（23 段断言）+ APK 回归 42.9MB
-- **R2 新增**：WelcomeBoard 欢迎告示牌（E1）、MemoryPanel 录音播放（E8，UnityWebRequest 异步 + 自制 radio.wav）、AudioSettingsService 三路音量（E9）、星点标签（E10）、接线 0.5s 退避（E11）、wall 路径延迟出面板统一（bridge 订阅 OnStarSelected）
-- **R3 队列**：交付材料（devlog 脚本/申报文档骨架/README 对齐）、性能预算核对、GUI 目检清单输出
-- **已跳过/待用户**：GitHub 登录、devlog 录屏、旁白素材、GUI 目检（R2 新 UI：欢迎牌/星点标签/面板录音观感）、Emulator 装机
-- **待办提醒**：D 盘 24GB；M3 12-12；提交 12-19 09:00
+- **阶段**：团队化 R3 完成（2026-11-13），交付材料四件套落盘 + 性能基线
+- **R3 新增**：APPLICATION.md（申报骨架）/ DEVLOG_SCRIPT.md（7 镜头分镜）/ README 重写（机制×断言对照表）/ PERF_AUDIT.md（62.5fps/403MB/粒子 200 基线）+ PerformanceProbe 工具（批处理可复跑）
+- **R4 队列（M2 内测反馈消化）**：内测用户反馈 P0 修复；Emulator/真机装机验证（用户侧）；GitHub 建库（gh 登录）
+- **已跳过/待用户**：① GitHub 登录建库 ② devlog 录制（脚本已备 DEVLOG_SCRIPT.md）③ 旁白音频 ④ GUI 目检 ⑤ 申报【待填】项（团队名单/日志链接）
+- **待办提醒**：D 盘 24GB；M3 12-12；提交 12-19 09:00；路演 12-26
