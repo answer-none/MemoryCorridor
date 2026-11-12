@@ -23,6 +23,9 @@ namespace MemoryCorridor.Media
         public bool IsShowing => gameObject.activeSelf;
         public string TitleString => titleText != null ? titleText.text : null;
         public Texture PhotoTexture => photoImage != null ? photoImage.texture : null;
+        public bool HasCloseButton => closeInteractable != null;
+
+        private UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable closeInteractable;
 
         private static readonly Color Amber = new Color(0.91f, 0.64f, 0.29f, 1f);
         private static readonly Color PanelBg = new Color(0.12f, 0.10f, 0.15f, 0.88f);
@@ -103,6 +106,51 @@ namespace MemoryCorridor.Media
             bodyText.enableWordWrapping = true; // TMP 3.0.9：无 textWrappingMode（坑-029）
             bodyText.raycastTarget = false;
             Stretch(bodyGo.GetComponent<RectTransform>(), 0.05f, 0.04f, 0.95f, 0.28f);
+
+            BuildCloseButton();
+        }
+
+        /// <summary>
+        /// 关闭按钮（R1，TEAM_PLAN E3）：canvas 右上角 3D ✕ + XRSimpleInteractable，
+        /// 射线点选即 Hide()。挂在 canvas 子级需换算像素坐标/比例（root scale 0.0016）。
+        /// </summary>
+        private void BuildCloseButton()
+        {
+            if (closeInteractable != null) return;
+
+            const float PixelScale = 0.0016f;
+            GameObject buttonGo = new GameObject("CloseButton");
+            buttonGo.transform.SetParent(transform, false);
+            buttonGo.transform.localPosition = new Vector3(262f, 196f, -10f); // 像素坐标
+            buttonGo.transform.localScale = new Vector3(
+                0.045f / PixelScale, 0.045f / PixelScale, 1f); // 世界约 4.5cm
+
+            MeshRenderer buttonRenderer = buttonGo.AddComponent<MeshRenderer>();
+            Material buttonMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            buttonMat.SetColor("_BaseColor", new Color(0.5f, 0.3f, 0.3f, 1f));
+            buttonRenderer.material = buttonMat;
+
+            GameObject crossGo = new GameObject("Cross");
+            crossGo.transform.SetParent(buttonGo.transform, false);
+            crossGo.transform.localPosition = new Vector3(0f, 0f, -0.01f);
+            MeshRenderer crossRenderer = crossGo.AddComponent<MeshRenderer>();
+            TextMesh crossTm = crossGo.AddComponent<TextMesh>();
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            crossTm.font = font;
+            crossRenderer.sharedMaterial = font.material;
+            crossTm.text = "×";
+            crossTm.fontSize = 64;
+            crossTm.characterSize = 0.02f;
+            crossTm.anchor = TextAnchor.MiddleCenter;
+            crossTm.alignment = TextAlignment.Center;
+            crossTm.color = new Color(0.95f, 0.92f, 0.88f, 1f);
+
+            closeInteractable = buttonGo.AddComponent<UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable>();
+            closeInteractable.selectEntered.AddListener(delegate (
+                UnityEngine.XR.Interaction.Toolkit.SelectEnterEventArgs args)
+            {
+                Hide();
+            });
         }
 
         private void EnsureFont(TMP_Text text)

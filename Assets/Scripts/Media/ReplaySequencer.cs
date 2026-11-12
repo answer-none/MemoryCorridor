@@ -22,6 +22,9 @@ namespace MemoryCorridor.Media
 
         public ReplayState State { get; private set; }
 
+        /// <summary>最近一次重演的发起方标签（"bridge"=光点主路径 / "wall"=星河墙），用于延迟出面板分流。</summary>
+        public string LastPlaySource { get; private set; } = "legacy";
+
         public event Action<ReplayState> OnBeat;
 
         private Color ambientBefore;
@@ -32,9 +35,16 @@ namespace MemoryCorridor.Media
         /// <summary>开始重演（重复调用在运行期间被忽略）。</summary>
         public void Play(MemoryFragment fragment, Vector3 anchorPosition)
         {
+            Play(fragment, anchorPosition, "legacy");
+        }
+
+        /// <summary>带来源标签的重演（bridge=光点主路径延迟出面板；wall=星河墙立即出面板）。</summary>
+        public void Play(MemoryFragment fragment, Vector3 anchorPosition, string sourceId)
+        {
             if (fragment == null) return;
             if (State != ReplayState.Idle && State != ReplayState.Done) return;
 
+            LastPlaySource = sourceId ?? "legacy";
             skipRequested = false;
             StartCoroutine(SequenceRoutine(fragment, anchorPosition));
         }

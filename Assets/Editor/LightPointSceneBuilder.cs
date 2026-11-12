@@ -60,6 +60,8 @@ namespace MemoryCorridor.EditorTools
             proto.AddComponent<AudioLowPassFilter>();
             LightPointAnchor protoAnchor = proto.AddComponent<LightPointAnchor>();
             protoAnchor.Configure(protoRenderer, protoLight);
+            protoAnchor.SetSelectChime(AssetDatabase.LoadAssetAtPath<AudioClip>(
+                "Assets/Audio/sfx_lightpoint_chime.wav")); // R1 E5：预制体级注入，实例继承
             proto.AddComponent<XRSimpleInteractable>();
             GameObject lightPrefab = PrefabUtility.SaveAsPrefabAsset(proto, "Assets/Prefabs/LightPoint.prefab");
             UnityEngine.Object.DestroyImmediate(proto);
@@ -83,6 +85,7 @@ namespace MemoryCorridor.EditorTools
             DestroyAll<AmbienceController>("环境音");
             DestroyAll<MemoryPanel>("记忆面板");
             DestroyAll<StardustField>("星尘");
+            DestroyAll<HoverPreviewCard>("预览卡");
             DestroyAll<PanoramaDome>("全景穹顶");
             DestroyAll<RoomManager>("房间管理");
             DestroyAll<RoutePlayer>("走读");
@@ -142,6 +145,12 @@ namespace MemoryCorridor.EditorTools
             new GameObject("StardustField").AddComponent<StardustField>();
             new GameObject("ImportServer").AddComponent<ImportServer>();
 
+            // R1 E2：悬停预览小卡（初始隐藏，桥接器驱动）
+            GameObject previewGo = new GameObject("HoverPreviewCard");
+            previewGo.AddComponent<MeshRenderer>();
+            HoverPreviewCard previewCard = previewGo.AddComponent<HoverPreviewCard>();
+            previewGo.SetActive(false); // EnsureBuilt 惰性构建；Hide 即此态
+
             FadeController fade = new GameObject("FadeController").AddComponent<FadeController>();
 
             // 地面 + 传送区域（XRI Teleportation；走读定点传送 W4 换 TeleportationAnchor）
@@ -173,7 +182,8 @@ namespace MemoryCorridor.EditorTools
             routePlayer.Configure(beacon, roomManager, fade, wall);
 
             XRIAnchorBridge bridge = new GameObject("XRIAnchorBridge").AddComponent<XRIAnchorBridge>();
-            bridge.Configure(panel, routePlayer, sequencer);
+            AudioClip chime = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/sfx_lightpoint_chime.wav");
+            bridge.Configure(panel, routePlayer, sequencer, previewCard, chime);
 
             if (GameObject.Find("SmokeProbe") == null)
             {

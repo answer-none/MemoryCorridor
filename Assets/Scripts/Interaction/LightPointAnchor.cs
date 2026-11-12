@@ -15,9 +15,15 @@ namespace MemoryCorridor.Interaction
         [SerializeField] private Light glowLight;
 
         [Header("配色（按记忆类型，见视觉规范 §4.1）")]
-        [SerializeField] private Color defaultColor = new Color(0.91f, 0.64f, 0.29f); // 琥珀
-        [SerializeField] private Color highlightColor = new Color(0.35f, 0.78f, 0.88f); // 青蓝
+        [SerializeField] private Color defaultColor = new Color(0.91f, 0.64f, 0.29f); // 琥珀=图片
+        [SerializeField] private Color highlightColor = new Color(0.35f, 0.78f, 0.88f); // 青蓝（悬停态）
         [SerializeField] private Color privateColor = new Color(0.78f, 0.42f, 0.42f);  // 暖红（私密）
+        [SerializeField] private Color audioColor = new Color(0.35f, 0.78f, 0.88f);    // 青蓝=录音
+        [SerializeField] private Color diaryColor = new Color(0.92f, 0.88f, 0.82f);    // 米白=日记
+        [SerializeField] private Color mixedColor = new Color(0.95f, 0.55f, 0.35f);    // 暖橙=混合
+
+        [Header("音效（R1 E5：选中反馈，内聚于光点本体）")]
+        [SerializeField] private AudioClip selectChime;
 
         [Header("呼吸动画")]
         [SerializeField] private float breathePeriod = 3f;
@@ -67,18 +73,42 @@ namespace MemoryCorridor.Interaction
             transform.localScale = Vector3.one * (0.6f + 0.4f * fadeFactor); // 褪色=萤火飞远变小
         }
 
-        public void BindFragment(string id, bool isPrivateFragment = false)
+        public void BindFragment(string id, bool isPrivateFragment = false, string fragmentType = null)
         {
             fragmentId = id;
             isPrivate = isPrivateFragment;
-            activeColor = isPrivate ? privateColor : defaultColor;
+            // R1 美学决策（TEAM_PLAN E4）：私密暖红优先，其余按记忆类型四色区分
+            if (isPrivateFragment)
+            {
+                activeColor = privateColor;
+            }
+            else
+            {
+                switch (fragmentType)
+                {
+                    case "audio": activeColor = audioColor; break;
+                    case "diary": activeColor = diaryColor; break;
+                    case "mixed": activeColor = mixedColor; break;
+                    case "image": activeColor = defaultColor; break;
+                    default: activeColor = defaultColor; break;
+                }
+            }
         }
+
+        /// <summary>当前主色（冒烟/配色断言读取）。</summary>
+        public Color CurrentColor => activeColor;
 
         /// <summary>编辑器场景搭建注入引用（运行时 Awake 仍会缓存材质实例）。</summary>
         public void Configure(Renderer rendererRef, Light lightRef)
         {
             pointRenderer = rendererRef;
             glowLight = lightRef;
+        }
+
+        /// <summary>注入选中音效（builder 在预制体上赋值，实例继承）。</summary>
+        public void SetSelectChime(AudioClip clip)
+        {
+            selectChime = clip;
         }
 
         /// <summary>由 FadeController 驱动：daysSinceVisit → [fadeFloor,1]。</summary>
@@ -111,6 +141,11 @@ namespace MemoryCorridor.Interaction
 
         public void Select()
         {
+            if (selectChime != null)
+            {
+                AudioSource source = GetComponent<AudioSource>();
+                if (source != null) source.PlayOneShot(selectChime);
+            }
             OnSelected?.Invoke(fragmentId);
         }
 

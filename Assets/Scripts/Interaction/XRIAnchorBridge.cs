@@ -17,17 +17,25 @@ namespace MemoryCorridor.Interaction
         [SerializeField] private MemoryPanel panel;
         [SerializeField] private RoutePlayer routePlayer;
         [SerializeField] private ReplaySequencer replaySequencer;
+        [SerializeField] private HoverPreviewCard previewCard;
+        [SerializeField] private AudioClip selectChime;
 
         private readonly HashSet<LightPointAnchor> wired = new HashSet<LightPointAnchor>();
         private Dictionary<string, MemoryFragment> fragmentsById;
         private int wiredLoggedCount = -1;
+        private string pendingFragmentId;
+        private bool pendingPanelShown;
 
-        /// <summary>编辑器搭建注入引用。</summary>
-        public void Configure(MemoryPanel panelRef, RoutePlayer routePlayerRef, ReplaySequencer replayRef)
+        /// <summary>编辑器场景搭建注入引用。</summary>
+        public void Configure(MemoryPanel panelRef, RoutePlayer routePlayerRef,
+            ReplaySequencer replayRef, HoverPreviewCard previewCardRef, AudioClip selectChimeRef)
         {
             panel = panelRef;
             routePlayer = routePlayerRef;
             replaySequencer = replayRef;
+            previewCard = previewCardRef;
+            selectChime = selectChimeRef;
+            SubscribeReplayBeats(replayRef);
         }
 
         private void Start()
@@ -45,6 +53,37 @@ namespace MemoryCorridor.Interaction
                         fragmentsById[room.fragments[f].id] = room.fragments[f];
                     }
                 }
+            }
+            SubscribeReplayBeats(replaySequencer); // 坑-026：Play 期重挂事件订阅
+        }
+
+        /// <summary>重演节拍回调：bridge 发起的重演在第③拍"重返当时"才出面板（TEAM_PLAN E7，
+        /// 避免剧透日记）；跳过直达 Done 时兜底显示。星河墙（wall）路径不在此处理。</summary>
+        private void SubscribeReplayBeats(ReplaySequencer replayRef)
+        {
+            if (replayRef == null) return;
+            replayRef.OnBeat -= OnReplayBeat;
+            replayRef.OnBeat += OnReplayBeat;
+        }
+
+        private void OnReplayBeat(ReplaySequencer.ReplayState state)
+        {
+            if (replaySequencer == null || replaySequencer.LastPlaySource != "bridge") return;
+            if (string.IsNullOrEmpty(pendingFragmentId)) return;
+
+            if (state == ReplaySequencer.ReplayState.Beat3_Return && !pendingPanelShown)
+            {
+                pendingPanelShown = true;
+                ShowPanelFor(pendingFragmentId);
+            }
+            else if (state == ReplaySequencer.ReplayState.Done && !pendingPanelShown)
+            {
+                pendingPanelShown = true;
+                ShowPanelFor(pendingFragmentId);
+            }
+            else if (state == ReplaySequencer.ReplayState.Done)
+            {
+                pendingFragmentId = null;
             }
         }
 
@@ -78,11 +117,22 @@ namespace MemoryCorridor.Interaction
                 interactable.hoverExited.AddListener(delegate (HoverExitEventArgs args)
                 {
                     captured.SetHighlight(false);
+                    if (previewCard != null) previewCard.Hide(); // R1 E2：离开即收预览卡
                 });
                 interactable.selectEntered.AddListener(delegate (SelectEnterEventArgs args)
                 {
-                    OnFragmentSelected(captured.FragmentId);
+                    OnFragmentSelected(captured);
                 });
+                // R1 E2：悬停 0.3s → 预览小卡（缩略图+标题+日期）
+                anchor.OnHoverPreview += delegate (string id)
+                {
+                    if (previewCard == null) return;
+                    MemoryFragment fragment;
+                    if (fragmentsById != null && fragmentsById.TryGetValue(id, out fragment))
+                    {
+                        previewCard.Show(fragment, captured.transform.position);
+                    }
+                };
                 wired.Add(anchor);
                 newWired++;
             }
@@ -96,21 +146,34 @@ namespace MemoryCorridor.Interaction
             }
         }
 
-        private void OnFragmentSelected(string fragmentId)
+        /// <summary>选中：回访记录 → 音效反馈 → 重演（延迟出面板，OnReplayBeat 驱动）。</summary>
+        private void OnFragmentSelected(LightPointAnchor anchor)
         {
+            if (anchor == null) return;
+            string fragmentId = anchor.FragmentId;
+
+            if (routePlayer != null) routePlayer.MarkVisited(fragmentId);
+
             MemoryFragment fragment;
             fragmentsById.TryGetValue(fragmentId, out fragment);
 
-            if (routePlayer != null) routePlayer.MarkVisited(fragmentId);
             if (replaySequencer != null && fragment != null)
             {
-                GameObject anchorGo = GameObject.Find("LP_" + fragmentId);
-                Vector3 anchorPosition = (anchorGo != null)
-                    ? anchorGo.transform.position
-                    : Vector3.zero;
-                replaySequencer.Play(fragment, anchorPosition);
+                pendingFragmentId = fragmentId;
+                pendingPanelShown = false;
+                replaySequencer.Play(fragment, anchor.transform.position, "bridge");
             }
-            if (panel != null && fragment != null)
+            else if (panel != null && fragment != null)
+            {
+                panel.Show(fragment); // 无重演路径时立即显示（兜底）
+            }
+        }
+
+        private void ShowPanelFor(string fragmentId)
+        {
+            if (panel == null) return;
+            MemoryFragment fragment;
+            if (fragmentsById != null && fragmentsById.TryGetValue(fragmentId, out fragment))
             {
                 panel.Show(fragment);
             }

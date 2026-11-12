@@ -148,7 +148,11 @@ namespace MemoryCorridor.Media
                 panel.Show(currentRoute[i]);
                 if (sequencer != null)
                 {
-                    sequencer.Play(currentRoute[i], transform.position);
+                    // R1 E6：重演发生在被点星的位置（而非墙中心）
+                    Vector3 starPosition = (i < stars.Count && stars[i] != null)
+                        ? stars[i].transform.position
+                        : transform.position;
+                    sequencer.Play(currentRoute[i], starPosition, "wall");
                 }
                 break;
             }

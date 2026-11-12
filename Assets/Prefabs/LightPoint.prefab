@@ -311,6 +311,10 @@ MonoBehaviour:
   defaultColor: {r: 0.91, g: 0.64, b: 0.29, a: 1}
   highlightColor: {r: 0.35, g: 0.78, b: 0.88, a: 1}
   privateColor: {r: 0.78, g: 0.42, b: 0.42, a: 1}
+  audioColor: {r: 0.35, g: 0.78, b: 0.88, a: 1}
+  diaryColor: {r: 0.92, g: 0.88, b: 0.82, a: 1}
+  mixedColor: {r: 0.95, g: 0.55, b: 0.35, a: 1}
+  selectChime: {fileID: 8300000, guid: beb3c46d209142a48bb63c16e4c61d84, type: 3}
   breathePeriod: 3
   breatheAmplitude: 0.25
 --- !u!114 &4994410173813387786

@@ -121,6 +121,62 @@ namespace MemoryCorridor.Core
                             + " faded=" + fadeFaded.ToString("F2"));
                     }
                 }
+
+                if (pass)
+                {
+                    // R1 E4：类型配色（image 琥珀 / 私密暖红）
+                    Color amber = new Color(0.91f, 0.64f, 0.29f);
+                    Color warmRed = new Color(0.78f, 0.42f, 0.42f);
+                    GameObject privateGo = GameObject.Find("LP_frag_02");
+                    LightPointAnchor privateAnchor = privateGo != null
+                        ? privateGo.GetComponent<LightPointAnchor>() : null;
+                    bool colorOk = fresh.CurrentColor == amber
+                        && privateAnchor != null && privateAnchor.CurrentColor == warmRed;
+                    if (!colorOk)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-B: 类型配色异常 (fresh=" + fresh.CurrentColor
+                            + " private=" + (privateAnchor != null ? privateAnchor.CurrentColor.ToString() : "null") + ")");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] B 类型配色 OK（image=琥珀 / 私密=暖红）");
+                    }
+                }
+
+                if (pass)
+                {
+                    // R1 E5：选中音效（PlayOneShot 短音，立即查 isPlaying）
+                    fresh.Select();
+                    AudioSource audio = fresh.GetComponent<AudioSource>();
+                    yield return null;
+                    if (audio == null || !audio.isPlaying)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-B: 选中音效未播放");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] B 选中音效 OK（chime 播放中）");
+                    }
+                }
+
+                if (pass)
+                {
+                    // R1 E2：悬停预览小卡（悬停流程已触发 previewFired）
+                    HoverPreviewCard card = FindFirst<HoverPreviewCard>();
+                    if (card == null || !card.IsShowing || card.TitleString != "缝纫机")
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-B: 预览卡异常 (showing=" + (card != null && card.IsShowing)
+                            + " title=" + (card != null ? card.TitleString : "null") + ")");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] B 悬停预览卡 OK（缩略+标题）");
+                        card.Hide();
+                    }
+                }
             }
 
             // ========== C. RouteEditor 手动排序 ==========
@@ -528,6 +584,25 @@ namespace MemoryCorridor.Core
                 yield break;
             }
 
+            // R1 E6：点星重演应发生在星点位置（等一拍后查分层场景位置）
+            yield return new WaitForSecondsRealtime(0.4f);
+            LayeredPhoto[] replayLayers = FindAll<LayeredPhoto>();
+            GameObject star1Go = GameObject.Find("Star_frag_01");
+            if (replayLayers.Length < 1 || star1Go == null
+                || Vector3.Distance(replayLayers[0].transform.position,
+                    star1Go.transform.position + Vector3.up * 0.4f) > 0.5f)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-H: 点星重演未在星点位置 (layers=" + replayLayers.Length + ")");
+                sectionPass = false;
+                yield break;
+            }
+            ReplaySequencer wallSequencer = FindFirst<ReplaySequencer>();
+            if (wallSequencer != null)
+            {
+                wallSequencer.SkipToEnd(); // 复原，避免影响后续段
+            }
+            yield return new WaitForSecondsRealtime(0.2f);
+
             // 缩略图断言：room_01 四星全带卡片（全为 image/图+音/mixed 类型）
             string[] room1Stars = { "Star_frag_01", "Star_frag_02", "Star_frag_03", "Star_frag_06" };
             for (int i = 0; i < room1Stars.Length; i++)
@@ -697,11 +772,17 @@ namespace MemoryCorridor.Core
             }
 
             panel.Show(frag);
-            yield return null; // 等 Canvas 构建/激活
+            yield return null;
             if (!panel.IsShowing || panel.PhotoTexture == null || panel.TitleString != "缝纫机")
             {
                 Debug.LogError("[SmokeProbe] FAIL-L: 面板显示异常 (showing=" + panel.IsShowing
                     + " photo=" + (panel.PhotoTexture != null) + " title=" + panel.TitleString + ")");
+                sectionPass = false;
+                yield break;
+            }
+            if (!panel.HasCloseButton)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-L: 关闭按钮缺失（R1 E3）");
                 sectionPass = false;
                 yield break;
             }

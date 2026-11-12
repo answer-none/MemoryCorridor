@@ -225,9 +225,9 @@
 
 ## 5. 当前状态（每次会话末更新）
 
-- **阶段**：**首个 Android APK 打包成功**（2026-11-12 第 7 批），M2 内测包就绪
-- **已完成**：PICO SDK 集成全链路 + AndroidBuildScript（IL2CPP/ARM64/ASTC/Linear）+ APK 42MB 验收（ARM64 so/PICO TOBAPI/包名字节验证）
-- **构建入口**：`Unity.exe -batchmode -projectPath … -executeMethod MemoryCorridor.EditorTools.AndroidBuildScript.Build -logFile …`（产物 D:\unityxiangmu\_builds\，仓库外）
-- **已跳过/待用户**：① GitHub 远端（gh 未登录）② devlog 录屏（GUI）③ 旁白音频（Freesound 手动）④ GUI 目检（穹顶已贴图，Play 见全量）⑤ Emulator/真机装 APK 验证（PDC 或 adb，用户侧 GUI）
-- **下一步**：模拟器/真机装机验证 → 内测发 2–3 位朋友收反馈（M2，11-29）→ M3 冻结（12-12）→ 提交（12-19 09:00）
-- **待办提醒**：D 盘 30GB；构建产物在 _builds/ 不进库；大文件增量构建 0.8 分钟
+- **阶段**：团队化 R1 完成（2026-11-12 第 8 批），smoke30 全绿（20 段断言）+ APK 回归 42.4MB
+- **本批新增**：docs/TEAM_PLAN.md（团队分工/评估/路线图）；R1 六项交互闭环（预览卡/关闭钮/类型四色/选中音效/星点重演定位/bridge 重演第③拍出面板）
+- **R2 队列**：E1 欢迎告示牌、E8 audio 播放链路、E9 音量接线、E10 星点标签、E11 接线退避、wall 路径延迟出面板统一
+- **已跳过/待用户**：GitHub 登录、devlog、旁白素材、GUI 目检（R1 新 UI 观感）、Emulator 装机
+- **下一步**：R2（引导+音频）→ R3（交付材料+性能）→ M2 内测（11-29）
+- **待办提醒**：D 盘 24GB（↓，构建产物多，注意）；M3 12-12

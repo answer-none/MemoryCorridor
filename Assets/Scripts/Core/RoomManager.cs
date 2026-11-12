@@ -101,7 +101,7 @@ namespace MemoryCorridor.Core
                 LightPointAnchor anchor = instance.GetComponent<LightPointAnchor>();
                 if (anchor != null)
                 {
-                    anchor.BindFragment(fragment.id, fragment.visibility == "private");
+                    anchor.BindFragment(fragment.id, fragment.visibility == "private", fragment.type);
                     if (fadeController != null) fadeController.Apply(fragment, anchor);
                 }
                 spawnedAnchors.Add(instance);
