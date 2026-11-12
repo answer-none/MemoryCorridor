@@ -225,9 +225,9 @@
 
 ## 5. 当前状态（每次会话末更新）
 
-- **阶段**：团队化 R3 完成 + GitHub 建库**进行中（网络阻断暂停）**（2026-11-13）
+- **阶段**：GitHub 仓库上线（2026-11-13），全部里程碑闭环
 - **R3 新增**：APPLICATION.md（申报骨架）/ DEVLOG_SCRIPT.md（7 镜头分镜）/ README 重写 / PERF_AUDIT.md 基线（62.5fps/403MB/粒子 200）
-- **GitHub 建库状态**：①gh 原账号 Hc-ve 已登出，换新账号 answer-none ✓（用户浏览器生成 classic token 勾 repo 权限，SSH key 已加）②诊断：github.com/api.github.com 被 **SNI 精准阻断**（TLS 握手掐、TCP 通），ssh.github.com:443 无 SNI 不受影响 ③解决：用户浏览器建库 + **git push 走 ssh://git@ssh.github.com:443**（12 提交 + LFS 23MB 全部上云，远端 main=7459c32 ✓）
-- **恢复网络后的操作**（下一会话必做）：`gh auth login --web`（浏览器输码）→ `gh repo create MemoryCorridor --public --source . --push` → 给用户仓库链接；若用户有代理，加 `https_proxy=http://127.0.0.1:端口` 前缀重跑即可
-- **用户侧备选**：开梯子后告诉我端口；或浏览器 github.com/new 手动建库（push 仍需网络恢复/代理）
-- **待办提醒**：M3 12-12；提交 12-19 09:00；路演 12-26；公开库决策已定（用户选公开）
+- **GitHub 建库状态（已闭环）**：①gh 原账号 Hc-ve 已登出，换新账号 answer-none ✓（用户浏览器生成 classic token 勾 repo 权限，SSH key 已加）②诊断：github.com/api.github.com 被 **SNI 精准阻断**（TLS 握手掐、TCP 通），ssh.github.com:443 无 SNI 不受影响 ③解决：用户浏览器建库 + **git push 走 ssh://git@ssh.github.com:443**（13 提交 + LFS 23MB 全部上云，远端 main=652ed02 ✓）④仓库：github.com/answer-none/MemoryCorridor（public）
+- **坑-035（重要）**：GFW 对 GitHub 是 **SNI 精准阻断**——今后所有 git 交互一律走 `ssh://git@ssh.github.com:443/`（remote 已配）；HTTPS API 类操作（gh/REST）被阻断时改走浏览器或等窗口期。
+- **token 安全提醒（已告知用户）**：classic token 曾在对话明文出现，建议到 github.com/settings/tokens **Revoke**（建库实际走的是浏览器，token 未派上用场）。
+- **待办提醒**：M3 12-12；提交 12-19 09:00；路演 12-26
