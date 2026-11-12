@@ -40,12 +40,13 @@ namespace MemoryCorridor.EditorTools
             if (!AssetDatabase.IsValidFolder("Assets/Materials"))
                 AssetDatabase.CreateFolder("Assets", "Materials"); // 坑-023
 
-            // 1) 光点辉光材质 + 预制体（球体+点光+音源+低通+锚点+XRI可交互体）
+            // 1) 光点辉光材质 + 预制体（球体+光晕外球+点光+音源+低通+锚点+XRI可交互体）
             Material glowMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             glowMat.EnableKeyword("_EMISSION");
             glowMat.SetColor("_BaseColor", AmberGlow * 0.4f);
             glowMat.SetColor("_EmissionColor", AmberGlow * 2f);
             AssetDatabase.CreateAsset(glowMat, "Assets/Prefabs/LightPointGlow.mat");
+            Shader glowShellShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/Sprite3D.shader");
 
             GameObject proto = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             proto.name = "LightPoint";
@@ -62,6 +63,23 @@ namespace MemoryCorridor.EditorTools
             protoAnchor.Configure(protoRenderer, protoLight);
             protoAnchor.SetSelectChime(AssetDatabase.LoadAssetAtPath<AudioClip>(
                 "Assets/Audio/sfx_lightpoint_chime.wav")); // R1 E5：预制体级注入，实例继承
+
+            if (glowShellShader != null)
+            {
+                // R3 美学：光晕外球（半透明壳，呼吸/褪色由锚点驱动——萤火意象）
+                GameObject shell = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                shell.name = "GlowShell";
+                shell.transform.SetParent(proto.transform, false);
+                shell.transform.localScale = Vector3.one * 1.6f;
+                Collider shellCollider = shell.GetComponent<Collider>();
+                if (shellCollider != null) UnityEngine.Object.DestroyImmediate(shellCollider);
+                MeshRenderer shellRenderer = shell.GetComponent<MeshRenderer>();
+                Material shellMat = new Material(glowShellShader);
+                shellMat.SetColor("_Color", new Color(0.91f, 0.64f, 0.29f, 0.18f));
+                shellRenderer.sharedMaterial = shellMat;
+                protoAnchor.SetGlowShell(shellRenderer);
+            }
+
             proto.AddComponent<XRSimpleInteractable>();
             GameObject lightPrefab = PrefabUtility.SaveAsPrefabAsset(proto, "Assets/Prefabs/LightPoint.prefab");
             UnityEngine.Object.DestroyImmediate(proto);

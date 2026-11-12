@@ -93,7 +93,14 @@ GitHub 登录 / 旁白素材下载 / GUI 目检 / Emulator 装机——记录在
 | R0 | 2026-11-12 | 团队组建+评估+路线图 | 本文档评审 | 随 R1 |
 | R1 | 2026-11-12 | 交互闭环+类型配色：E2 悬停预览卡 / E3 面板关闭钮 / E4 类型四色+私密优先 / E5 选中音效（内聚 anchor，预制体级注入）/ E6 星点重演定位 / E7 bridge 路径重演第③拍出面板（wall 路径 R2 统一） | smoke30 全绿（B 段 +3 断言：配色/音效/预览卡；L 段 +关闭钮；H 段 +星点重演定位）；APK 回归 42.4MB ✓ | d2b2a02 |
 | R2 | 2026-11-13 | 引导+音频+统一：E1 欢迎告示牌（WelcomeBoard，首条记忆后收起）/ E8 录音播放链路（UnityWebRequest 异步 WAV/MP3 + 自制 radio.wav 占位）/ E9 AudioSettingsService（master→AudioListener，narration→面板，ambient→环境音）/ E10 星点标题标签 / E11 接线退避 0.5s / wall 路径延迟出面板统一（bridge 订阅 OnStarSelected） | smoke31 全绿（23 段断言：+P 欢迎牌/L 录音播放/Q 音量服务/H wall 延迟链路）；APK 回归 42.9MB ✓ | 5fcb1ba |
-| R3 | 2026-11-13 | 交付材料：①APPLICATION.md 申报骨架（创新点/技术方案/日志索引，【待填】团队/日志链接）②DEVLOG_SCRIPT.md 录制分镜（7 镜头 3:30 + 每周简版模板）③README 全面重写对齐 R2 现状（机制×断言对照表/构建入口/SDK 链）④PerfAudit 性能基线（62.5fps/403MB/粒子 200 ✓）→ docs/PERF_AUDIT.md | PERF_EXIT=0 报告落盘；【待用户】devlog 录制、申报【待填】项、GUI 目检 | 待 |
+| R3 | 2026-11-13 | 交付材料：①APPLICATION.md 申报骨架（创新点/技术方案/日志索引，【待填】团队/日志链接）②DEVLOG_SCRIPT.md 录制分镜（7 镜头 3:30 + 每周简版模板）③README 全面重写对齐 R2 现状（机制×断言对照表/构建入口/SDK 链）④PerfAudit 性能基线（62.5fps/403MB/粒子 200 ✓）→ docs/PERF_AUDIT.md | PERF_EXIT=0 报告落盘；【待用户】devlog 录制、申报【待填】项、GUI 目检 | e8a48bb |
+| R3.5 | 2026-11-13 | 四线专项：①UI_DESIGN.md 设计 tokens+组件规范 ②ARCHITECTURE.md 3 张 mermaid 架构图 ③FUNCTION_AUDIT.md P0 全核对（发现导出导入缺口）④NARRATION_SCRIPT.md 8 条旁白文案 ⑤SfxLibrary 合成 4 SFX（缝纫/车铃/tick/翻页）⑥**ExportService/ImportService（P0 缺口补齐：zip+隐私过滤+id 冲突合并）** ⑦UI 好看升级：程序化圆角贴图+标题分隔线+光点光晕外球+Sprite3D shader | smoke33 全绿（Z 段导出过滤/导入后缀）；APK 44.7MB ✓ | 待 |
+
+**R3.5 验收报告（验收工程师）**：
+- smoke33：24 段断言全绿（+Z 导出/导入段：隐私过滤验证 frag_02 不入包、id 冲突自动后缀）。
+- 构建回归：44.7MB（+UI 圆角贴图/SFX）✓。
+- 新坑：坑-036（inactive GameObject 上 StartCoroutine 静默失败——Show 里先激活再起协程）。
+- P0 清单：8/8 全 ✅（FUNCTION_AUDIT.md），**内测可发**。
 
 **R2 验收报告（验收工程师）**：
 - smoke31：23 段断言全绿。

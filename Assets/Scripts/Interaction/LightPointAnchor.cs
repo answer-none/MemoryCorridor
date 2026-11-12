@@ -24,6 +24,7 @@ namespace MemoryCorridor.Interaction
 
         [Header("音效（R1 E5：选中反馈，内聚于光点本体）")]
         [SerializeField] private AudioClip selectChime;
+        [SerializeField] private Renderer glowShellRenderer; // R3 美学：光晕外球
 
         [Header("呼吸动画")]
         [SerializeField] private float breathePeriod = 3f;
@@ -69,6 +70,13 @@ namespace MemoryCorridor.Interaction
             {
                 glowLight.color = target;
                 glowLight.intensity = 2f * emissive;
+            }
+            // R3 美学：光晕外球同色半透明，呼吸+褪色同步（萤火意象）
+            if (glowShellRenderer != null)
+            {
+                Color shell = target;
+                shell.a = Mathf.Clamp01(0.18f * emissive + (isHighlighted ? 0.15f : 0f));
+                glowShellRenderer.material.SetColor("_Color", shell);
             }
             transform.localScale = Vector3.one * (0.6f + 0.4f * fadeFactor); // 褪色=萤火飞远变小
         }
@@ -137,6 +145,12 @@ namespace MemoryCorridor.Interaction
                 previewFired = true;
                 OnHoverPreview?.Invoke(fragmentId);
             }
+        }
+
+        /// <summary>注入光晕外球渲染器（builder 创建半透明壳后调用）。</summary>
+        public void SetGlowShell(Renderer shell)
+        {
+            glowShellRenderer = shell;
         }
 
         public void Select()

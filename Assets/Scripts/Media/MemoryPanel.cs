@@ -58,8 +58,8 @@ namespace MemoryCorridor.Media
                     : "";
             }
             ShowFirstImage(fragment);
-            StartAudio(fragment);
-            gameObject.SetActive(true);
+            gameObject.SetActive(true); // 坑-036：先激活再 StartAudio——inactive 的 GameObject 上
+            StartAudio(fragment);       // StartCoroutine 会静默失败
         }
 
         /// <summary>隐藏面板（同时停止录音播放）。</summary>
@@ -79,12 +79,12 @@ namespace MemoryCorridor.Media
             root.sizeDelta = new Vector2(620f, 460f);
             transform.localScale = Vector3.one * 0.0016f; // ≈1.0m × 0.74m
 
+            // R3 美学升级：圆角底板（程序化贴图，UI_DESIGN §1 形状 tokens）
             Image background = gameObject.AddComponent<Image>();
-            background.color = PanelBg;
+            background.sprite = Sprite.Create(
+                RoundedRectTexture.RoundedRect(620, 460, 24, PanelBg, Amber, 2),
+                new Rect(0f, 0f, 620f, 460f), new Vector2(0.5f, 0.5f), 100f);
             background.raycastTarget = false;
-            Outline outline = gameObject.AddComponent<Outline>();
-            outline.effectColor = new Color(Amber.r, Amber.g, Amber.b, 0.6f);
-            outline.effectDistance = new Vector2(2f, -2f);
 
             GameObject photoGo = new GameObject("Photo");
             photoGo.transform.SetParent(transform, false);
@@ -101,6 +101,13 @@ namespace MemoryCorridor.Media
             titleText.alignment = TextAlignmentOptions.Center;
             titleText.raycastTarget = false;
             Stretch(titleGo.GetComponent<RectTransform>(), 0.03f, 0.30f, 0.97f, 0.42f);
+
+            GameObject dividerGo = new GameObject("Divider");
+            dividerGo.transform.SetParent(transform, false);
+            Image divider = dividerGo.AddComponent<Image>();
+            divider.color = new Color(Amber.r, Amber.g, Amber.b, 0.55f); // 标题分隔线（UI_DESIGN §1）
+            divider.raycastTarget = false;
+            Stretch(dividerGo.GetComponent<RectTransform>(), 0.04f, 0.295f, 0.96f, 0.302f);
 
             GameObject bodyGo = new GameObject("Body");
             bodyGo.transform.SetParent(transform, false);

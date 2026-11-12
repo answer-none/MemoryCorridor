@@ -60,8 +60,13 @@ namespace MemoryCorridor.Media
             rootObject = gameObject;
             MeshRenderer boardRenderer = GetComponent<MeshRenderer>();
             if (boardRenderer == null) boardRenderer = gameObject.AddComponent<MeshRenderer>();
-            Material boardMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            boardMat.SetColor("_BaseColor", new Color(0.12f, 0.10f, 0.15f, 1f));
+            // R3 美学升级：圆角底板（Sprite3D 透明 shader + 程序化贴图）
+            Shader spriteShader = Shader.Find("MemoryCorridor/Sprite3D");
+            Material boardMat = new Material(spriteShader);
+            boardMat.mainTexture = RoundedRectTexture.RoundedRect(
+                360, 160, 16, new Color(0.12f, 0.10f, 0.15f, 0.94f),
+                new Color(0.91f, 0.64f, 0.29f), 2);
+            boardMat.SetColor("_Color", Color.white);
             boardRenderer.material = boardMat;
             transform.localScale = new Vector3(0.36f, 0.16f, 1f);
 

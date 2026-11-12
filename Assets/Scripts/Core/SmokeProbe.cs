@@ -320,8 +320,66 @@ namespace MemoryCorridor.Core
                 }
             }
 
+            // ========== Z. 导出/导入（P0 第 6 项闭环，R3） ==========
+            if (pass)
+            {
+                try
+                {
+                    // 1) 导出：zip 生成 + 隐私过滤（frag_02 私密不得入包）
+                    string zipPath = ExportService.ExportAll();
+                    if (!System.IO.File.Exists(zipPath))
+                    {
+                        throw new System.Exception("导出 zip 未生成");
+                    }
+                    using (System.IO.Compression.ZipArchive archive = System.IO.Compression.ZipFile.OpenRead(zipPath))
+                    {
+                        System.IO.Compression.ZipArchiveEntry jsonEntry = archive.GetEntry("appdata.json");
+                        if (jsonEntry == null) throw new System.Exception("包内缺 appdata.json");
+                        string json;
+                        using (var reader = new System.IO.StreamReader(jsonEntry.Open()))
+                        {
+                            json = reader.ReadToEnd();
+                        }
+                        if (json.Contains("\"frag_02\""))
+                        {
+                            throw new System.Exception("隐私过滤失败：私密碎片 frag_02 出现在导出包");
+                        }
+                        if (!json.Contains("\"frag_01\"")) throw new System.Exception("公开碎片意外丢失");
+                        if (!archive.GetEntry("Media/frag_01/sewing.jpg").FullName.Contains("frag_01"))
+                        {
+                            throw new System.Exception("媒体文件缺失");
+                        }
+                    }
+                    Debug.Log("[SmokeProbe] Z 导出 OK（zip 生成+私密过滤+媒体随包）");
+
+                    // 2) 导入：合并 + id 冲突后缀
+                    ImportService.ImportResult result = ImportService.Import(zipPath);
+                    AppData merged = SaveDataService.LoadAppData();
+                    bool hasSuffix = false;
+                    for (int r = 0; r < merged.rooms.Count; r++)
+                    {
+                        if (merged.rooms[r].fragments == null) continue;
+                        for (int f = 0; f < merged.rooms[r].fragments.Count; f++)
+                        {
+                            if (merged.rooms[r].fragments[f].id.Contains("_i")) hasSuffix = true;
+                        }
+                    }
+                    if (!result.success || result.importedFragments < 1 || !hasSuffix)
+                    {
+                        throw new System.Exception("导入异常 success=" + result.success
+                            + " frags=" + result.importedFragments + " 后缀=" + hasSuffix);
+                    }
+                    Debug.Log("[SmokeProbe] Z 导入 OK（" + result.message + "，id 冲突自动后缀）");
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-Z: 导出/导入异常 " + e.Message);
+                    pass = false; failedSections++;
+                }
+            }
+
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
 
 #if UNITY_EDITOR
