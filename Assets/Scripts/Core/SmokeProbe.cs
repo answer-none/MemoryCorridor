@@ -851,7 +851,9 @@ namespace MemoryCorridor.Core
         {
             yield return new WaitForSecondsRealtime(60f);
             Debug.LogError("[SmokeProbe] WATCHDOG: 60s 超时强制退出(1)");
-            UnityEditor.EditorApplication.Exit(1);
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.Exit(1); // 坑-031：仅编辑器；真机上只留日志
+#endif
         }
     }
 }

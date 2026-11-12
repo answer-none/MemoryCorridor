@@ -56,9 +56,9 @@ PICO Emulator: D:\PICO_Emulator\swan_rls_spaceos_oversea_K_pico_emulator_win64_2
 - Unity 种子工程创建并合并进仓库；manifest 依赖写死；SetupWizard 已放入 `Assets/Editor/`
 
 **进行中（后台）：**
-- 无。**PICO Integration SDK v3.3.3 集成完成，smoke27 全回归零破坏**：SDK zip 定位（PDC 下载目录）→ 嵌入 Packages/com.unity.xr.picoxr → Wizard 第 5 阶段挂 PXR_Loader（双 Loader）→ 17 段全绿。穹顶编辑期贴图已加（用户打开场景即见客厅）。坑-030（GUI/批处理互斥）。
-- **用户侧待办**：GitHub 登录、devlog 录屏、旁白素材、GUI 目检（现在场景可直接看了）。
-- **接手**：Android Build 试跑（批处理）→ Emulator 验证 → M2 内测包（11-29）。
+- 无。**首个 Android APK 打包成功**：`D:\unityxiangmu\_builds\MemoryCorridor_M2.apk`（42MB，IL2CPP/ARM64/ASTC/Linear/PICO TOBAPI/包名验证）。5 轮构建调试（坑-031 Exit 宏/坑-032 shader 移动端 const/坑-033 libopenxr_loader.so 撞库→Android 仅留 PXR/坑-034 RemoveLoader NRE），构建入口 AndroidBuildScript.Build。
+- **用户侧待办**：GitHub 登录、devlog 录屏、旁白素材、GUI 目检、Emulator/真机装 APK（PDC 应用管理或 adb）。
+- **接手**：模拟器/真机验证 → M2 内测（11-29）→ M3 冻结（12-12）→ 提交（12-19）。
 
 **未开始：** 运行时脚本进工程、光点预制体、射线冒烟、PICO SDK 导入、XR Device Simulator 配置。
 

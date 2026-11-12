@@ -190,10 +190,21 @@
 - **坑-030**：用户开着 Unity GUI 时跑 batchmode → exit 21"另一个实例"；**Unity 编辑器与批处理互斥，跑批前必须关 GUI**（Temp/UnityLockfile 是判据）。
 - 下一步（真机链路）：Android Build（IL2CPP/ASTC/PICO 清单配置）→ Emulator 验证 → 真机标定。
 
-### 穹顶编辑期贴图（用户"场景空"问题的修复）
+### 穹顶编辑期贴图（用户"场景空"问题的修复，第 6 批）
 - 根因：光点是 Play 时 RoomManager 数据驱动生成（编辑器视图本来就没有）；穹顶贴图原先是 Play 时才加载 → 编辑视图=白球。
 - 修复：builder 现在编辑期就把 `Assets/Art/Panoramas/living_room_warm.jpg` 赋给穹顶材质（资产引用，随场景序列化持久）；Play 时 PanoramaDome.Start 仍按 appdata 流程重载（双保险）。
 - 告知用户的 GUI 观察法：打开场景即见客厅穹顶；按 ▶️ 后 8 光点/星尘/信标全出。
+
+### Android 首包备忘（2026-11-12 第 7 批，**首个 APK 打包成功**）
+- **产物**：`D:\unityxiangmu\_builds\MemoryCorridor_M2.apk`（42MB，构建 0.8 分钟增量/首次含 Gradle 全程）。
+- 配置：IL2CPP / ARM64 / ASTC / Linear / 包名 com.memorycorridor.app / minSdk 29 / Gradle；APK 内已验证 libil2cpp+libunity（ARM64）、libPICO_TOBAPI.so、包名字节串。
+- 构建脚本：`Assets/Editor/AndroidBuildScript.cs`（BuildAndSmoke 同模式，成功 Exit(0)）——构建走它，不手工点。
+- **坑-031**：`UnityEditor.EditorApplication.Exit` 必须包 `#if UNITY_EDITOR`——Watchdog 那处没包，Player 构建编译报 CS0234（编辑器内一直没暴露）。
+- **坑-032**：shader 里 `const float PI = …;` 编辑器 D3D11 能过、**移动端（gles3/vulkan）报 syntax error**——shader 改动必须跑一次 Android 构建级别的编译验证（PanoramaDome 改 `#define PI`）。
+- **坑-033**：**OpenXR 包与 PICO SDK 的 `libopenxr_loader.so` 在 Gradle mergeNativeLibs 撞库**——Android 平台双 Loader 不可行，构建前 `RemoveLoader(OpenXRLoader)`，只留 PXR_Loader。Editor Play 不依赖 Android loader（模拟器走 Input System），无影响。
+- **坑-034**：`RemoveLoader(null, …)` NRE——先取 `general.Manager` 再传。
+- 构建轮次：b1 编译错→b2 shader→b3 撞库→b4 NRE→b5 ✅（5 轮，全部有断言级日志）。
+- 下一步：模拟器装 APK 验证（adb install 或 PDC 安装）→ 真机标定 → M2 内测包。
 
 ### W2 内容层备忘（2026-11-12，第 1 天）
 - 素材入工程：`Assets/Art/Panoramas`（2 全景）、`Assets/StreamingAssets/Media/frag_01|03`（演示照片）、`Assets/StreamingAssets/Panoramas/room_01.jpg`（穹顶用）、`Assets/Audio`（3 占位 WAV）。
@@ -214,8 +225,9 @@
 
 ## 5. 当前状态（每次会话末更新）
 
-- **阶段**：PICO SDK 集成完成（2026-11-12 第 6 批），smoke27 全绿（17 段断言零破坏）
-- **已完成**：W4/Demo 全部 + **Integration SDK v3.3.3 嵌入 + PXR_Loader 双 Loader 配置** + 穹顶编辑期贴图（用户"场景空"修复）
-- **已跳过/待用户**：① GitHub 远端（gh 未登录）② devlog 录屏（GUI）③ 旁白音频素材（Freesound 手动）④ GUI 目检（现在打开场景就能看到客厅穹顶，Play 见全量）
-- **下一步**：Android Build 试跑（IL2CPP/ASTC/包名/清单，批处理可做）→ Emulator 验证 → 真机标定；M2 内测包（11-29）
-- **待办提醒**：D 盘 30GB；M3（12-12）冻结倒计时 30 天；比赛提交 12-19 09:00
+- **阶段**：**首个 Android APK 打包成功**（2026-11-12 第 7 批），M2 内测包就绪
+- **已完成**：PICO SDK 集成全链路 + AndroidBuildScript（IL2CPP/ARM64/ASTC/Linear）+ APK 42MB 验收（ARM64 so/PICO TOBAPI/包名字节验证）
+- **构建入口**：`Unity.exe -batchmode -projectPath … -executeMethod MemoryCorridor.EditorTools.AndroidBuildScript.Build -logFile …`（产物 D:\unityxiangmu\_builds\，仓库外）
+- **已跳过/待用户**：① GitHub 远端（gh 未登录）② devlog 录屏（GUI）③ 旁白音频（Freesound 手动）④ GUI 目检（穹顶已贴图，Play 见全量）⑤ Emulator/真机装 APK 验证（PDC 或 adb，用户侧 GUI）
+- **下一步**：模拟器/真机装机验证 → 内测发 2–3 位朋友收反馈（M2，11-29）→ M3 冻结（12-12）→ 提交（12-19 09:00）
+- **待办提醒**：D 盘 30GB；构建产物在 _builds/ 不进库；大文件增量构建 0.8 分钟
