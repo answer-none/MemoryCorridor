@@ -18,11 +18,8 @@ namespace MemoryCorridor.Media
             source.playOnAwake = true;
             source.Play();
 
-            AppData data = SaveDataService.LoadAppData();
-            if (data != null && data.settings != null)
-            {
-                source.volume = Mathf.Clamp01(data.settings.ambientVolume);
-            }
+            AudioSettingsService.WarmSettings(); // E9：环境音量走统一服务（幂等）
+            source.volume = AudioSettingsService.AmbientVolume;
         }
     }
 }

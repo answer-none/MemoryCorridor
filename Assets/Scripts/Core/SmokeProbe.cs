@@ -58,6 +58,31 @@ namespace MemoryCorridor.Core
                 Debug.Log("[SmokeProbe] A 房间初始态 OK（room0×4 光点，穹顶已加载）");
             }
 
+            // ========== P. 欢迎告示牌（R2 E1） ==========
+            if (pass)
+            {
+                WelcomeBoard board = FindFirst<WelcomeBoard>();
+                if (board == null || !board.IsShowing)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-P: 欢迎告示牌未显示 (board=" + (board == null) + ")");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    board.NotifyUsed();
+                    yield return null;
+                    if (board.IsShowing)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-P: NotifyUsed 后未收起");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] P 欢迎告示牌 OK（显示→首条记忆后收起）");
+                    }
+                }
+            }
+
             // ========== B. XRI 装配 + 悬停预览 + 选中 + 褪色 ==========
             if (pass)
             {
@@ -255,6 +280,28 @@ namespace MemoryCorridor.Core
                 yield return TestStardustField();
                 pass = sectionPass;
                 if (!pass) failedSections++;
+            }
+
+            // ========== Q. 音量设置服务（R2 E9） ==========
+            if (pass)
+            {
+                AudioSettingsService.WarmSettings();
+                AppData qData = SaveDataService.LoadAppData();
+                float expected = Mathf.Clamp01(qData.settings.masterVolume);
+                if (!AudioSettingsService.IsWarmed
+                    || Mathf.Abs(AudioSettingsService.MasterVolume - expected) > 0.001f
+                    || Mathf.Abs(AudioListener.volume - expected) > 0.001f)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-Q: 音量服务异常 (warmed=" + AudioSettingsService.IsWarmed
+                        + " master=" + AudioSettingsService.MasterVolume
+                        + " expected=" + expected
+                        + " listener=" + AudioListener.volume + ")");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] Q 音量服务 OK（master→AudioListener 全局生效）");
+                }
             }
 
             // ========== K. ImportServer HTTP ==========
@@ -584,6 +631,22 @@ namespace MemoryCorridor.Core
                 yield break;
             }
 
+            // 缩略图断言：room_01 四星全带卡片（全为 image/图+音/mixed 类型）
+            string[] room1Stars = { "Star_frag_01", "Star_frag_02", "Star_frag_03", "Star_frag_06" };
+            for (int i = 0; i < room1Stars.Length; i++)
+            {
+                GameObject starGo = GameObject.Find(room1Stars[i]);
+                Transform thumb = starGo != null ? starGo.transform.Find("Thumb") : null;
+                bool hasThumb = thumb != null && thumb.GetComponent<MeshRenderer>() != null
+                    && thumb.GetComponent<MeshRenderer>().material.mainTexture != null;
+                if (!hasThumb)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-H: " + room1Stars[i] + " 缩略图缺失");
+                    sectionPass = false;
+                    yield break;
+                }
+            }
+
             // R1 E6：点星重演应发生在星点位置（等一拍后查分层场景位置）
             yield return new WaitForSecondsRealtime(0.4f);
             LayeredPhoto[] replayLayers = FindAll<LayeredPhoto>();
@@ -603,22 +666,16 @@ namespace MemoryCorridor.Core
             }
             yield return new WaitForSecondsRealtime(0.2f);
 
-            // 缩略图断言：room_01 四星全带卡片（全为 image/图+音/mixed 类型）
-            string[] room1Stars = { "Star_frag_01", "Star_frag_02", "Star_frag_03", "Star_frag_06" };
-            for (int i = 0; i < room1Stars.Length; i++)
+            // R2：wall 路径统一——Done 兜底后面板应已显示（延迟出面板链路）
+            MemoryPanel wallPanel = FindFirst<MemoryPanel>();
+            if (wallPanel == null || !wallPanel.IsShowing)
             {
-                GameObject starGo = GameObject.Find(room1Stars[i]);
-                Transform thumb = starGo != null ? starGo.transform.Find("Thumb") : null;
-                bool hasThumb = thumb != null && thumb.GetComponent<MeshRenderer>() != null
-                    && thumb.GetComponent<MeshRenderer>().material.mainTexture != null;
-                if (!hasThumb)
-                {
-                    Debug.LogError("[SmokeProbe] FAIL-H: " + room1Stars[i] + " 缩略图缺失");
-                    sectionPass = false;
-                    yield break;
-                }
+                Debug.LogError("[SmokeProbe] FAIL-H: wall 路径延迟出面板未生效");
+                sectionPass = false;
+                yield break;
             }
-            Debug.Log("[SmokeProbe] H 星河回顾墙 OK（4 星连线+首星回调+四缩略图）");
+            wallPanel.Hide();
+            Debug.Log("[SmokeProbe] H 星河墙点星→重演→面板（统一延迟链路）OK");
         }
 
         // ---------- H2 ----------
@@ -754,7 +811,10 @@ namespace MemoryCorridor.Core
         private IEnumerator TestUguiPanel()
         {
             sectionPass = true;
-            MemoryPanel panel = FindFirst<MemoryPanel>();
+            // 坑-021 同类：面板常态 inactive，必须含未激活搜索
+            MemoryPanel[] panels = UnityEngine.Object.FindObjectsByType<MemoryPanel>(
+                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
+            MemoryPanel panel = panels.Length > 0 ? panels[0] : null;
             if (panel == null)
             {
                 Debug.LogError("[SmokeProbe] FAIL-L: 缺 MemoryPanel");
@@ -786,7 +846,27 @@ namespace MemoryCorridor.Core
                 sectionPass = false;
                 yield break;
             }
+
+            // R2 E8：录音播放链路（frag_02 有自制 radio.wav；私密碎片本人视角可看可听）
+            AppData audioData = SaveDataService.LoadAppData();
+            MemoryFragment audioFrag = FindFragmentById(audioData, "frag_02");
+            if (audioFrag == null)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-L: frag_02 缺失");
+                sectionPass = false;
+                yield break;
+            }
+            panel.Show(audioFrag);
+            yield return new WaitForSecondsRealtime(1.2f); // 等 WAV 异步加载+起播
+            if (!panel.IsAudioPlaying)
+            {
+                Debug.LogError("[SmokeProbe] FAIL-L: 录音未播放（E8 链路异常）");
+                sectionPass = false;
+                yield break;
+            }
+            Debug.Log("[SmokeProbe] L 录音链路 OK（radio.wav 异步加载并播放）");
             panel.Hide();
+            yield return null;
             yield return null;
             if (panel.IsShowing)
             {

@@ -91,7 +91,14 @@ GitHub 登录 / 旁白素材下载 / GUI 目检 / Emulator 装机——记录在
 | 轮次 | 日期 | 内容 | 验收 | 提交 |
 |---|---|---|---|---|
 | R0 | 2026-11-12 | 团队组建+评估+路线图 | 本文档评审 | 随 R1 |
-| R1 | 2026-11-12 | 交互闭环+类型配色：E2 悬停预览卡 / E3 面板关闭钮 / E4 类型四色+私密优先 / E5 选中音效（内聚 anchor，预制体级注入）/ E6 星点重演定位 / E7 bridge 路径重演第③拍出面板（wall 路径 R2 统一） | smoke30 全绿（B 段 +3 断言：配色/音效/预览卡；L 段 +关闭钮；H 段 +星点重演定位）；APK 回归 42.4MB ✓ | 待 |
+| R1 | 2026-11-12 | 交互闭环+类型配色：E2 悬停预览卡 / E3 面板关闭钮 / E4 类型四色+私密优先 / E5 选中音效（内聚 anchor，预制体级注入）/ E6 星点重演定位 / E7 bridge 路径重演第③拍出面板（wall 路径 R2 统一） | smoke30 全绿（B 段 +3 断言：配色/音效/预览卡；L 段 +关闭钮；H 段 +星点重演定位）；APK 回归 42.4MB ✓ | d2b2a02 |
+| R2 | 2026-11-13 | 引导+音频+统一：E1 欢迎告示牌（WelcomeBoard，首条记忆后收起）/ E8 录音播放链路（UnityWebRequest 异步 WAV/MP3 + 自制 radio.wav 占位）/ E9 AudioSettingsService（master→AudioListener，narration→面板，ambient→环境音）/ E10 星点标题标签 / E11 接线退避 0.5s / wall 路径延迟出面板统一（bridge 订阅 OnStarSelected） | smoke31 全绿（23 段断言：+P 欢迎牌/L 录音播放/Q 音量服务/H wall 延迟链路）；APK 回归 42.9MB ✓ | 待 |
+
+**R2 验收报告（验收工程师）**：
+- smoke31：23 段断言全绿。
+- 构建回归：42.9MB ✓。
+- 调试中发现并修复：①MemoryPanel.cs 被误拷至 Scripts/Core/（双类定义）；②坑-026 变体再现——`ConstellationWallRef`/`WelcomeBoardRef` 属性赋值不序列化 → 改 Configure 序列化字段；③bridge/panel 整文件重写（多轮 Edit 出重复定义）；④`UnityWebRequest.Result` 是嵌套枚举（坑-029 同类）。
+- 遗留到 R3：面板朝向/引导牌观感 GUI 目检；音效音量未走 narration 组（chime 走 master 全局即可）；ASSET_LIST 补 radio.wav 登记（自制）。
 
 **R1 验收报告（验收工程师）**：
 - smoke30：20 段断言全绿，零回归。

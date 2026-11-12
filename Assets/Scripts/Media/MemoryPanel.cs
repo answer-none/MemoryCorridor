@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using System.IO;
 using MemoryCorridor.Core;
 using TMPro;
@@ -7,9 +9,9 @@ using UnityEngine.UI;
 namespace MemoryCorridor.Media
 {
     /// <summary>
-    /// 记忆面板（W4 UGUI 磨砂版）：WorldSpace Canvas——暮色半透明底 + 琥珀描边 +
-    /// 照片 RawImage + TMP 标题/正文（动态字体资产，CJK 按需填充）。
-    /// 显示时定位于视线前方 1.5m 固定不随头（§5.3 防眩晕）；Show/Hide 契约与桥接器不变。
+    /// 记忆面板（W4 UGUI 磨砂版 + R2 音频链路）：WorldSpace Canvas——暮色半透明底 +
+    /// 琥珀描边 + 照片 RawImage + TMP 标题/正文 + ✕ 关闭钮 + 录音播放（E8）。
+    /// 显示时定位于视线前方 1.5m 固定不随头（§5.3）；音量走 AudioSettingsService（E9）。
     /// </summary>
     public class MemoryPanel : MonoBehaviour
     {
@@ -19,13 +21,15 @@ namespace MemoryCorridor.Media
         private TMP_Text bodyText;
         private Texture2D loadedTexture;
         private TMP_FontAsset fontAsset;
+        private AudioSource audioSource;
+        private Coroutine audioLoadRoutine;
+        private UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable closeInteractable;
 
         public bool IsShowing => gameObject.activeSelf;
         public string TitleString => titleText != null ? titleText.text : null;
         public Texture PhotoTexture => photoImage != null ? photoImage.texture : null;
         public bool HasCloseButton => closeInteractable != null;
-
-        private UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable closeInteractable;
+        public bool IsAudioPlaying => audioSource != null && audioSource.isPlaying;
 
         private static readonly Color Amber = new Color(0.91f, 0.64f, 0.29f, 1f);
         private static readonly Color PanelBg = new Color(0.12f, 0.10f, 0.15f, 0.88f);
@@ -54,12 +58,14 @@ namespace MemoryCorridor.Media
                     : "";
             }
             ShowFirstImage(fragment);
+            StartAudio(fragment);
             gameObject.SetActive(true);
         }
 
-        /// <summary>隐藏面板。</summary>
+        /// <summary>隐藏面板（同时停止录音播放）。</summary>
         public void Hide()
         {
+            StopAudio();
             gameObject.SetActive(false);
         }
 
@@ -78,7 +84,7 @@ namespace MemoryCorridor.Media
             background.raycastTarget = false;
             Outline outline = gameObject.AddComponent<Outline>();
             outline.effectColor = new Color(Amber.r, Amber.g, Amber.b, 0.6f);
-            outline.effectDistance = new Vector2(2f, -2f); // 1px 级描边（磨砂卡片 §4.2）
+            outline.effectDistance = new Vector2(2f, -2f);
 
             GameObject photoGo = new GameObject("Photo");
             photoGo.transform.SetParent(transform, false);
@@ -111,8 +117,8 @@ namespace MemoryCorridor.Media
         }
 
         /// <summary>
-        /// 关闭按钮（R1，TEAM_PLAN E3）：canvas 右上角 3D ✕ + XRSimpleInteractable，
-        /// 射线点选即 Hide()。挂在 canvas 子级需换算像素坐标/比例（root scale 0.0016）。
+        /// 关闭按钮（R1 E3）：canvas 右上角 3D ✕ + XRSimpleInteractable，射线点选即 Hide()。
+        /// 挂在 canvas 子级需换算像素坐标/比例（root scale 0.0016）。
         /// </summary>
         private void BuildCloseButton()
         {
@@ -121,9 +127,8 @@ namespace MemoryCorridor.Media
             const float PixelScale = 0.0016f;
             GameObject buttonGo = new GameObject("CloseButton");
             buttonGo.transform.SetParent(transform, false);
-            buttonGo.transform.localPosition = new Vector3(262f, 196f, -10f); // 像素坐标
-            buttonGo.transform.localScale = new Vector3(
-                0.045f / PixelScale, 0.045f / PixelScale, 1f); // 世界约 4.5cm
+            buttonGo.transform.localPosition = new Vector3(262f, 196f, -10f);
+            buttonGo.transform.localScale = new Vector3(0.045f / PixelScale, 0.045f / PixelScale, 1f);
 
             MeshRenderer buttonRenderer = buttonGo.AddComponent<MeshRenderer>();
             Material buttonMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
@@ -222,6 +227,87 @@ namespace MemoryCorridor.Media
                 Debug.LogWarning("[MemoryPanel] 素材缺失: " + MediaResolver.DescribeMiss(item.path));
             }
             return null;
+        }
+
+        /// <summary>
+        /// E8：碎片音频播放链路（WAV/MP3 从持久化或随包目录异步加载）。
+        /// 文件缺失静默降级（日志）；音量走 AudioSettingsService.NarrationVolume。
+        /// </summary>
+        private void StartAudio(MemoryFragment fragment)
+        {
+            StopAudio();
+            if (fragment.mediaItems == null) return;
+
+            for (int i = 0; i < fragment.mediaItems.Count; i++)
+            {
+                MediaItem item = fragment.mediaItems[i];
+                if (item.kind != "audio" || string.IsNullOrEmpty(item.path)) continue;
+                string resolved = MediaResolver.ResolveExisting(item.path);
+                if (resolved == null)
+                {
+                    Debug.LogWarning("[MemoryPanel] 音频缺失，静默降级: "
+                        + MediaResolver.DescribeMiss(item.path));
+                    continue;
+                }
+
+                if (audioSource == null)
+                {
+                    audioSource = gameObject.AddComponent<AudioSource>();
+                    audioSource.spatialBlend = 1f;
+                    audioSource.playOnAwake = false;
+                }
+
+                if (audioLoadRoutine != null) StopCoroutine(audioLoadRoutine);
+                audioLoadRoutine = StartCoroutine(LoadAndPlayAudio(resolved));
+                return; // 只播第一条音频
+            }
+        }
+
+        private IEnumerator LoadAndPlayAudio(string resolvedPath)
+        {
+            string url = "file:///" + resolvedPath.Replace('\\', '/');
+            AudioType type = resolvedPath.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
+                ? AudioType.MPEG
+                : AudioType.WAV;
+            using (UnityEngine.Networking.UnityWebRequest request =
+                UnityEngine.Networking.UnityWebRequestMultimedia.GetAudioClip(url, type))
+            {
+                yield return request.SendWebRequest();
+                if (request.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+                {
+                    Debug.LogWarning("[MemoryPanel] 音频加载失败: " + request.error);
+                    yield break;
+                }
+                AudioClip clip = UnityEngine.Networking.DownloadHandlerAudioClip.GetContent(request);
+                if (clip == null || audioSource == null) yield break;
+
+                AudioSettingsService.WarmSettings();
+                audioSource.clip = clip;
+                audioSource.volume = AudioSettingsService.NarrationVolume;
+                audioSource.Play();
+            }
+        }
+
+        private void StopAudio()
+        {
+            if (audioLoadRoutine != null)
+            {
+                StopCoroutine(audioLoadRoutine);
+                audioLoadRoutine = null;
+            }
+            if (audioSource != null && audioSource.isPlaying)
+            {
+                audioSource.Stop();
+            }
+        }
+
+        private void Update()
+        {
+            Camera cam = Camera.main;
+            if (cam != null)
+            {
+                transform.LookAt(cam.transform);
+            }
         }
     }
 }

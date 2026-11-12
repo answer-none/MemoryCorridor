@@ -101,6 +101,23 @@ namespace MemoryCorridor.Media
                 {
                     captured.Select();
                 });
+
+                // R2 E10：星点标签（标题浮于星上方，可读性）
+                GameObject labelGo = new GameObject("Label");
+                labelGo.transform.SetParent(star.transform, false);
+                labelGo.transform.localPosition = new Vector3(0f, 2.4f, 0f);
+                labelGo.transform.localScale = new Vector3(1.6f, 1.6f, 1f);
+                MeshRenderer labelRenderer = labelGo.AddComponent<MeshRenderer>();
+                TextMesh labelTm = labelGo.AddComponent<TextMesh>();
+                Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                labelTm.font = font;
+                labelRenderer.sharedMaterial = font.material;
+                labelTm.text = orderedFragments[i].title;
+                labelTm.fontSize = 40;
+                labelTm.characterSize = 0.028f;
+                labelTm.anchor = TextAnchor.LowerCenter;
+                labelTm.alignment = TextAlignment.Center;
+                labelTm.color = new Color(0.92f, 0.88f, 0.82f, 1f);
                 stars.Add(star);
             }
 
@@ -140,12 +157,13 @@ namespace MemoryCorridor.Media
         private void OnStarPicked(string fragmentId)
         {
             if (OnStarSelected != null) OnStarSelected(fragmentId);
-            if (panel == null || currentRoute == null) return;
+            if (currentRoute == null) return;
 
             for (int i = 0; i < currentRoute.Count; i++)
             {
                 if (currentRoute[i].id != fragmentId) continue;
-                panel.Show(currentRoute[i]);
+                // R2：面板显示统一由桥接器的重演节拍回调驱动（wall 路径同样延迟出面板）；
+                // 此处只发起星点位置的重演。
                 if (sequencer != null)
                 {
                     // R1 E6：重演发生在被点星的位置（而非墙中心）
