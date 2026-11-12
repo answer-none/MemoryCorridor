@@ -71,7 +71,7 @@ W1 地基 → W2 机制+内容 → W3 叙事 → R1/R2 团队化迭代（交互�
 
 ## 提交清单
 
-- [ ] GitHub 仓库（本工程 + 文档套件）
+- [x] GitHub 仓库：github.com/answer-none/MemoryCorridor（public）
 - [ ] APK（`_builds/MemoryCorridor_M2.apk`，42.9MB）
 - [ ] 演示视频 3–5 分钟（脚本就绪 `docs/DEVLOG_SCRIPT.md`）
 - [ ] 申报文档（骨架就绪 `docs/APPLICATION.md`，待填团队/日志链接）

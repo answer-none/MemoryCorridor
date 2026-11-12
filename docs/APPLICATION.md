@@ -59,7 +59,7 @@
 
 ## 7. 开源与二次开发
 
-- 仓库：github.com/{用户名}/MemoryCorridor【待建库】
+- 仓库：github.com/answer-none/MemoryCorridor ✅（已建库并推送，public）
 - 数据格式文档（appdata.json schema）随仓库开源；Demo 记忆包（2 房间 8 碎片）可替换为任意家庭素材。
 - 素材授权：CC0 / CC-BY（署名）/ OFL / Pexels / 自制，全量登记于 `docs/ASSET_LIST.md`。
 
