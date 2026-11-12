@@ -104,6 +104,11 @@ namespace MemoryCorridor.EditorTools
             if (domeCollider != null) UnityEngine.Object.DestroyImmediate(domeCollider);
             MeshRenderer domeRenderer = dome.GetComponent<MeshRenderer>();
             Material domeMat = new Material(domeShader);
+            // 编辑期直接贴客厅全景（资产引用随场景序列化）——用户打开场景即可见"奶奶的客厅"；
+            // Play 时 PanoramaDome.Start 再按 appdata 室内/持久化目录优先级重载（双保险）
+            Texture2D editTimePano = AssetDatabase.LoadAssetAtPath<Texture2D>(
+                "Assets/Art/Panoramas/living_room_warm.jpg");
+            if (editTimePano != null) domeMat.mainTexture = editTimePano;
             AssetDatabase.CreateAsset(domeMat, "Assets/Materials/PanoramaDome.mat");
             domeRenderer.sharedMaterial = domeMat;
             dome.AddComponent<PanoramaDome>();

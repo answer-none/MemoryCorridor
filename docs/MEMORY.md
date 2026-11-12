@@ -177,9 +177,23 @@
 
 ### W4 续备忘（2026-11-12 第 5 批，smoke26 全绿 17 段断言）
 - Demo 包定稿：**2 房间 8 碎片**——room_01（缝纫机/老收音机·私密/童年自行车·褪色300天/窗台花瓶）+ room_02（村口的路/摇椅日记·纯diary/屋前自行车·褪色180天/妹妹学车）。
-- frag_02 补 radio.jpg（私密碎片也可见可看）；新增 frag_06/07/08 均有图有文案；日记文案润色（"跑调也不许我们笑"/"车把上挂着一网兜汽水瓶"等细节句）。
-- 探针连锁更新：4 光点/4 星全缩略图（room_01 全带图）；**新增 H2 段**（切房间二建墙：日记星纯光球、图星带卡、褪色样例星）。
+- frag_02 补 radio.jpg（私密碎片也可见可看）；新增 frag_06/07/08 均有图有文案；日记文案润色。
+- 探针连锁更新：4 光点/4 星全缩略图；**H2 段**（切房间二建墙：日记星纯光球、图星带卡、褪色样例星）。
 - ASSET_LIST.md §1.3 已更新为实装映射（4 张备用照片留在 raw）。
+
+### PICO SDK 集成备忘（2026-11-12 第 6 批，smoke27 全绿）
+- **PDC"已安装"= 下载 zip**：`C:\Users\Administrator\AppData\Roaming\PICO_Developer_Center_Downloads\cn\sdk_id_12\PICO%20Unity%20Integration%20SDK-3.3.3-20251202.zip`（105MB，文件名含 %20 转义）。
+- 包形态：**UPM 本地包**（顶层 package.json + Runtime/Editor/Platform/Enterprise/SpatialAudio asmdefs），不是 unitypackage——正确导入 = 解包拷入 `Packages/com.unity.xr.picoxr/`（238MB，Unity 自动识别嵌入包），**不能拷进 Assets/**。
+- Loader：`Unity.XR.PXR.PXR_Loader`（Runtime/Scripts/PXR_Loader.cs:67，坑-013 纪律 grep 实测）。Wizard 新增第 5 阶段 AssignLoader；与 OpenXRLoader **双 Loader 并存**（真机走 PICO / 模拟器走 OpenXR），`Assets/XR/Loaders/PXR_Loader.asset` 落盘 ✓。
+- SDK 依赖 xr.management/XRI/core-utils 均被工程现有版本满足（4.5.3/2.5.4/2.5.2）。
+- 集成后 smoke27 全回归 17 段零破坏 ✓。
+- **坑-030**：用户开着 Unity GUI 时跑 batchmode → exit 21"另一个实例"；**Unity 编辑器与批处理互斥，跑批前必须关 GUI**（Temp/UnityLockfile 是判据）。
+- 下一步（真机链路）：Android Build（IL2CPP/ASTC/PICO 清单配置）→ Emulator 验证 → 真机标定。
+
+### 穹顶编辑期贴图（用户"场景空"问题的修复）
+- 根因：光点是 Play 时 RoomManager 数据驱动生成（编辑器视图本来就没有）；穹顶贴图原先是 Play 时才加载 → 编辑视图=白球。
+- 修复：builder 现在编辑期就把 `Assets/Art/Panoramas/living_room_warm.jpg` 赋给穹顶材质（资产引用，随场景序列化持久）；Play 时 PanoramaDome.Start 仍按 appdata 流程重载（双保险）。
+- 告知用户的 GUI 观察法：打开场景即见客厅穹顶；按 ▶️ 后 8 光点/星尘/信标全出。
 
 ### W2 内容层备忘（2026-11-12，第 1 天）
 - 素材入工程：`Assets/Art/Panoramas`（2 全景）、`Assets/StreamingAssets/Media/frag_01|03`（演示照片）、`Assets/StreamingAssets/Panoramas/room_01.jpg`（穹顶用）、`Assets/Audio`（3 占位 WAV）。
@@ -200,8 +214,8 @@
 
 ## 5. 当前状态（每次会话末更新）
 
-- **阶段**：Demo 包内容定稿（2026-11-12 第 5 批），smoke26 全绿（17 段断言）
-- **已完成**：W4 全部 + **2 房间 8 碎片叙事包**（图5/音+图1/混合1/纯日记1，褪色样例×2，私密样例×1）+ 房间二星河墙验证段（H2）
-- **已跳过（勿卡住）**：① **Android 打包验证——依赖 PICO SDK（用户侧被墙/GUI），SDK 到位即试 Build** ② GitHub 远端（gh 未登录）③ devlog（GUI）④ Emulator GUI ⑤ 旁白音频（Freesound 手动）⑥ Android StreamingAssets 异步化（真机前）⑦ VR 内抓取/定点 Anchor ⑧ 视觉 GUI 目检
-- **下一步（M2 冲刺，11-29）**：用户侧四件事（PICO SDK/GitHub 登录/GUI 目检/旁白素材）；agent 侧余量：TeleportationAnchor 定点传送、VR 内抓取编排、星河墙文案牌、devlog 脚本撰写
+- **阶段**：PICO SDK 集成完成（2026-11-12 第 6 批），smoke27 全绿（17 段断言零破坏）
+- **已完成**：W4/Demo 全部 + **Integration SDK v3.3.3 嵌入 + PXR_Loader 双 Loader 配置** + 穹顶编辑期贴图（用户"场景空"修复）
+- **已跳过/待用户**：① GitHub 远端（gh 未登录）② devlog 录屏（GUI）③ 旁白音频素材（Freesound 手动）④ GUI 目检（现在打开场景就能看到客厅穹顶，Play 见全量）
+- **下一步**：Android Build 试跑（IL2CPP/ASTC/包名/清单，批处理可做）→ Emulator 验证 → 真机标定；M2 内测包（11-29）
 - **待办提醒**：D 盘 30GB；M3（12-12）冻结倒计时 30 天；比赛提交 12-19 09:00

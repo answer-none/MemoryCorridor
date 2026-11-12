@@ -56,9 +56,9 @@ PICO Emulator: D:\PICO_Emulator\swan_rls_spaceos_oversea_K_pico_emulator_win64_2
 - Unity 种子工程创建并合并进仓库；manifest 依赖写死；SetupWizard 已放入 `Assets/Editor/`
 
 **进行中（后台）：**
-- 无。**Demo 叙事包定稿，smoke26 全绿（17 段断言）**：2 房间 8 碎片（含褪色样例×2、私密样例×1、纯日记×1），frag_02 补配图，新增 frag_06/07/08；H2 段验证房间二星河墙分类（日记星无缩略图）。ASSET_LIST 已更新实装映射。
-- **用户指示的跳过项（勿卡住）**：**Android 打包验证（依赖 PICO SDK，用户侧）**、GitHub 远端、devlog 录屏、Emulator GUI、旁白音频、Android StreamingAssets 异步化、VR 内抓取/定点 Anchor、视觉 GUI 目检。
-- **接手**：M2 冲刺余量（TeleportationAnchor/VR 抓取/星河墙文案牌/devlog 脚本）；用户侧四件事（PICO SDK/GitHub/GUI 目检/旁白素材）到位即闭环。
+- 无。**PICO Integration SDK v3.3.3 集成完成，smoke27 全回归零破坏**：SDK zip 定位（PDC 下载目录）→ 嵌入 Packages/com.unity.xr.picoxr → Wizard 第 5 阶段挂 PXR_Loader（双 Loader）→ 17 段全绿。穹顶编辑期贴图已加（用户打开场景即见客厅）。坑-030（GUI/批处理互斥）。
+- **用户侧待办**：GitHub 登录、devlog 录屏、旁白素材、GUI 目检（现在场景可直接看了）。
+- **接手**：Android Build 试跑（批处理）→ Emulator 验证 → M2 内测包（11-29）。
 
 **未开始：** 运行时脚本进工程、光点预制体、射线冒烟、PICO SDK 导入、XR Device Simulator 配置。
 

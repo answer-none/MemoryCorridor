@@ -28,6 +28,7 @@ namespace MemoryCorridor.EditorTools
             if (Stage("Scenes", StageScenes)) ok++; else fail++;
             if (Stage("Android", StageAndroid)) ok++; else fail++;
             if (Stage("OpenXR", StageOpenXrLoader)) ok++; else fail++;
+            if (Stage("PICO", StagePicoLoader)) ok++; else fail++;
             AssetDatabase.SaveAssets();
             Debug.Log($"[SetupWizard] 完成：{ok} 成功 / {fail} 失败（失败项见上方 LogError，可菜单 MemoryCorridor/W1 环境向导 重跑）");
         }
@@ -133,7 +134,30 @@ namespace MemoryCorridor.EditorTools
             bool result = UnityEditor.XR.Management.Metadata.XRPackageMetadataStore.AssignLoader(
                 settings.Manager, "UnityEngine.XR.OpenXR.OpenXRLoader", BuildTargetGroup.Android);
             if (!result)
-                throw new Exception("AssignLoader 返回 false（OpenXR 包未就绪或已被占用）");
+                throw new Exception("AssignLoader(OpenXR) 返回 false");
+            AssetDatabase.SaveAssets();
+        }
+
+        /// <summary>PICO Loader：前提 Packages/com.unity.xr.picoxr 已嵌入（本地 UPM 包）。
+        /// Loader 类 Unity.XR.PXR.PXR_Loader（源码实测，坑-013 纪律）。
+        /// OpenXR 与 PICO 双 Loader 并存：PICO 设备走 PXR_Loader，模拟器/OpenXR 走 OpenXRLoader。</summary>
+        private static void StagePicoLoader()
+        {
+            var perBtType = typeof(UnityEditor.XR.Management.XRGeneralSettingsPerBuildTarget);
+            var getOrCreate = perBtType.GetMethod("GetOrCreate",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var perBt = getOrCreate?.Invoke(null, null) as UnityEditor.XR.Management.XRGeneralSettingsPerBuildTarget;
+            if (perBt == null)
+                throw new Exception("XRGeneralSettingsPerBuildTarget 创建失败");
+
+            var settings = perBt.SettingsForBuildTarget(BuildTargetGroup.Android);
+            if (settings == null || settings.Manager == null)
+                throw new Exception("XRGeneralSettings(Android) 未初始化（依赖 OpenXR 阶段）");
+
+            bool assigned = UnityEditor.XR.Management.Metadata.XRPackageMetadataStore.AssignLoader(
+                settings.Manager, "Unity.XR.PXR.PXR_Loader", BuildTargetGroup.Android);
+            if (!assigned)
+                throw new Exception("AssignLoader(PICO) 返回 false（检查 Packages/com.unity.xr.picoxr 是否完整）");
             AssetDatabase.SaveAssets();
         }
     }

@@ -196,6 +196,16 @@
       },
       "url": "https://packages.unity.cn"
     },
+    "com.unity.xr.picoxr": {
+      "version": "file:com.unity.xr.picoxr",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.xr.management": "4.0.0",
+        "com.unity.xr.interaction.toolkit": "2.0.0",
+        "com.unity.xr.core-utils": "2.3.0"
+      }
+    },
     "com.unity.modules.ai": {
       "version": "1.0.0",
       "depth": 0,
