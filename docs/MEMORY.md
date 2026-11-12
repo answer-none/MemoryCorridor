@@ -225,8 +225,9 @@
 
 ## 5. 当前状态（每次会话末更新）
 
-- **阶段**：团队化 R3 完成（2026-11-13），交付材料四件套落盘 + 性能基线
-- **R3 新增**：APPLICATION.md（申报骨架）/ DEVLOG_SCRIPT.md（7 镜头分镜）/ README 重写（机制×断言对照表）/ PERF_AUDIT.md（62.5fps/403MB/粒子 200 基线）+ PerformanceProbe 工具（批处理可复跑）
-- **R4 队列（M2 内测反馈消化）**：内测用户反馈 P0 修复；Emulator/真机装机验证（用户侧）；GitHub 建库（gh 登录）
-- **已跳过/待用户**：① GitHub 登录建库 ② devlog 录制（脚本已备 DEVLOG_SCRIPT.md）③ 旁白音频 ④ GUI 目检 ⑤ 申报【待填】项（团队名单/日志链接）
-- **待办提醒**：D 盘 24GB；M3 12-12；提交 12-19 09:00；路演 12-26
+- **阶段**：团队化 R3 完成 + GitHub 建库**进行中（网络阻断暂停）**（2026-11-13）
+- **R3 新增**：APPLICATION.md（申报骨架）/ DEVLOG_SCRIPT.md（7 镜头分镜）/ README 重写 / PERF_AUDIT.md 基线（62.5fps/403MB/粒子 200）
+- **GitHub 建库状态**：①gh 原账号 Hc-ve 已登出（用户要求换新账号）②新账号登录两次尝试均失败——github.com 间歇阻断（curl=000，dial tcp 超时；此前 api.github.com 一直通，纯网络波动）③仓库内容就绪：11 提交、无 >100MB 单文件、工作区干净，恢复网络后一条命令完成建库+推送
+- **恢复网络后的操作**（下一会话必做）：`gh auth login --web`（浏览器输码）→ `gh repo create MemoryCorridor --public --source . --push` → 给用户仓库链接；若用户有代理，加 `https_proxy=http://127.0.0.1:端口` 前缀重跑即可
+- **用户侧备选**：开梯子后告诉我端口；或浏览器 github.com/new 手动建库（push 仍需网络恢复/代理）
+- **待办提醒**：M3 12-12；提交 12-19 09:00；路演 12-26；公开库决策已定（用户选公开）
