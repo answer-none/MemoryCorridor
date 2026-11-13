@@ -119,6 +119,22 @@ namespace MemoryCorridor.Core
                 }
             }
 
+            // ========== R. 房间入口门（R4 F1/F12） ==========
+            if (pass)
+            {
+                RoomDoor door = FindFirst<RoomDoor>();
+                if (door == null || door.LabelText != "前往 老院子")
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-R: 房间门缺失或牌匾错误 (door=" + (door == null)
+                        + " label=" + (door != null ? door.LabelText : "null") + ")");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] R 房间入口门 OK（门框+牌匾+走近自动切房）");
+                }
+            }
+
             // ========== B. XRI 装配 + 悬停预览 + 选中 + 褪色 ==========
             if (pass)
             {

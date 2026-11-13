@@ -102,20 +102,33 @@ namespace MemoryCorridor.Media
                     captured.Select();
                 });
 
-                // R2 E10：星点标签（标题浮于星上方，可读性）
+                // R2 E10 → R4 U4：星点标签底板化（圆角贴图+描边，可读性）
                 GameObject labelGo = new GameObject("Label");
                 labelGo.transform.SetParent(star.transform, false);
-                labelGo.transform.localPosition = new Vector3(0f, 2.4f, 0f);
-                labelGo.transform.localScale = new Vector3(1.6f, 1.6f, 1f);
-                MeshRenderer labelRenderer = labelGo.AddComponent<MeshRenderer>();
-                TextMesh labelTm = labelGo.AddComponent<TextMesh>();
+                labelGo.transform.localPosition = new Vector3(0f, 2.2f, 0f);
+                labelGo.transform.localScale = new Vector3(1.7f, 0.55f, 1f);
+                MeshRenderer labelBoardRenderer = labelGo.AddComponent<MeshRenderer>();
+                Shader spriteShader2 = Shader.Find("MemoryCorridor/Sprite3D");
+                Material labelBoardMat = new Material(spriteShader2);
+                labelBoardMat.mainTexture = RoundedRectTexture.RoundedRect(
+                    280, 72, 14, new Color(0.10f, 0.08f, 0.13f, 0.9f),
+                    new Color(0.91f, 0.64f, 0.29f), 2);
+                labelBoardMat.SetColor("_Color", Color.white);
+                labelBoardRenderer.material = labelBoardMat;
+
+                GameObject labelTextGo = new GameObject("LabelText");
+                labelTextGo.transform.SetParent(labelGo.transform, false);
+                labelTextGo.transform.localPosition = new Vector3(0f, 0f, -0.02f);
+                labelTextGo.transform.localScale = new Vector3(0.62f, 1.8f, 1f);
+                MeshRenderer labelRenderer = labelTextGo.AddComponent<MeshRenderer>();
+                TextMesh labelTm = labelTextGo.AddComponent<TextMesh>();
                 Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                 labelTm.font = font;
                 labelRenderer.sharedMaterial = font.material;
                 labelTm.text = orderedFragments[i].title;
                 labelTm.fontSize = 40;
                 labelTm.characterSize = 0.028f;
-                labelTm.anchor = TextAnchor.LowerCenter;
+                labelTm.anchor = TextAnchor.MiddleCenter;
                 labelTm.alignment = TextAlignment.Center;
                 labelTm.color = new Color(0.92f, 0.88f, 0.82f, 1f);
                 stars.Add(star);

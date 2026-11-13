@@ -62,6 +62,22 @@ namespace MemoryCorridor.Core
                 "- [x] 碎片按房间分批装载 ✓\n";
 
             string docsDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "docs");
+
+            // R4：截图证据（Play 实拍 Game 视图——验收纪律"给出实测证据"）
+            try
+            {
+                string evidenceDir = Path.Combine(docsDir, "evidence");
+                Directory.CreateDirectory(evidenceDir);
+                string shotPath = Path.Combine(evidenceDir, "play_view.png");
+                ScreenCapture.CaptureScreenshot(shotPath);
+                yield return new WaitForSeconds(0.6f); // 等帧末写入
+                Debug.Log("[PerfAudit] 截图证据: " + shotPath + " (exists=" + File.Exists(shotPath) + ")");
+            }
+            catch (Exception screenshotError)
+            {
+                Debug.LogWarning("[PerfAudit] 截图失败（batchmode 兼容性）: " + screenshotError.Message);
+            }
+
             Directory.CreateDirectory(docsDir);
             string path = Path.Combine(docsDir, "PERF_AUDIT.md");
             File.WriteAllText(path, report, Encoding.UTF8);

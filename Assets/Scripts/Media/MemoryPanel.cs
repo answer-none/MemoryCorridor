@@ -24,6 +24,8 @@ namespace MemoryCorridor.Media
         private AudioSource audioSource;
         private Coroutine audioLoadRoutine;
         private UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable closeInteractable;
+        private CanvasGroup canvasGroup;
+        private Coroutine fadeRoutine;
 
         public bool IsShowing => gameObject.activeSelf;
         public string TitleString => titleText != null ? titleText.text : null;
@@ -60,6 +62,22 @@ namespace MemoryCorridor.Media
             ShowFirstImage(fragment);
             gameObject.SetActive(true); // 坑-036：先激活再 StartAudio——inactive 的 GameObject 上
             StartAudio(fragment);       // StartCoroutine 会静默失败
+
+            // R4 F4：淡入（0.25s alpha 渐变）
+            if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            if (fadeRoutine != null) StopCoroutine(fadeRoutine);
+            fadeRoutine = StartCoroutine(FadeIn(0.25f));
+        }
+
+        private IEnumerator FadeIn(float duration)
+        {
+            float t0 = Time.unscaledTime;
+            while (canvasGroup != null && Time.unscaledTime - t0 < duration)
+            {
+                canvasGroup.alpha = Mathf.Clamp01((Time.unscaledTime - t0) / duration);
+                yield return null;
+            }
+            if (canvasGroup != null) canvasGroup.alpha = 1f;
         }
 
         /// <summary>隐藏面板（同时停止录音播放）。</summary>
@@ -86,11 +104,21 @@ namespace MemoryCorridor.Media
                 new Rect(0f, 0f, 620f, 460f), new Vector2(0.5f, 0.5f), 100f);
             background.raycastTarget = false;
 
+            // R4 U1：照片圆角框（amber 描边底图，照片叠其上）
+            GameObject photoFrameGo = new GameObject("PhotoFrame");
+            photoFrameGo.transform.SetParent(transform, false);
+            Image photoFrame = photoFrameGo.AddComponent<Image>();
+            photoFrame.sprite = Sprite.Create(
+                RoundedRectTexture.RoundedRect(560, 250, 20, new Color(0.16f, 0.13f, 0.19f, 1f), Amber, 2),
+                new Rect(0f, 0f, 560f, 250f), new Vector2(0.5f, 0.5f), 100f);
+            photoFrame.raycastTarget = false;
+            Stretch(photoFrameGo.GetComponent<RectTransform>(), 0.045f, 0.435f, 0.955f, 0.945f);
+
             GameObject photoGo = new GameObject("Photo");
             photoGo.transform.SetParent(transform, false);
             photoImage = photoGo.AddComponent<RawImage>();
             photoImage.raycastTarget = false;
-            Stretch(photoGo.GetComponent<RectTransform>(), 0.05f, 0.44f, 0.95f, 0.94f);
+            Stretch(photoGo.GetComponent<RectTransform>(), 0.055f, 0.442f, 0.945f, 0.938f);
 
             GameObject titleGo = new GameObject("Title");
             titleGo.transform.SetParent(transform, false);

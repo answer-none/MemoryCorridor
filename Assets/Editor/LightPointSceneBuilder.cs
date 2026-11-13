@@ -127,6 +127,7 @@ namespace MemoryCorridor.EditorTools
             DestroyAll<StardustField>("星尘");
             DestroyAll<HoverPreviewCard>("预览卡");
             DestroyAll<WelcomeBoard>("欢迎牌");
+            DestroyAll<RoomDoor>("房间门");
             DestroyAll<TutorialGuide>("引导条");
             DestroyAll<PanoramaDome>("全景穹顶");
             DestroyAll<RoomManager>("房间管理");
@@ -186,6 +187,10 @@ namespace MemoryCorridor.EditorTools
                     UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
                 if (camData != null) camData.renderPostProcessing = true;
             }
+            // R4 F1：Kinematic Rigidbody——OnTriggerEnter 需要一方有 RB（门框触发切房）
+            Rigidbody originRb = rig.AddComponent<Rigidbody>();
+            originRb.isKinematic = true;
+            originRb.useGravity = false;
 
             GameObject simPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SimulatorPrefabPath);
             if (simPrefab == null) throw new Exception("XR Device Simulator.prefab 未找到");
@@ -262,6 +267,10 @@ namespace MemoryCorridor.EditorTools
             bridge.Configure(panel, routePlayer, sequencer, previewCard, chime, wall,
                 welcomeGo.GetComponent<WelcomeBoard>(), tutorialGuide);
 
+            // R4 F1/F12：房间入口门（发光门框+牌匾+走近自动切房，双向对称）
+            BuildRoomDoor(new Vector3(0f, 0f, 3.9f), 1, "老院子", roomManager, glowMat);
+            Debug.Log("[SceneBuilder] 房间门 OK（走近自动切房，带 3s 冷却）");
+
             if (GameObject.Find("SmokeProbe") == null)
             {
                 GameObject probeGo = new GameObject("SmokeProbe");
@@ -288,6 +297,80 @@ namespace MemoryCorridor.EditorTools
             tm.alignment = TextAlignment.Center;
             tm.color = color;
             return tm;
+        }
+
+        /// <summary>R4 F1/F12：房间入口门——两柱+横梁（发光）+ 圆角牌匾 + 走近触发切房。</summary>
+        private static void BuildRoomDoor(Vector3 position, int targetIndex, string targetTitle,
+            RoomManager roomManager, Material glowMat)
+        {
+            GameObject door = new GameObject("RoomDoor_" + targetIndex);
+            door.transform.position = position;
+
+            Shader spriteShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/Sprite3D.shader");
+
+            // 两柱 + 横梁（发光 amber）
+            for (int i = -1; i <= 1; i += 2)
+            {
+                GameObject post = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                post.name = "Post" + (i > 0 ? "R" : "L");
+                post.transform.SetParent(door.transform, false);
+                post.transform.localPosition = new Vector3(i * 0.7f, 1.1f, 0f);
+                post.transform.localScale = new Vector3(0.09f, 2.2f, 0.09f);
+                MeshRenderer postRenderer = post.GetComponent<MeshRenderer>();
+                Material postMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                postMat.EnableKeyword("_EMISSION");
+                postMat.SetColor("_BaseColor", AmberGlow * 0.6f);
+                postMat.SetColor("_EmissionColor", AmberGlow * 1.2f);
+                postRenderer.material = postMat;
+            }
+            GameObject beam = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            beam.name = "Beam";
+            beam.transform.SetParent(door.transform, false);
+            beam.transform.localPosition = new Vector3(0f, 2.24f, 0f);
+            beam.transform.localScale = new Vector3(1.49f, 0.09f, 0.09f);
+            MeshRenderer beamRenderer = beam.GetComponent<MeshRenderer>();
+            Material beamMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            beamMat.EnableKeyword("_EMISSION");
+            beamMat.SetColor("_BaseColor", AmberGlow * 0.6f);
+            beamMat.SetColor("_EmissionColor", AmberGlow * 1.2f);
+            beamRenderer.material = beamMat;
+
+            // 牌匾：圆角底板 + 目标房间名
+            GameObject plaque = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            plaque.name = "Plaque";
+            UnityEngine.Object.DestroyImmediate(plaque.GetComponent<Collider>());
+            plaque.transform.SetParent(door.transform, false);
+            plaque.transform.localPosition = new Vector3(0f, 1.85f, -0.01f);
+            plaque.transform.localScale = new Vector3(0.52f, 0.13f, 1f);
+            MeshRenderer plaqueRenderer = plaque.GetComponent<MeshRenderer>();
+            Material plaqueMat = new Material(spriteShader);
+            plaqueMat.mainTexture = RoundedRectTexture.RoundedRect(
+                520, 130, 14, new Color(0.12f, 0.10f, 0.15f, 0.92f),
+                new Color(0.91f, 0.64f, 0.29f), 2);
+            plaqueMat.SetColor("_Color", Color.white);
+            plaqueRenderer.material = plaqueMat;
+            GameObject plaqueTextGo = new GameObject("PlaqueText");
+            plaqueTextGo.transform.SetParent(plaque.transform, false);
+            plaqueTextGo.transform.localPosition = new Vector3(0f, 0f, -0.02f);
+            MeshRenderer textRenderer = plaqueTextGo.AddComponent<MeshRenderer>();
+            TextMesh plaqueTm = plaqueTextGo.AddComponent<TextMesh>();
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            plaqueTm.font = font;
+            textRenderer.sharedMaterial = font.material;
+            plaqueTm.text = "前往 " + targetTitle;
+            plaqueTm.fontSize = 42;
+            plaqueTm.characterSize = 0.011f;
+            plaqueTm.anchor = TextAnchor.MiddleCenter;
+            plaqueTm.alignment = TextAlignment.Center;
+            plaqueTm.color = new Color(0.92f, 0.88f, 0.82f, 1f);
+
+            // 触发区：玩家（XR Origin）走近自动切房
+            BoxCollider trigger = door.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.size = new Vector3(1.4f, 2.4f, 0.8f);
+            trigger.center = new Vector3(0f, 1.2f, 0f);
+            RoomDoor roomDoor = door.AddComponent<RoomDoor>();
+            roomDoor.Configure(targetIndex, targetTitle, roomManager);
         }
 
         private static void DestroyAll<T>(string label) where T : Component

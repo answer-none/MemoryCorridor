@@ -54,35 +54,30 @@
 
 ---
 
-## 三、分阶段优化路线图
+## 三、分阶段优化路线图（R4 起按用户指令"批处理环境持续优化"滚动推进）
 
-### R1 交互闭环补全 + 类型配色（本轮）
-**目标**：把"交互承诺"全部兑现——悬停有卡、选中有声、面板可关、光点有色、重演有节奏。
-**改动方案**（全栈落地清单）：
-1. 光点四类型配色（美学：image 琥珀/audio 青蓝/diary 米白/mixed 暖橙；私密暖红优先）——`LightPointAnchor.BindFragment` 增 type 参数
-2. **HoverPreviewCard**（新组件）：世界空间预览小卡（缩略图+标题+日期），桥接器 OnHoverPreview 驱动显示、hoverExited 隐藏
-3. MemoryPanel 关闭按钮（3D ✕ + XRSimpleInteractable → Hide()）——E3
-4. 选中音效：bridge 注入 AudioClip（builder 序列化引用）+ PlayOneShot——E5
-5. 星河墙点星重演位置改为星点位置——E6
-6. 重演延迟出面板：sequencer.OnBeat(Beat3) 才 Show 面板，Done 兜底——E7（bridge 主路径；星河墙路径 R2 统一）
-**验收**：smoke28 全绿（新增 N 预览卡段/O 关闭段/B 配色断言/H 音效+位置断言）；构建回归（增量 APK）。
+### R4 交互与场景补强（本轮）
+**功能补强**（对照 FUNCTION_AUDIT）：
+- F1/F12 房间入口可视化：RoomDoor 发光门框+牌匾（"前往老院子"）+走近自动切房（BoxTrigger→SwitchToRoomWithFade），双向对称
+- F9 星河墙完成提示音
+**UI 打磨**（对照 UI_DESIGN tokens）：
+- U1 面板照片圆角框（amber 边框底图）
+- U4 星点标签底板化（圆角贴图+描边）
+- U2 预览卡标题截断（>12 字省略）
+- F4/F5 面板/预览卡淡入（0.25s/0.15s alpha 渐变）
+**验收升级**：
+- 截图证据：Play 采样中 ScreenCapture → docs/evidence/（"不能只报已完成"）
+- 新断言：门框存在/标签底板/淡入 alpha/截图文件生成
 
-### R2 引导 + 音频链路 + 星河墙统一
-- 欢迎引导告示牌（E1）：世界空间说明牌（走近光点/扳机选择/星尘路径三句话）
-- audio 媒体播放链路（E8）+ 音量设置接线（E9）
-- 星河墙路径统一"重演延迟出面板"（E7 收尾）+ 星点标签（E10）
-- 桥接器接线退避优化（E11）
-
-### R3 交付材料 + 性能
-- devlog 录制脚本、申报文档骨架、README 对齐实际
-- 性能预算核对（粒子/加载/帧率日志）
-- GitHub 建库提醒（用户侧）
-
-### R4 内测反馈消化（M2 后）
-- 按 2-3 位内测用户反馈排 P0 修复
+### R5 候选（下轮）
+视频记忆（低码率）· 多维排序数据层 · 光点显隐开关接入 · VR 抓取排序 · 旁白接入（素材到位）
 
 ### 持续跳过项
-GitHub 登录 / 旁白素材下载 / GUI 目检 / Emulator 装机——记录在 MEMORY §5，不卡轮次。
+真机/Emulator 装机 · GUI 目检 · devlog 录制 · 申报名单 · 旁白人声录音
+
+---
+
+## 三a、原路线图（R1-R3.5 已完成，存档见轮次表）
 
 ---
 
@@ -101,6 +96,12 @@ GitHub 登录 / 旁白素材下载 / GUI 目检 / Emulator 装机——记录在
 - 构建回归：44.7MB（+UI 圆角贴图/SFX）✓。
 - 新坑：坑-036（inactive GameObject 上 StartCoroutine 静默失败——Show 里先激活再起协程）。
 - P0 清单：8/8 全 ✅（FUNCTION_AUDIT.md），**内测可发**。
+
+| R4 | 2026-11-14 | 交互与场景补强+UI 打磨+截图证据（见"三、路线图 R4"）：RoomDoor 门框/走近切房、星点标签底板、预览卡截断、面板淡入+照片圆角框、截图证据（docs/evidence/） | smoke37（+R 段门框断言，预期 26 段）+ APK + 截图文件落盘 | 待 |
+
+**R4 实施中备注（验收工程师）**：
+- 工程锁冲突 2 次（用户 GUI 目检与批处理互斥）——已按坑-040 SOP 协调错峰。
+- 截图证据走 PerformanceProbe 内 ScreenCapture（batchmode 兼容性待验证，失败则记录跳过）。
 
 **R2 验收报告（验收工程师）**：
 - smoke31：23 段断言全绿。

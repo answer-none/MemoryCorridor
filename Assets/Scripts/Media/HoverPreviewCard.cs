@@ -34,7 +34,9 @@ namespace MemoryCorridor.Media
             rootObject.transform.position = anchorPosition + Vector3.up * 0.35f;
             if (titleText != null)
             {
-                titleText.text = string.IsNullOrEmpty(fragment.title) ? "未命名记忆" : fragment.title;
+                // R4 U2：长标题截断（>14 字省略，避免溢出卡片）
+                string title = string.IsNullOrEmpty(fragment.title) ? "未命名记忆" : fragment.title;
+                titleText.text = title.Length > 14 ? title.Substring(0, 13) + "…" : title;
             }
             string date = fragment.diary != null && !string.IsNullOrEmpty(fragment.diary.date)
                 ? fragment.diary.date
