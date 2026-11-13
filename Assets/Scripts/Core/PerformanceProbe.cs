@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.IO;
 using System.Text;
@@ -64,18 +65,25 @@ namespace MemoryCorridor.Core
             string docsDir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "docs");
 
             // R4：截图证据（Play 实拍 Game 视图——验收纪律"给出实测证据"）
+            // 坑-017 复发警示：try 内禁止 yield——同步调用放 try，等待放 try 外
+            bool screenshotRequested = false;
+            string shotPath = "";
             try
             {
                 string evidenceDir = Path.Combine(docsDir, "evidence");
                 Directory.CreateDirectory(evidenceDir);
-                string shotPath = Path.Combine(evidenceDir, "play_view.png");
+                shotPath = Path.Combine(evidenceDir, "play_view.png");
                 ScreenCapture.CaptureScreenshot(shotPath);
-                yield return new WaitForSeconds(0.6f); // 等帧末写入
-                Debug.Log("[PerfAudit] 截图证据: " + shotPath + " (exists=" + File.Exists(shotPath) + ")");
+                screenshotRequested = true;
             }
             catch (Exception screenshotError)
             {
-                Debug.LogWarning("[PerfAudit] 截图失败（batchmode 兼容性）: " + screenshotError.Message);
+                Debug.LogWarning("[PerfAudit] 截图请求失败: " + screenshotError.Message);
+            }
+            if (screenshotRequested)
+            {
+                yield return new WaitForSeconds(0.6f); // 等帧末写入（yield 必须在 try 外）
+                Debug.Log("[PerfAudit] 截图证据: " + shotPath + " (exists=" + File.Exists(shotPath) + ")");
             }
 
             Directory.CreateDirectory(docsDir);
