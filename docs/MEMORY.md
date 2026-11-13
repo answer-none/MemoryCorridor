@@ -228,6 +228,7 @@
 - **阶段**：团队化 R3.5 完成（2026-11-13），P0 8/8 全 ✅（FUNCTION_AUDIT.md），**内测可发**
 - **R3.5 新增**：ExportService/ImportService（P0 缺口补齐：zip+隐私过滤+id 冲突合并）/ 程序化圆角贴图 RoundedRectTexture + Sprite3D shader / 光点光晕外球 / 4 SFX 合成 / 四份文档（UI_DESIGN/ARCHITECTURE/FUNCTION_AUDIT/NARRATION_SCRIPT）
 - **坑-036**：**inactive GameObject 上 StartCoroutine 静默失败**（MemoryPanel.Show 先 StartAudio 后 SetActive → 协程没跑）——先激活再起协程；同类坑避坑法：涉及协程的激活流程把 SetActive 提前
+- **坑-042（R8 已实现，真机部分待验）**：视频记忆已落地——VideoPlayer+RT+RawImage 一次通过（无踩坑）；ffmpeg lavfi 生成 994KB 测试视频（H.264/yuv420p/faststart，Android 兼容）。
 - **坑-042（预登记，R7 评估未踩）**：视频记忆接入要点——VideoPlayer+RenderTexture 面板方案可行；限制单条 ≤10s/720p/1Mbps（APK 增重可控）；prepareCompleted 异步协程；inactive 面板自动停播；真机解码差异排真机验证。
 - **坑-041**：**batchmode Play 下 ScreenCapture 不产出文件**（截图请求被接受但写入依赖 GUI 设备呈现）——"实测画面证据"在批处理环境不可行，改用：①断言级证据（25 段）②用户 GUI 目检截图 ③真机录屏。CaptureProbe 代码保留（GUI Play 可用）
 - **坑-037**：**Play 模式中弹 TMP Importer 模态窗 = UI 卡死**（导入触发资源重载与 Play 冲突）——已根治：builder 静默导入 TMP Essentials（AssetDatabase.ImportPackage(path, false)），GUI 永不再弹。用户卡死时处置：任务管理器杀 Unity.exe → 删 Temp/UnityLockfile → 重跑流水线。

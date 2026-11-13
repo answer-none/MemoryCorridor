@@ -459,6 +459,7 @@ namespace MemoryCorridor.EditorTools
                 {
                     new MediaItem { kind = "image", path = "Media/frag_03/bike.jpg", caption = "院子里学车" },
                     new MediaItem { kind = "audio", path = "Media/frag_03/bell.wav", caption = "车铃声" },
+                    new MediaItem { kind = "video", path = "Media/frag_03/memories.mp4", caption = "重演回放（R8 视频）" },
                 },
                 anchor = new FragmentAnchor { position = new float[] { 0.9f, 1.2f, 2.5f } },
             });

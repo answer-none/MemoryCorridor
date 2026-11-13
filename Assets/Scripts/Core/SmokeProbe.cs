@@ -1063,15 +1063,20 @@ namespace MemoryCorridor.Core
                 sectionPass = false;
                 yield break;
             }
-            panel.Show(audioFrag);
-            yield return new WaitForSecondsRealtime(1.2f); // 等 WAV 异步加载+起播
-            if (!panel.IsAudioPlaying)
+            // R8：视频记忆播放链路（frag_03 mixed 含 video 项，ffmpeg 生成测试视频）
+            panel.Show(audioFrag /* frag_02 先验录音 */);
+            yield return new WaitForSecondsRealtime(0.3f);
+            MemoryFragment videoFrag = FindFragmentById(SaveDataService.LoadAppData(), "frag_03");
+            if (videoFrag == null) throw new System.Exception("frag_03 缺失");
+            panel.Show(videoFrag);
+            yield return new WaitForSecondsRealtime(2.5f); // 等 VideoPlayer prepare+起播
+            if (!panel.IsVideoPlaying)
             {
-                Debug.LogError("[SmokeProbe] FAIL-L: 录音未播放（E8 链路异常）");
+                Debug.LogError("[SmokeProbe] FAIL-L: 视频未播放（R8 链路异常）");
                 sectionPass = false;
                 yield break;
             }
-            Debug.Log("[SmokeProbe] L 录音链路 OK（radio.wav 异步加载并播放）");
+            Debug.Log("[SmokeProbe] L 视频播放 OK（memories.mp4 RenderTexture→RawImage）");
             panel.Hide();
             yield return null;
             yield return null;

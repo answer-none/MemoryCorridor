@@ -23,6 +23,8 @@ namespace MemoryCorridor.Media
         private TMP_FontAsset fontAsset;
         private AudioSource audioSource;
         private Coroutine audioLoadRoutine;
+        private UnityEngine.Video.VideoPlayer videoPlayer;
+        private RenderTexture videoRT;
         private UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable closeInteractable;
         private CanvasGroup canvasGroup;
         private Coroutine fadeRoutine;
@@ -32,6 +34,7 @@ namespace MemoryCorridor.Media
         public Texture PhotoTexture => photoImage != null ? photoImage.texture : null;
         public bool HasCloseButton => closeInteractable != null;
         public bool IsAudioPlaying => audioSource != null && audioSource.isPlaying;
+        public bool IsVideoPlaying => videoPlayer != null && videoPlayer.isPlaying; // R8
 
         private static readonly Color Amber = new Color(0.91f, 0.64f, 0.29f, 1f);
         private static readonly Color PanelBg = new Color(0.12f, 0.10f, 0.15f, 0.88f);
@@ -60,6 +63,7 @@ namespace MemoryCorridor.Media
                     : "";
             }
             ShowFirstImage(fragment);
+            StartVideo(fragment); // R8：视频优先（有 video 项则 RT 接管照片区）
             gameObject.SetActive(true); // 坑-036：先激活再 StartAudio——inactive 的 GameObject 上
             StartAudio(fragment);       // StartCoroutine 会静默失败
 
@@ -80,12 +84,62 @@ namespace MemoryCorridor.Media
             if (canvasGroup != null) canvasGroup.alpha = 1f;
         }
 
-        /// <summary>隐藏面板（同时停止录音播放）。</summary>
+        /// <summary>隐藏面板（同时停止录音与视频）。</summary>
         public void Hide()
         {
             StopAudio();
+            StopVideo();
             gameObject.SetActive(false);
         }
+
+        /// <summary>
+        /// R8 视频记忆（坑-042 方案落地）：VideoPlayer + RenderTexture → RawImage，
+        /// file:/// 直读 StreamingAssets；inactive 面板 Stop（坑-042③）。
+        /// </summary>
+        private void StartVideo(MemoryFragment fragment)
+        {
+            StopVideo();
+            if (fragment.mediaItems == null) return;
+
+            for (int i = 0; i < fragment.mediaItems.Count; i++)
+            {
+                MediaItem item = fragment.mediaItems[i];
+                if (item.kind != "video" || string.IsNullOrEmpty(item.path)) continue;
+                string resolved = MediaResolver.ResolveExisting(item.path);
+                if (resolved == null)
+                {
+                    Debug.LogWarning("[MemoryPanel] 视频缺失，降级为图片: "
+                        + MediaResolver.DescribeMiss(item.path));
+                    continue;
+                }
+
+                if (videoPlayer == null)
+                {
+                    videoPlayer = gameObject.AddComponent<UnityEngine.Video.VideoPlayer>();
+                    videoPlayer.playOnAwake = false;
+                    videoPlayer.renderMode = UnityEngine.Video.VideoRenderMode.RenderTexture;
+                    videoRT = new RenderTexture(1280, 720, 0);
+                    videoPlayer.targetTexture = videoRT;
+                    videoPlayer.audioOutputMode = UnityEngine.Video.VideoAudioOutputMode.Direct;
+                    videoPlayer.SetDirectAudioVolume(0, AudioSettingsService.NarrationVolume);
+                }
+
+                videoPlayer.url = "file:///" + resolved.Replace('\\', '/');
+                videoPlayer.Play();
+                if (photoImage != null)
+                {
+                    photoImage.texture = videoRT; // RawImage 直接显示 RenderTexture
+                    photoImage.enabled = true;
+                }
+                return;
+            }
+        }
+
+        private void StopVideo()
+        {
+            if (videoPlayer != null && videoPlayer.isPlaying) videoPlayer.Stop();
+        }
+
 
         private void EnsureBuilt()
         {
