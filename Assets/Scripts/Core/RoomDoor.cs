@@ -14,7 +14,7 @@ namespace MemoryCorridor.Core
         [SerializeField] private RoomManager roomManager;
 
         private float cooldownUntil;
-        private bool armed;
+        private bool armed = true; // R7 评测修复：OnTriggerExit 玩家离开后才重新武装——防"站着不动反复切房"循环
 
         public string LabelText => "前往 " + targetTitle;
 
@@ -33,11 +33,18 @@ namespace MemoryCorridor.Core
             if (Time.unscaledTime < cooldownUntil) return;
             if (other.GetComponentInParent<Unity.XR.CoreUtils.XROrigin>() == null) return;
 
-            cooldownUntil = Time.unscaledTime + 3f; // 冷却防反复横跳
+            armed = false; // 玩家须先离开触发区（OnTriggerExit）才可再次切房——根治循环
+            cooldownUntil = Time.unscaledTime + 3f;
             if (roomManager != null)
             {
                 StartCoroutine(roomManager.SwitchToRoomWithFade(targetRoomIndex));
             }
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            if (other.GetComponentInParent<Unity.XR.CoreUtils.XROrigin>() == null) return;
+            armed = true;
         }
     }
 }

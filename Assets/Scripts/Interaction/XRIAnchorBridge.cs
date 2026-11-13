@@ -204,6 +204,7 @@ namespace MemoryCorridor.Interaction
             string fragmentId = anchor.FragmentId;
 
             if (routePlayer != null) routePlayer.MarkVisited(fragmentId);
+            if (previewCard != null) previewCard.Hide(); // R7 走查：选中后收预览卡，保证重演沉浸
             if (welcomeBoard != null && welcomeBoard.IsShowing)
             {
                 welcomeBoard.NotifyUsed(); // E1：引导完成即收

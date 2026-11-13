@@ -257,7 +257,7 @@ namespace MemoryCorridor.EditorTools
             GameObject welcomeGo = new GameObject("WelcomeBoard");
             welcomeGo.AddComponent<MeshRenderer>();
             welcomeGo.AddComponent<WelcomeBoard>();
-            welcomeGo.transform.position = new Vector3(0f, 1.5f, 2.0f);
+            welcomeGo.transform.position = new Vector3(0f, 1.75f, 1.8f); // R7：抬高 0.25m，不遮挡 1.2m 高的光点
 
             // R4：新手引导条（HUD 跟随相机，事件+计时双驱动）
             GameObject guideGo = new GameObject("TutorialGuide");

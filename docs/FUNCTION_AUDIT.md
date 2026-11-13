@@ -20,7 +20,7 @@
 
 | # | 功能 | 状态 | 计划 |
 |---|---|---|---|
-| 9 | 视频记忆 | ❌ | R5（低码率短片段，UnityVideoPlayer） |
+| 9 | 视频记忆 | 📋 已评估（R7），实现排 R8 | 接入方案：Unity VideoPlayer + RenderTexture → 面板 RawImage；mediaItems kind=video；UnityWebRequest 免加载直接 file:// URL；音轨 volume=narration 组。**坑位预登记**：①单条 ≤10s/720p/1Mbps（8 条 ≈40MB APK 增重）②prepareCompleted 异步（协程）③面板 SetActive(false) 时 VideoPlayer 自动停 ④真机硬件解码差异待真机验证。预估 1.5 天工作量。|
 | 10 | 家庭本地多档案合并 | 🟡（成员字段+导入合并规则已定义） | 随导入服务本轮落逻辑，UI 后补 |
 | 11 | 多维排序（时间/主题） | ❌ | R5（数据层已有 order/createdAt） |
 | 12 | 光点显隐开关 | ✅ R5 | SettingsPanel 设置面板（光点标记/星点标签两路开关，翻转持久化+场景应用）；X 段断言（翻转/持久化/renderer 状态） |
