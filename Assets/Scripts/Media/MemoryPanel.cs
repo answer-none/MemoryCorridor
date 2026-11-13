@@ -36,9 +36,6 @@ namespace MemoryCorridor.Media
         public bool IsAudioPlaying => audioSource != null && audioSource.isPlaying;
         public bool IsVideoPlaying => videoPlayer != null && videoPlayer.isPlaying; // R8
 
-        private static readonly Color Amber = new Color(0.91f, 0.64f, 0.29f, 1f);
-        private static readonly Color PanelBg = new Color(0.12f, 0.10f, 0.15f, 0.88f);
-        private static readonly Color BodyInk = new Color(0.92f, 0.88f, 0.82f, 1f);
 
         private void Awake()
         {
@@ -154,7 +151,7 @@ namespace MemoryCorridor.Media
             // R3 美学升级：圆角底板（程序化贴图，UI_DESIGN §1 形状 tokens）
             Image background = gameObject.AddComponent<Image>();
             background.sprite = Sprite.Create(
-                RoundedRectTexture.RoundedRect(620, 460, 24, PanelBg, Amber, 2),
+                RoundedRectTexture.RoundedRect(620, 460, 24, UiTokens.PanelBg, UiTokens.Amber, 2),
                 new Rect(0f, 0f, 620f, 460f), new Vector2(0.5f, 0.5f), 100f);
             background.raycastTarget = false;
 
@@ -163,7 +160,7 @@ namespace MemoryCorridor.Media
             photoFrameGo.transform.SetParent(transform, false);
             Image photoFrame = photoFrameGo.AddComponent<Image>();
             photoFrame.sprite = Sprite.Create(
-                RoundedRectTexture.RoundedRect(560, 250, 20, new Color(0.16f, 0.13f, 0.19f, 1f), Amber, 2),
+                RoundedRectTexture.RoundedRect(560, 250, 20, new Color(0.16f, 0.13f, 0.19f, 1f), UiTokens.Amber, 2),
                 new Rect(0f, 0f, 560f, 250f), new Vector2(0.5f, 0.5f), 100f);
             photoFrame.raycastTarget = false;
             Stretch(photoFrameGo.GetComponent<RectTransform>(), 0.045f, 0.435f, 0.955f, 0.945f);
@@ -179,7 +176,7 @@ namespace MemoryCorridor.Media
             titleText = titleGo.AddComponent<TextMeshProUGUI>();
             EnsureFont(titleText);
             titleText.fontSize = 42f;
-            titleText.color = Amber;
+            titleText.color = UiTokens.Amber;
             titleText.alignment = TextAlignmentOptions.Center;
             titleText.raycastTarget = false;
             Stretch(titleGo.GetComponent<RectTransform>(), 0.03f, 0.30f, 0.97f, 0.42f);
@@ -187,7 +184,7 @@ namespace MemoryCorridor.Media
             GameObject dividerGo = new GameObject("Divider");
             dividerGo.transform.SetParent(transform, false);
             Image divider = dividerGo.AddComponent<Image>();
-            divider.color = new Color(Amber.r, Amber.g, Amber.b, 0.55f); // 标题分隔线（UI_DESIGN §1）
+            divider.color = new Color(UiTokens.Amber.r, UiTokens.Amber.g, UiTokens.Amber.b, 0.55f); // 标题分隔线（UI_DESIGN §1）
             divider.raycastTarget = false;
             Stretch(dividerGo.GetComponent<RectTransform>(), 0.04f, 0.295f, 0.96f, 0.302f);
 
@@ -196,7 +193,7 @@ namespace MemoryCorridor.Media
             bodyText = bodyGo.AddComponent<TextMeshProUGUI>();
             EnsureFont(bodyText);
             bodyText.fontSize = 28f;
-            bodyText.color = BodyInk;
+            bodyText.color = UiTokens.Cream;
             bodyText.alignment = TextAlignmentOptions.Top;
             bodyText.enableWordWrapping = true; // TMP 3.0.9：无 textWrappingMode（坑-029）
             bodyText.raycastTarget = false;
@@ -229,7 +226,7 @@ namespace MemoryCorridor.Media
             crossGo.transform.localPosition = new Vector3(0f, 0f, -0.01f);
             MeshRenderer crossRenderer = crossGo.AddComponent<MeshRenderer>();
             TextMesh crossTm = crossGo.AddComponent<TextMesh>();
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Font font = UiTextFactory.Legacy;
             crossTm.font = font;
             crossRenderer.sharedMaterial = font.material;
             crossTm.text = "×";
@@ -252,7 +249,7 @@ namespace MemoryCorridor.Media
             if (fontAsset == null)
             {
                 fontAsset = TMP_FontAsset.CreateFontAsset(
-                    Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"));
+                    UiTextFactory.Legacy);
             }
             text.font = fontAsset;
         }

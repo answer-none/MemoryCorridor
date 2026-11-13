@@ -135,7 +135,7 @@ namespace MemoryCorridor.Media
                 labelTextGo.transform.localScale = new Vector3(0.62f, 1.8f, 1f);
                 MeshRenderer labelRenderer = labelTextGo.AddComponent<MeshRenderer>();
                 TextMesh labelTm = labelTextGo.AddComponent<TextMesh>();
-                Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                Font font = UiTextFactory.Legacy;
                 labelTm.font = font;
                 labelRenderer.sharedMaterial = font.material;
                 labelTm.text = orderedFragments[i].title;

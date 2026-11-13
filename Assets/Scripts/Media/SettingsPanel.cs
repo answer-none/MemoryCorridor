@@ -21,10 +21,6 @@ namespace MemoryCorridor.Media
         public string PointsToggleText => pointsToggleText != null ? pointsToggleText.text : null;
         public string LabelsToggleText => labelsToggleText != null ? labelsToggleText.text : null;
 
-        private static readonly Color Amber = new Color(0.91f, 0.64f, 0.29f, 1f);
-        private static readonly Color Ink = new Color(0.92f, 0.88f, 0.82f, 1f);
-        private static readonly Color OnColor = new Color(0.55f, 0.85f, 0.55f, 1f);
-        private static readonly Color OffColor = new Color(0.75f, 0.5f, 0.5f, 1f);
 
         private void Awake()
         {
@@ -61,7 +57,7 @@ namespace MemoryCorridor.Media
             boardRenderer.material = boardMat;
             transform.localScale = new Vector3(0.46f, 0.30f, 1f);
 
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Font font = UiTextFactory.Legacy;
 
             GameObject titleGo = new GameObject("Title");
             titleGo.transform.SetParent(transform, false);
@@ -75,7 +71,7 @@ namespace MemoryCorridor.Media
             titleTm.characterSize = 0.013f;
             titleTm.anchor = TextAnchor.MiddleCenter;
             titleTm.alignment = TextAlignment.Center;
-            titleTm.color = Amber;
+            titleTm.color = UiTokens.Amber;
 
             pointsToggleText = BuildToggleRow("TogglePoints", new Vector3(0f, 0.025f, -0.01f), font);
             labelsToggleText = BuildToggleRow("ToggleLabels", new Vector3(0f, -0.075f, -0.01f), font);
@@ -111,7 +107,7 @@ namespace MemoryCorridor.Media
             tm.characterSize = 0.0105f;
             tm.anchor = TextAnchor.MiddleCenter;
             tm.alignment = TextAlignment.Center;
-            tm.color = Ink;
+            tm.color = UiTokens.Cream;
 
             XRSimpleInteractable interactable = rowGo.AddComponent<XRSimpleInteractable>();
             rowGo.GetComponent<Collider>().isTrigger = true; // Sprites3D shader 下 quad 可见无碰撞干扰
@@ -141,9 +137,9 @@ namespace MemoryCorridor.Media
             if (pointsToggleText != null) pointsToggleText.text = "光点标记：" + (showPoints ? "开" : "关");
             if (labelsToggleText != null) labelsToggleText.text = "星点标签：" + (showLabels ? "开" : "关");
             if (pointsToggleText != null)
-                pointsToggleText.color = showPoints ? OnColor : OffColor;
+                pointsToggleText.color = showPoints ? UiTokens.OnColor : UiTokens.OffColor;
             if (labelsToggleText != null)
-                labelsToggleText.color = showLabels ? OnColor : OffColor;
+                labelsToggleText.color = showLabels ? UiTokens.OnColor : UiTokens.OffColor;
         }
 
         /// <summary>从持久化设置同步初始显示状态（Play 起始调用）。</summary>

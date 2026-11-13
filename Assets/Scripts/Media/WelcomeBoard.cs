@@ -18,8 +18,6 @@ namespace MemoryCorridor.Media
 
         public bool IsShowing => rootObject != null && rootObject.activeSelf;
 
-        private static readonly Color Amber = new Color(0.91f, 0.64f, 0.29f, 1f);
-        private static readonly Color Ink = new Color(0.92f, 0.88f, 0.82f, 1f);
 
         private void Awake()
         {
@@ -56,14 +54,14 @@ namespace MemoryCorridor.Media
             boardRenderer.material = boardMat;
             transform.localScale = new Vector3(0.9f, 0.34f, 1f);
 
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            titleText = CreateText("Title", new Vector3(0f, 0.055f, -0.01f), font, 52, 0.014f, Amber,
+            Font font = UiTextFactory.Legacy;
+            titleText = CreateText("Title", new Vector3(0f, 0.055f, -0.01f), font, 52, 0.014f, UiTokens.Amber,
                 "回响长廊 · 记忆策展");
-            line1Text = CreateText("Line1", new Vector3(0f, 0.005f, -0.01f), font, 34, 0.0105f, Ink,
+            line1Text = CreateText("Line1", new Vector3(0f, 0.005f, -0.01f), font, 34, 0.0105f, UiTokens.Cream,
                 "走近发光的光点，它会先向你传来声音");
-            line2Text = CreateText("Line2", new Vector3(0f, -0.045f, -0.01f), font, 34, 0.0105f, Ink,
+            line2Text = CreateText("Line2", new Vector3(0f, -0.045f, -0.01f), font, 34, 0.0105f, UiTokens.Cream,
                 "扣下扳机，回到那一刻");
-            line3Text = CreateText("Line3", new Vector3(0f, -0.095f, -0.01f), font, 34, 0.0105f, Ink,
+            line3Text = CreateText("Line3", new Vector3(0f, -0.095f, -0.01f), font, 34, 0.0105f, UiTokens.Cream,
                 "跟随星尘走完一条记忆路线");
         }
 

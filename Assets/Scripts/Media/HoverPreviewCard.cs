@@ -86,7 +86,7 @@ namespace MemoryCorridor.Media
             thumbMat.SetColor("_BaseColor", new Color(0.2f, 0.18f, 0.22f, 1f));
             thumbRenderer.material = thumbMat;
 
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Font font = UiTextFactory.Legacy;
             titleText = CreateText("TitleText", new Vector3(0.02f, 0.038f, -0.01f), font,
                 44, 0.012f, new Color(0.91f, 0.64f, 0.29f));
             dateText = CreateText("DateText", new Vector3(0.02f, -0.042f, -0.01f), font,

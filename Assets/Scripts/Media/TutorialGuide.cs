@@ -33,8 +33,6 @@ namespace MemoryCorridor.Media
 
         public int StepCount => Steps.Length;
 
-        private static readonly Color Amber = new Color(0.91f, 0.64f, 0.29f, 1f);
-        private static readonly Color Ink = new Color(0.92f, 0.88f, 0.82f, 1f);
 
         public bool IsShowing => rootObject != null && rootObject.activeSelf;
         public string HintText => hintText != null ? hintText.text : null;
@@ -75,7 +73,7 @@ namespace MemoryCorridor.Media
             if (hintText != null)
             {
                 hintText.text = Steps[index];
-                hintText.color = index == 0 ? Amber : Ink;
+                hintText.color = index == 0 ? UiTokens.Amber : UiTokens.Cream;
             }
             rootObject.SetActive(true);
         }
@@ -101,14 +99,14 @@ namespace MemoryCorridor.Media
             textGo.transform.localPosition = new Vector3(0f, 0f, -0.01f);
             MeshRenderer textRenderer = textGo.AddComponent<MeshRenderer>();
             hintText = textGo.AddComponent<TextMesh>();
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Font font = UiTextFactory.Legacy;
             hintText.font = font;
             textRenderer.sharedMaterial = font.material;
             hintText.fontSize = 46;
             hintText.characterSize = 0.011f;
             hintText.anchor = TextAnchor.MiddleCenter;
             hintText.alignment = TextAlignment.Center;
-            hintText.color = Ink;
+            hintText.color = UiTokens.Cream;
         }
 
         private void Update()
