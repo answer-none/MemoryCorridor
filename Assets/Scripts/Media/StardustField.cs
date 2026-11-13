@@ -36,9 +36,14 @@ namespace MemoryCorridor.Media
             shape.shapeType = ParticleSystemShapeType.Box;
             shape.scale = new Vector3(4f, 2.5f, 4f); // 相机周围 2m 半径感受区
 
-            // 坑-022 同源：URP 粒子专用 shader 未被引用时 Find 不到，复用已加载的 URP/Lit
+            // 坑-038：无贴图粒子渲染成方块——换径向光晕贴图 + 透明 shader（圆形柔光）
             ParticleSystemRenderer renderer = GetComponent<ParticleSystemRenderer>();
-            renderer.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            Shader spriteShader = Shader.Find("MemoryCorridor/Sprite3D");
+            Material mat = new Material(spriteShader);
+            mat.mainTexture = RoundedRectTexture.RadialGlow(
+                64, new Color(0.91f, 0.72f, 0.45f, 0.85f), 2.5f);
+            mat.SetColor("_Color", Color.white);
+            renderer.material = mat;
             renderer.renderMode = ParticleSystemRenderMode.Billboard;
         }
 

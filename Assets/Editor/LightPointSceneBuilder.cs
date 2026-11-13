@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using MemoryCorridor.Core;
 using MemoryCorridor.Interaction;
 using MemoryCorridor.Media;
@@ -39,6 +40,27 @@ namespace MemoryCorridor.EditorTools
                 AssetDatabase.CreateFolder("Assets", "Prefabs");
             if (!AssetDatabase.IsValidFolder("Assets/Materials"))
                 AssetDatabase.CreateFolder("Assets", "Materials"); // 坑-023
+
+            // 坑-037：TMP Essentials 自动导入（根治 GUI 首次 Play 的模态弹窗卡死）
+            try
+            {
+                if (!AssetDatabase.IsValidFolder("Assets/TextMesh Pro"))
+                {
+                    string tmpPkgRoot = Path.Combine(Directory.GetParent(Application.dataPath).FullName,
+                        "Library", "PackageCache");
+                    string[] candidates = Directory.GetFiles(tmpPkgRoot,
+                        "TMP Essential Resources.unitypackage", SearchOption.AllDirectories);
+                    if (candidates.Length > 0)
+                    {
+                        AssetDatabase.ImportPackage(candidates[0], false); // 静默导入
+                        Debug.Log("[SceneBuilder] TMP Essentials 已静默导入");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[SceneBuilder] TMP Essentials 导入跳过: " + e.Message);
+            }
 
             // 1) 光点辉光材质 + 预制体（球体+光晕外球+点光+音源+低通+锚点+XRI可交互体）
             Material glowMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
@@ -139,10 +161,31 @@ namespace MemoryCorridor.EditorTools
             RenderSettings.ambientLight = new Color(0.24f, 0.19f, 0.21f);
 
             // 5) XR 装配
+            // R3 美学：Bloom 后处理（视觉规范 §4.2——光点/星尘真正发光；坑-039）
+            VolumeProfile volumeProfile = ScriptableObject.CreateInstance<VolumeProfile>();
+            UnityEngine.Rendering.Universal.Bloom bloom = volumeProfile.Add<UnityEngine.Rendering.Universal.Bloom>();
+            bloom.threshold.Override(0.9f);
+            bloom.intensity.Override(0.6f);
+            bloom.tint.Override(AmberGlow);
+            AssetDatabase.CreateAsset(volumeProfile, "Assets/Settings/GlobalVolume.asset");
+            GameObject volumeGo = new GameObject("GlobalVolume");
+            Volume volume = volumeGo.AddComponent<Volume>();
+            volume.isGlobal = true;
+            volume.sharedProfile = volumeProfile;
+
             GameObject rigPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RigPrefabPath);
             if (rigPrefab == null) throw new Exception("XR Origin (XR Rig).prefab 未找到");
             GameObject rig = (GameObject)PrefabUtility.InstantiatePrefab(rigPrefab);
             rig.transform.position = Vector3.zero;
+
+            // 坑-039：主相机开启后处理（Bloom 才会生效）
+            Unity.XR.CoreUtils.XROrigin origin = rig.GetComponent<Unity.XR.CoreUtils.XROrigin>();
+            if (origin != null && origin.Camera != null)
+            {
+                var camData = origin.Camera.GetComponent<
+                    UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+                if (camData != null) camData.renderPostProcessing = true;
+            }
 
             GameObject simPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SimulatorPrefabPath);
             if (simPrefab == null) throw new Exception("XR Device Simulator.prefab 未找到");

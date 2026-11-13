@@ -25,6 +25,7 @@ namespace MemoryCorridor.Interaction
         [Header("音效（R1 E5：选中反馈，内聚于光点本体）")]
         [SerializeField] private AudioClip selectChime;
         [SerializeField] private Renderer glowShellRenderer; // R3 美学：光晕外球
+        [SerializeField] private float baseScale = 0.7f; // 坑-039：光点基础尺寸（避免大球挡视线）
 
         [Header("呼吸动画")]
         [SerializeField] private float breathePeriod = 3f;
@@ -78,7 +79,7 @@ namespace MemoryCorridor.Interaction
                 shell.a = Mathf.Clamp01(0.18f * emissive + (isHighlighted ? 0.15f : 0f));
                 glowShellRenderer.material.SetColor("_Color", shell);
             }
-            transform.localScale = Vector3.one * (0.6f + 0.4f * fadeFactor); // 褪色=萤火飞远变小
+            transform.localScale = Vector3.one * baseScale * (0.6f + 0.4f * fadeFactor); // 褪色=萤火飞远变小
         }
 
         public void BindFragment(string id, bool isPrivateFragment = false, string fragmentType = null)
