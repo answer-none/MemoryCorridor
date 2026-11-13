@@ -129,6 +129,7 @@ namespace MemoryCorridor.EditorTools
             DestroyAll<WelcomeBoard>("欢迎牌");
             DestroyAll<RoomDoor>("房间门");
             DestroyAll<TutorialGuide>("引导条");
+            DestroyAll<Media.SettingsPanel>("设置面板");
             DestroyAll<PanoramaDome>("全景穹顶");
             DestroyAll<RoomManager>("房间管理");
             DestroyAll<RoutePlayer>("走读");
@@ -262,6 +263,12 @@ namespace MemoryCorridor.EditorTools
             GameObject guideGo = new GameObject("TutorialGuide");
             guideGo.AddComponent<MeshRenderer>();
             TutorialGuide tutorialGuide = guideGo.AddComponent<TutorialGuide>();
+
+            // R5：设置面板（右前方，光点/星点标签显隐开关，持久化）
+            GameObject settingsGo = new GameObject("SettingsPanel");
+            settingsGo.AddComponent<MeshRenderer>();
+            settingsGo.AddComponent<Media.SettingsPanel>();
+            settingsGo.transform.position = new Vector3(1.9f, 1.5f, 1.4f);
 
             // 坑-026：全部跨对象引用走 Configure 序列化字段（编辑期属性赋值不持久化）
             bridge.Configure(panel, routePlayer, sequencer, previewCard, chime, wall,

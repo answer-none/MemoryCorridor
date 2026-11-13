@@ -24,9 +24,22 @@ namespace MemoryCorridor.Media
         private readonly List<GameObject> stars = new List<GameObject>();
         private LineRenderer constellationLine;
         private System.Collections.Generic.List<MemoryFragment> currentRoute;
+        private bool labelsVisible = true;
 
         public bool IsVisible { get; private set; }
         public int StarCount => stars.Count;
+
+        /// <summary>R5：星点标签显隐（底板+文字一起隐）。</summary>
+        public void SetLabelsVisible(bool visible)
+        {
+            labelsVisible = visible;
+            for (int i = 0; i < stars.Count; i++)
+            {
+                if (stars[i] == null) continue;
+                Transform label = stars[i].transform.Find("Label");
+                if (label != null) label.gameObject.SetActive(visible);
+            }
+        }
 
         /// <summary>星点被选中（点击/射线确认）事件。</summary>
         public event Action<string> OnStarSelected;

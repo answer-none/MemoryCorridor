@@ -48,6 +48,16 @@ namespace MemoryCorridor.Interaction
 
         private float hoverTimer;
         private bool previewFired;
+        private bool markerVisible = true;
+
+        /// <summary>R5：光点标记显隐（只隐渲染，保留 collider/交互——规范 §5.9）。</summary>
+        public void SetMarkerVisible(bool visible)
+        {
+            markerVisible = visible;
+            if (pointRenderer != null) pointRenderer.enabled = visible;
+            if (glowShellRenderer != null) glowShellRenderer.enabled = visible;
+            if (glowLight != null) glowLight.enabled = visible;
+        }
 
         private void Awake()
         {

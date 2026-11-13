@@ -11,6 +11,7 @@ namespace MemoryCorridor.Core
         public float narrationVolume = 1.0f;
         public float ambientVolume = 0.6f;
         public bool showLightPoints = true;
+        public bool showStarLabels = true; // R5：星点标签显隐（schema v2 扩展字段）
         public int fadeStartDays = 30;
         public float fadeFloor = 0.25f;
     }

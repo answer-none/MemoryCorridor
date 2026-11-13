@@ -107,6 +107,7 @@ namespace MemoryCorridor.Core
                 spawnedAnchors.Add(instance);
             }
             SpawnedAnchorCount = spawnedAnchors.Count;
+            SettingsService.ApplyAll(); // R5：spawn 后应用持久化显隐设置（光点标记）
         }
 
         private void ApplyDome(RoomData room)

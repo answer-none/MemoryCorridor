@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using MemoryCorridor.Interaction;
 using MemoryCorridor.Media;
 using UnityEngine;
@@ -356,6 +357,93 @@ namespace MemoryCorridor.Core
                 }
             }
 
+            // ========== X. 设置面板显隐开关（R5） ==========
+            if (pass)
+            {
+                Media.SettingsPanel panel2 = FindFirst<Media.SettingsPanel>();
+                if (panel2 == null)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-X: 缺 SettingsPanel");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    AppData before = SaveDataService.LoadAppData();
+                    bool beforeVal = before.settings.showLightPoints;
+                    bool after = SettingsService.ToggleLightPoints();
+                    bool persisted = SaveDataService.LoadAppData().settings.showLightPoints == after;
+                    GameObject anchorGo = GameObject.Find("LP_frag_01");
+                    LightPointAnchor anchor2 = anchorGo != null ? anchorGo.GetComponent<LightPointAnchor>() : null;
+                    bool rendererState = anchor2 == null || !anchor2.GetComponent<Renderer>().enabled;
+
+                    // 恢复（不打扰后续段）
+                    SettingsService.ToggleLightPoints();
+
+                    if (after == beforeVal || !persisted || rendererState != beforeVal)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-X: 显隐开关异常 (翻转=" + (after != beforeVal)
+                            + " 持久化=" + persisted + " renderer=" + rendererState + ")");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] X 设置面板 OK（光点显隐翻转+持久化+场景应用）");
+                    }
+                }
+            }
+
+            // ========== Y. 多维排序数据层（R5） ==========
+            if (pass)
+            {
+                try
+                {
+                    AppData sortData = SaveDataService.LoadAppData();
+                    List<MemoryFragment> all = new List<MemoryFragment>();
+                    for (int r = 0; r < sortData.rooms.Count; r++)
+                    {
+                        // Z 段导入副本（room_XX_i* / id 含 _i）不进排序断言集，只测原始 8 条
+                        if (sortData.rooms[r].id.Contains("_i")) continue;
+                        all.AddRange(sortData.rooms[r].fragments);
+                    }
+
+                    // Time 升序：f03(2008) 最老在前，f05(2020) 最新在后
+                    List<MemoryFragment> byTime = MemorySortService.Sorted(all, SortCriterion.Time);
+                    bool timeOk = byTime[0].id == "frag_03" && byTime[byTime.Count - 1].id == "frag_05";
+
+                    // Tag：image 组全在前、audio 组（frag_02）在 diary 组（frag_05）前
+                    List<MemoryFragment> byTag = MemorySortService.Sorted(all, SortCriterion.Tag);
+                    int audioIdx = byTag.FindIndex(f => f.id == "frag_02");
+                    int diaryIdx = byTag.FindIndex(f => f.id == "frag_05");
+                    bool tagOk = byTag[0].type == "image" && audioIdx < diaryIdx;
+
+                    // Relevance：褪色最深的 frag_03（300 天）最靠前，其后 frag_07（180 天）
+                    List<MemoryFragment> byRel = MemorySortService.Sorted(all, SortCriterion.Relevance);
+                    bool relOk = byRel[0].id == "frag_03" && byRel[1].id == "frag_07";
+
+                    // 解耦：排序不得修改 order 字段（手动排序优先原则）
+                    AppData afterSort = SaveDataService.LoadAppData();
+                    bool decoupled = afterSort.rooms[0].fragments[0].order == 0;
+
+                    string timeSeq = "";
+                    for (int i = 0; i < byTime.Count; i++) timeSeq += byTime[i].id + "(" + (byTime[i].diary != null ? byTime[i].diary.date : "null") + ") ";
+                    if (!timeOk || !tagOk || !relOk || !decoupled)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-Y: 排序异常 (time=" + timeOk + " tag=" + tagOk
+                            + " rel=" + relOk + " decoupled=" + decoupled + ") timeSeq=" + timeSeq);
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] Y 多维排序 OK（Time/Tag/Relevance 全维通过，order 不被覆写）");
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-Y: 排序异常 " + e.Message);
+                    pass = false; failedSections++;
+                }
+            }
+
             // ========== K. ImportServer HTTP ==========
             if (pass)
             {
@@ -431,7 +519,7 @@ namespace MemoryCorridor.Core
             }
 
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
 
 #if UNITY_EDITOR
