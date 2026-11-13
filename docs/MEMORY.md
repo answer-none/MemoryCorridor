@@ -228,6 +228,10 @@
 - **阶段**：团队化 R3.5 完成（2026-11-13），P0 8/8 全 ✅（FUNCTION_AUDIT.md），**内测可发**
 - **R3.5 新增**：ExportService/ImportService（P0 缺口补齐：zip+隐私过滤+id 冲突合并）/ 程序化圆角贴图 RoundedRectTexture + Sprite3D shader / 光点光晕外球 / 4 SFX 合成 / 四份文档（UI_DESIGN/ARCHITECTURE/FUNCTION_AUDIT/NARRATION_SCRIPT）
 - **坑-036**：**inactive GameObject 上 StartCoroutine 静默失败**（MemoryPanel.Show 先 StartAudio 后 SetActive → 协程没跑）——先激活再起协程；同类坑避坑法：涉及协程的激活流程把 SetActive 提前
+- **坑-037**：**Play 模式中弹 TMP Importer 模态窗 = UI 卡死**（导入触发资源重载与 Play 冲突）——已根治：builder 静默导入 TMP Essentials（AssetDatabase.ImportPackage(path, false)），GUI 永不再弹。用户卡死时处置：任务管理器杀 Unity.exe → 删 Temp/UnityLockfile → 重跑流水线。
+- **坑-038**：无贴图粒子渲染成方块——粒子材质换径向光晕贴图（RoundedRectTexture.RadialGlow）+ 透明 shader。
+- **坑-039**：URP 下 Bloom 不生效两要素——①Global Volume+Bloom profile（程序创建）②**相机 UniversalAdditionalCameraData.renderPostProcessing=true**（XR Rig 自带相机默认关）。缺一就是灰球。
+- **坑-040**：GUI 卡死场景处理 SOP：taskkill //IM Unity.exe //F → 删 Temp/UnityLockfile → 重跑流水线（场景是产物无损失）。
 - **R3 新增**：APPLICATION.md（申报骨架）/ DEVLOG_SCRIPT.md（7 镜头分镜）/ README 重写 / PERF_AUDIT.md 基线（62.5fps/403MB/粒子 200）
 - **GitHub 建库状态（已闭环）**：①gh 原账号 Hc-ve 已登出，换新账号 answer-none ✓（用户浏览器生成 classic token 勾 repo 权限，SSH key 已加）②诊断：github.com/api.github.com 被 **SNI 精准阻断**（TLS 握手掐、TCP 通），ssh.github.com:443 无 SNI 不受影响 ③解决：用户浏览器建库 + **git push 走 ssh://git@ssh.github.com:443**（13 提交 + LFS 23MB 全部上云，远端 main=652ed02 ✓）④仓库：github.com/answer-none/MemoryCorridor（public）
 - **坑-035（重要）**：GFW 对 GitHub 是 **SNI 精准阻断**——今后所有 git 交互一律走 `ssh://git@ssh.github.com:443/`（remote 已配）；HTTPS API 类操作（gh/REST）被阻断时改走浏览器或等窗口期。
