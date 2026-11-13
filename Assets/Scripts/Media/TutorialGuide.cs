@@ -22,7 +22,16 @@ namespace MemoryCorridor.Media
             "走近它，悬停半秒即可预览",
             "扣下扳机选中，回忆会重演",
             "面板右上 × 可关闭 · 跟随星尘走完一条路线",
+            "右前方有设置面板：开关光点标记与星点标签", // R6：设置入口可达性
         };
+
+        /// <summary>只读访问第 index 步文案（断言用）。</summary>
+        public string StepText(int index)
+        {
+            return (index >= 0 && index < Steps.Length) ? Steps[index] : null;
+        }
+
+        public int StepCount => Steps.Length;
 
         private static readonly Color Amber = new Color(0.91f, 0.64f, 0.29f, 1f);
         private static readonly Color Ink = new Color(0.92f, 0.88f, 0.82f, 1f);

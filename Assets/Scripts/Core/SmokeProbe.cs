@@ -101,11 +101,20 @@ namespace MemoryCorridor.Core
                     guide.Notify("select");
                     string step3 = guide.HintText;
                     guide.Notify("panel");
-                    // 第 4 步是最终提示，保持显示（9s 计时器自动收起）——断言推进与文案变化
+                    // 第 4 步是最终事件步（9s 计时器推进到第 5 步设置提示）——断言推进与文案变化
                     if (guide.StepIndex != 3 || !guide.IsShowing)
                     {
                         Debug.LogError("[SmokeProbe] FAIL-P2: 引导推进异常 (finalStep=" + guide.StepIndex
                             + " showing=" + guide.IsShowing + ")");
+                        pass = false; failedSections++;
+                    }
+                    else if (guide.StepCount != 5
+                        || guide.StepText(4) == null
+                        || !guide.StepText(4).Contains("设置面板"))
+                    {
+                        // R6：第 5 步=设置入口提示（显隐开关可达性）
+                        Debug.LogError("[SmokeProbe] FAIL-P2: 设置入口提示步缺失 (count=" + guide.StepCount
+                            + " s5=" + guide.StepText(4) + ")");
                         pass = false; failedSections++;
                     }
                     else if (step1 == step2 || step2 == step3)
@@ -115,7 +124,7 @@ namespace MemoryCorridor.Core
                     }
                     else
                     {
-                        Debug.Log("[SmokeProbe] P2 新手引导 OK（4 步推进完成并收起）");
+                        Debug.Log("[SmokeProbe] P2 新手引导 OK（5 步含设置入口提示，事件+计时推进）");
                     }
                 }
             }

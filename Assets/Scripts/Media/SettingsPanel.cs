@@ -15,6 +15,8 @@ namespace MemoryCorridor.Media
         private TextMesh labelsToggleText;
         private bool showPoints = true;
         private bool showLabels = true;
+        private Vector3 basePosition;
+        private float bobPhase; // R6：轻微浮动显眼化（入口可达性）
 
         public string PointsToggleText => pointsToggleText != null ? pointsToggleText.text : null;
         public string LabelsToggleText => labelsToggleText != null ? labelsToggleText.text : null;
@@ -32,7 +34,16 @@ namespace MemoryCorridor.Media
         private void Start()
         {
             AudioSettingsService.WarmSettings();
-            RefreshTexts();
+            basePosition = transform.position;
+            bobPhase = 0f;
+            SyncFromDisk();
+        }
+
+        private void Update()
+        {
+            // R6 入口可达性：0.02m 正弦浮动，远看也能注意到
+            bobPhase += Time.unscaledDeltaTime;
+            transform.position = basePosition + Vector3.up * (0.02f * Mathf.Sin(bobPhase * 2f));
         }
 
         private void EnsureBuilt()
