@@ -83,6 +83,42 @@ namespace MemoryCorridor.Core
                 }
             }
 
+            // ========== P2. 新手引导（R4） ==========
+            if (pass)
+            {
+                MemoryCorridor.Media.TutorialGuide guide = FindFirst<MemoryCorridor.Media.TutorialGuide>();
+                if (guide == null || !guide.IsShowing)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-P2: 引导条缺失或未显示");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    string step1 = guide.HintText;
+                    guide.Notify("hover");
+                    string step2 = guide.HintText;
+                    guide.Notify("select");
+                    string step3 = guide.HintText;
+                    guide.Notify("panel");
+                    // 第 4 步是最终提示，保持显示（9s 计时器自动收起）——断言推进与文案变化
+                    if (guide.StepIndex != 3 || !guide.IsShowing)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-P2: 引导推进异常 (finalStep=" + guide.StepIndex
+                            + " showing=" + guide.IsShowing + ")");
+                        pass = false; failedSections++;
+                    }
+                    else if (step1 == step2 || step2 == step3)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-P2: 引导文案未变化");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] P2 新手引导 OK（4 步推进完成并收起）");
+                    }
+                }
+            }
+
             // ========== B. XRI 装配 + 悬停预览 + 选中 + 褪色 ==========
             if (pass)
             {

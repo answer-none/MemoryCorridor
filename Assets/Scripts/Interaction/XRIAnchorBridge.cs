@@ -21,6 +21,7 @@ namespace MemoryCorridor.Interaction
         [SerializeField] private AudioClip selectChime;
         [SerializeField] private MemoryCorridor.Media.ConstellationWall constellationWall;
         [SerializeField] private MemoryCorridor.Media.WelcomeBoard welcomeBoard;
+        [SerializeField] private MemoryCorridor.Media.TutorialGuide tutorialGuide;
 
         private readonly HashSet<LightPointAnchor> wired = new HashSet<LightPointAnchor>();
         private Dictionary<string, MemoryFragment> fragmentsById;
@@ -42,10 +43,17 @@ namespace MemoryCorridor.Interaction
             set { welcomeBoard = value; }
         }
 
+        public MemoryCorridor.Media.TutorialGuide TutorialGuideRef
+        {
+            get { return tutorialGuide; }
+            set { tutorialGuide = value; }
+        }
+
         /// <summary>编辑器场景搭建注入引用。</summary>
         public void Configure(MemoryPanel panelRef, RoutePlayer routePlayerRef,
             ReplaySequencer replayRef, HoverPreviewCard previewCardRef, AudioClip selectChimeRef,
-            MemoryCorridor.Media.ConstellationWall wallRef, MemoryCorridor.Media.WelcomeBoard welcomeRef)
+            MemoryCorridor.Media.ConstellationWall wallRef, MemoryCorridor.Media.WelcomeBoard welcomeRef,
+            MemoryCorridor.Media.TutorialGuide tutorialRef)
         {
             panel = panelRef;
             routePlayer = routePlayerRef;
@@ -54,6 +62,7 @@ namespace MemoryCorridor.Interaction
             selectChime = selectChimeRef;
             constellationWall = wallRef;
             welcomeBoard = welcomeRef;
+            tutorialGuide = tutorialRef;
             SubscribeReplayBeats(replayRef);
         }
 
@@ -108,11 +117,13 @@ namespace MemoryCorridor.Interaction
             {
                 pendingPanelShown = true;
                 ShowPanelFor(pendingFragmentId);
+                if (tutorialGuide != null) tutorialGuide.Notify("panel"); // R4 引导推进
             }
             else if (state == ReplaySequencer.ReplayState.Done && !pendingPanelShown)
             {
                 pendingPanelShown = true;
                 ShowPanelFor(pendingFragmentId);
+                if (tutorialGuide != null) tutorialGuide.Notify("panel");
             }
             else if (state == ReplaySequencer.ReplayState.Done)
             {
@@ -162,9 +173,10 @@ namespace MemoryCorridor.Interaction
                 {
                     OnFragmentSelected(captured);
                 });
-                // E2：悬停 0.3s → 预览小卡（缩略图+标题+日期）
+                // E2：悬停 0.3s → 预览小卡（缩略图+标题+日期）+ 引导推进（R4）
                 anchor.OnHoverPreview += delegate (string id)
                 {
+                    if (tutorialGuide != null) tutorialGuide.Notify("hover");
                     if (previewCard == null) return;
                     MemoryFragment fragment;
                     if (fragmentsById != null && fragmentsById.TryGetValue(id, out fragment))
@@ -196,6 +208,7 @@ namespace MemoryCorridor.Interaction
             {
                 welcomeBoard.NotifyUsed(); // E1：引导完成即收
             }
+            if (tutorialGuide != null) tutorialGuide.Notify("select"); // R4 引导推进
 
             MemoryFragment fragment;
             fragmentsById.TryGetValue(fragmentId, out fragment);

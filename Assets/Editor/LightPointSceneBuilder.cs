@@ -105,6 +105,7 @@ namespace MemoryCorridor.EditorTools
             DestroyAll<StardustField>("星尘");
             DestroyAll<HoverPreviewCard>("预览卡");
             DestroyAll<WelcomeBoard>("欢迎牌");
+            DestroyAll<TutorialGuide>("引导条");
             DestroyAll<PanoramaDome>("全景穹顶");
             DestroyAll<RoomManager>("房间管理");
             DestroyAll<RoutePlayer>("走读");
@@ -203,15 +204,20 @@ namespace MemoryCorridor.EditorTools
             XRIAnchorBridge bridge = new GameObject("XRIAnchorBridge").AddComponent<XRIAnchorBridge>();
             AudioClip chime = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/sfx_lightpoint_chime.wav");
 
-            // R2 E1：欢迎告示牌（入口引导，选中第一条记忆后收起）
+            // R2 E1：欢迎告示牌——出生点视线正前方（R4 修正：原在侧面不可见）
             GameObject welcomeGo = new GameObject("WelcomeBoard");
             welcomeGo.AddComponent<MeshRenderer>();
             welcomeGo.AddComponent<WelcomeBoard>();
-            welcomeGo.transform.position = new Vector3(1.6f, 1.4f, 1.2f);
+            welcomeGo.transform.position = new Vector3(0f, 1.5f, 2.0f);
+
+            // R4：新手引导条（HUD 跟随相机，事件+计时双驱动）
+            GameObject guideGo = new GameObject("TutorialGuide");
+            guideGo.AddComponent<MeshRenderer>();
+            TutorialGuide tutorialGuide = guideGo.AddComponent<TutorialGuide>();
 
             // 坑-026：全部跨对象引用走 Configure 序列化字段（编辑期属性赋值不持久化）
             bridge.Configure(panel, routePlayer, sequencer, previewCard, chime, wall,
-                welcomeGo.GetComponent<WelcomeBoard>());
+                welcomeGo.GetComponent<WelcomeBoard>(), tutorialGuide);
 
             if (GameObject.Find("SmokeProbe") == null)
             {
