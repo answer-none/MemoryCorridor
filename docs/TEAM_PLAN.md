@@ -97,6 +97,7 @@
 **R10 验收报告（验收工程师）**：
 - 崩溃取证：Editor-prev.log（SettingsPanel concave trigger 警告链）+ Windows 事件日志（0x40000015 @ 11-14 0:16:30）。
 - 修复后 smoke43 全绿 28 段零 FAIL，待用户 GUI Play 复测确认不再闪退。
+| R11 | 2026-11-17 | 舒适性三新项（PICO 规范落地）：面板距离档位（1.5-3.0 默认 2.4）/舒适暗角（开关+强度 0.2/0.4，Global Volume Vignette）/移动方式（传送↔平滑，XR Rig 组件级切换）；探针 S 段静态安全扫描（凹面 trigger 防复发）；MemoryPanel 下倾 10°+距离档读取 | smoke60 全绿（30 段）+ APK 47.7MB ✓ | 待 |
 | R9 | 2026-11-14 | 静态一致性自查：UiTokens（11 色值单一来源）+UiTextFactory（TextMesh 工厂）收敛 6 文件重复/静态扫描零 TODO 残留/日志前缀统一/FUNCTION_AUDIT #11 🟡 #12 ✅/DEVICE_READINESS.md 真机就绪清单（锚点迁移方案静态准备） | smoke42 全绿（28 段，token 重构零破坏）+ APK ✓ | 4d294d5 |
 | R5 | 2026-11-14 | 数据层+设置双项：①MemorySortService 多维排序（Time 日记日期升序/Tag 类型分组/Relevance 回访紧迫度，纯函数不改 order，UI 解耦）②SettingsService+SettingsPanel 设置面板（光点标记/星点标签显隐开关，翻转即持久化并全场景应用，schema 加 showStarLabels）③LightPointAnchor.SetMarkerVisible（隐标记留交互）/ConstellationWall.SetLabelsVisible | smoke38 全绿（28 段：+X 显隐开关+Y 多维排序）；APK 46.6MB ✓ | 待 |
 

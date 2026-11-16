@@ -169,6 +169,10 @@ namespace MemoryCorridor.EditorTools
             bloom.threshold.Override(0.9f);
             bloom.intensity.Override(0.6f);
             bloom.tint.Override(AmberGlow);
+            // R11 b：舒适暗角（强度由 SettingsService.ApplyVignette 运行时按 settings 调）
+            UnityEngine.Rendering.Universal.Vignette vignette = volumeProfile.Add<UnityEngine.Rendering.Universal.Vignette>();
+            vignette.intensity.Override(0f);
+            vignette.smoothness.Override(0.4f);
             AssetDatabase.CreateAsset(volumeProfile, "Assets/Settings/GlobalVolume.asset");
             GameObject volumeGo = new GameObject("GlobalVolume");
             Volume volume = volumeGo.AddComponent<Volume>();
@@ -264,15 +268,15 @@ namespace MemoryCorridor.EditorTools
             guideGo.AddComponent<MeshRenderer>();
             TutorialGuide tutorialGuide = guideGo.AddComponent<TutorialGuide>();
 
-            // R5：设置面板（右前方，光点/星点标签显隐开关，持久化）
+            // R5/R11：设置面板（5 行开关：距离/暗角/移动/光点/标签）
             GameObject settingsGo = new GameObject("SettingsPanel");
             settingsGo.AddComponent<MeshRenderer>();
-            settingsGo.AddComponent<Media.SettingsPanel>();
+            Media.SettingsPanel settingsPanel = settingsGo.AddComponent<Media.SettingsPanel>();
             settingsGo.transform.position = new Vector3(1.9f, 1.5f, 1.4f);
 
             // 坑-026：全部跨对象引用走 Configure 序列化字段（编辑期属性赋值不持久化）
             bridge.Configure(panel, routePlayer, sequencer, previewCard, chime, wall,
-                welcomeGo.GetComponent<WelcomeBoard>(), tutorialGuide);
+                welcomeGo.GetComponent<WelcomeBoard>(), tutorialGuide, settingsPanel);
 
             // R4 F1/F12：房间入口门（发光门框+牌匾+走近自动切房，双向对称）
             BuildRoomDoor(new Vector3(0f, 0f, 3.9f), 1, "老院子", roomManager, glowMat);

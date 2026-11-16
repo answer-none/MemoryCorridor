@@ -12,6 +12,10 @@ namespace MemoryCorridor.Core
         public float ambientVolume = 0.6f;
         public bool showLightPoints = true;
         public bool showStarLabels = true; // R5：星点标签显隐（schema v2 扩展字段）
+        public float panelDistance = 2.4f;  // R11 舒适性：面板距离（米，1.5-3.0）
+        public bool vignetteEnabled = false; // R11 舒适性：舒适暗角开关
+        public float vignetteIntensity = 0.3f; // R11 舒适性：暗角强度（0-0.4）
+        public string locomotionMode = "teleport"; // R11 舒适性：teleport / smooth
         public int fadeStartDays = 30;
         public float fadeFloor = 0.25f;
     }

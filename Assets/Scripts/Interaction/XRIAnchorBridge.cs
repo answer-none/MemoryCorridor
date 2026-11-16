@@ -22,6 +22,7 @@ namespace MemoryCorridor.Interaction
         [SerializeField] private MemoryCorridor.Media.ConstellationWall constellationWall;
         [SerializeField] private MemoryCorridor.Media.WelcomeBoard welcomeBoard;
         [SerializeField] private MemoryCorridor.Media.TutorialGuide tutorialGuide;
+        [SerializeField] private MemoryCorridor.Media.SettingsPanel settingsPanel;
 
         private readonly HashSet<LightPointAnchor> wired = new HashSet<LightPointAnchor>();
         private Dictionary<string, MemoryFragment> fragmentsById;
@@ -53,7 +54,7 @@ namespace MemoryCorridor.Interaction
         public void Configure(MemoryPanel panelRef, RoutePlayer routePlayerRef,
             ReplaySequencer replayRef, HoverPreviewCard previewCardRef, AudioClip selectChimeRef,
             MemoryCorridor.Media.ConstellationWall wallRef, MemoryCorridor.Media.WelcomeBoard welcomeRef,
-            MemoryCorridor.Media.TutorialGuide tutorialRef)
+            MemoryCorridor.Media.TutorialGuide tutorialRef, MemoryCorridor.Media.SettingsPanel settingsPanelRef)
         {
             panel = panelRef;
             routePlayer = routePlayerRef;
@@ -63,6 +64,7 @@ namespace MemoryCorridor.Interaction
             constellationWall = wallRef;
             welcomeBoard = welcomeRef;
             tutorialGuide = tutorialRef;
+            settingsPanel = settingsPanelRef;
             SubscribeReplayBeats(replayRef);
         }
 
@@ -83,6 +85,7 @@ namespace MemoryCorridor.Interaction
                 }
             }
 
+            SettingsService.ApplyAll(); // R5/R11：持久化显隐+暗角应用到场景
             SubscribeReplayBeats(replaySequencer); // 坑-026：Play 期重挂事件订阅
             if (constellationWall != null)
             {
@@ -209,6 +212,7 @@ namespace MemoryCorridor.Interaction
             {
                 welcomeBoard.NotifyUsed(); // E1：引导完成即收
             }
+            if (settingsPanel != null) settingsPanel.SetDimmed(true); // R11 c：单焦点——记忆面板优先
             if (tutorialGuide != null) tutorialGuide.Notify("select"); // R4 引导推进
 
             MemoryFragment fragment;

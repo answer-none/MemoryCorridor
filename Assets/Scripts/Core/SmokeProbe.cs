@@ -527,8 +527,85 @@ namespace MemoryCorridor.Core
                 }
             }
 
+            // ========== S. 静态安全扫描（R11 扩面：坑-043 防复发） ==========
+            if (pass)
+            {
+                Collider[] allColliders = UnityEngine.Object.FindObjectsByType<Collider>(
+                    UnityEngine.FindObjectsSortMode.None);
+                int concaveTrigger = 0;
+                for (int i = 0; i < allColliders.Length; i++)
+                {
+                    Collider c = allColliders[i];
+                    if (c.isTrigger && c is MeshCollider mc && !mc.convex)
+                    {
+                        concaveTrigger++;
+                        Debug.LogError("[SmokeProbe] S: 凹面 trigger 残留于 " + c.gameObject.name);
+                    }
+                }
+                if (concaveTrigger > 0)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-S: 凹面 MeshCollider+trigger 残留 " + concaveTrigger + " 处（坑-043 防复发）");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] S 静态安全扫描 OK（全场景 " + allColliders.Length
+                        + " 个 Collider，凹面 trigger=0）");
+                }
+            }
+
+            // ========== T. 舒适性设置三新项（R11 a/b） ==========
+            if (pass)
+            {
+                // 先复位到"关"——appdata 跨 smoke 轮次持久化，起点必须确定（坑：状态跨轮残留）
+                AppData vr = SaveDataService.LoadAppData();
+                vr.settings.vignetteEnabled = false;
+                SaveDataService.SaveAppData(vr);
+
+                // 档位循环：关→0.2→0.4→关，每步持久化+Volume 应用
+                float v1 = SettingsService.CycleVignette();
+                AppData d1 = SaveDataService.LoadAppData();
+                bool c1 = d1.settings.vignetteEnabled && Mathf.Abs(d1.settings.vignetteIntensity - 0.2f) < 0.01f;
+
+                float v2 = SettingsService.CycleVignette();
+                AppData d2 = SaveDataService.LoadAppData();
+                bool c2 = d2.settings.vignetteEnabled && Mathf.Abs(d2.settings.vignetteIntensity - 0.4f) < 0.01f;
+
+                SettingsService.CycleVignette(); // →关
+                AppData d3 = SaveDataService.LoadAppData();
+                bool c3 = !d3.settings.vignetteEnabled;
+
+                // Volume 应用验证（找到含 URP Vignette 的 Volume）
+                UnityEngine.Rendering.Volume[] vols = FindAll<UnityEngine.Rendering.Volume>();
+                UnityEngine.Rendering.Universal.Vignette vigParam = null;
+                for (int i = 0; i < vols.Length; i++)
+                {
+                    if (vols[i].sharedProfile == null) continue;
+                    if (vols[i].sharedProfile.TryGet(out vigParam)) break;
+                }
+                float vigValue = vigParam != null ? vigParam.intensity.value : -1f;
+
+                bool allOk = c1 && c2 && c3;
+                if (!allOk)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-T: 档位循环异常 C1=" + c1 + " C2=" + c2 + " C3=" + c3);
+                    pass = false; failedSections++;
+                }
+                else if (Mathf.Abs(vigValue) > 0.05f)
+                {
+                    // 循环到"关"后 Volume 应清零（残留非零才算异常）
+                    Debug.LogError("[SmokeProbe] FAIL-T: Volume 暗角未清零 value=" + vigValue.ToString("F2"));
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] T 舒适性设置 OK（档位循环 关→0.2→0.4→关，Volume 同步，当前 value="
+                        + vigValue.ToString("F2") + "）");
+                }
+            }
+
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
 
 #if UNITY_EDITOR
