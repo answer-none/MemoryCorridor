@@ -92,6 +92,11 @@
 | R6 | 2026-11-14 | 显隐开关入口可达性：TutorialGuide 第 5 步设置提示+StepText 访问器/SettingsPanel 0.02m 浮动显眼化/P2 段断言扩展/误拷双类清理/FUNCTION_AUDIT #12 ✅ | smoke39 全绿（28 段零 FAIL）+ APK 46.6MB ✓ | 1588616 |
 | R7 | 2026-11-14 | 评测员代码级走查 4 项：RoomDoor 防循环切房（OnTriggerExit 重装填）/告示牌抬高 1.75m 不遮挡/选中后预览卡 Hide 保重演沉浸/视频记忆评估+坑-042 预登记 | smoke40 全绿（28 段）+ APK 46.6MB ✓ | 45ecca6 |
 | R8 | 2026-11-14 | 视频记忆实现（坑-042 方案落地）：VideoPlayer+RT→RawImage/file:// 直读/inactive 自动停/ffmpeg 渐变测试视频 994KB（全约束达标）/frag_03 三媒体/L 段播放断言 | smoke41 全绿（28 段）+ APK 47.7MB ✓ | 47e8b53 |
+| R10 | 2026-11-16 | 用户报告 Play 闪退 → Windows 事件日志定位 0x40000015（abort）→ 根因 SettingsPanel 凹面 MeshCollider trigger（坑-043）→ 换凸面 BoxCollider | smoke43 全绿（28 段零 FAIL）+ APK 回归 ✓ | 待 |
+
+**R10 验收报告（验收工程师）**：
+- 崩溃取证：Editor-prev.log（SettingsPanel concave trigger 警告链）+ Windows 事件日志（0x40000015 @ 11-14 0:16:30）。
+- 修复后 smoke43 全绿 28 段零 FAIL，待用户 GUI Play 复测确认不再闪退。
 | R9 | 2026-11-14 | 静态一致性自查：UiTokens（11 色值单一来源）+UiTextFactory（TextMesh 工厂）收敛 6 文件重复/静态扫描零 TODO 残留/日志前缀统一/FUNCTION_AUDIT #11 🟡 #12 ✅/DEVICE_READINESS.md 真机就绪清单（锚点迁移方案静态准备） | smoke42 全绿（28 段，token 重构零破坏）+ APK ✓ | 4d294d5 |
 | R5 | 2026-11-14 | 数据层+设置双项：①MemorySortService 多维排序（Time 日记日期升序/Tag 类型分组/Relevance 回访紧迫度，纯函数不改 order，UI 解耦）②SettingsService+SettingsPanel 设置面板（光点标记/星点标签显隐开关，翻转即持久化并全场景应用，schema 加 showStarLabels）③LightPointAnchor.SetMarkerVisible（隐标记留交互）/ConstellationWall.SetLabelsVisible | smoke38 全绿（28 段：+X 显隐开关+Y 多维排序）；APK 46.6MB ✓ | 待 |
 

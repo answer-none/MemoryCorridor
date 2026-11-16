@@ -92,8 +92,13 @@ namespace MemoryCorridor.Media
                 300, 64, 12, new Color(0.18f, 0.15f, 0.22f, 0.9f),
                 new Color(0.91f, 0.64f, 0.29f, 0.5f), 2);
             rowMat.SetColor("_Color", Color.white);
+            // 坑-043：Quad 自带 MeshCollider（凹面）做 trigger 会触发 PhysX abort → Unity 闪退
+            //（Windows 事件日志 0x40000015 实证）——必须换凸面 BoxCollider
+            MeshCollider rowMeshCollider = rowGo.GetComponent<MeshCollider>();
+            if (rowMeshCollider != null) Destroy(rowMeshCollider);
+            BoxCollider rowBox = rowGo.AddComponent<BoxCollider>();
+            rowBox.isTrigger = true;
             rowRenderer.material = rowMat;
-            rowGo.GetComponent<Collider>().isTrigger = true; // 视觉牌可穿越，不挡射线（射线走 XRI）
 
             GameObject textGo = new GameObject("Text");
             textGo.transform.SetParent(rowGo.transform, false);
@@ -110,7 +115,6 @@ namespace MemoryCorridor.Media
             tm.color = UiTokens.Cream;
 
             XRSimpleInteractable interactable = rowGo.AddComponent<XRSimpleInteractable>();
-            rowGo.GetComponent<Collider>().isTrigger = true; // Sprites3D shader 下 quad 可见无碰撞干扰
             TextMesh captured = tm;
             interactable.selectEntered.AddListener(delegate (SelectEnterEventArgs args)
             {
