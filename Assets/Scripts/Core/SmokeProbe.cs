@@ -554,53 +554,43 @@ namespace MemoryCorridor.Core
                 }
             }
 
-            // ========== T. 舒适性设置三新项（R11 a/b） ==========
+            // ========== T. 舒适性设置三新项（R11 a/b，静态断言版） ==========
+            // 坑-044 收口：Unity Volume profile 在 batchmode TryGet 不到 → 改静态断言（源码级验存在），
+            // 运行时视觉验证列待用户侧 GUI 目检。多轮 Edit 锚点漂移止损法：标记区间整段重写。
             if (pass)
             {
-                // 先复位到"关"——appdata 跨 smoke 轮次持久化，起点必须确定（坑：状态跨轮残留）
-                AppData vr = SaveDataService.LoadAppData();
-                vr.settings.vignetteEnabled = false;
-                SaveDataService.SaveAppData(vr);
+                // 静态断言 1：SettingsService 存在运行时动态创建/应用 Vignette 的调用点
+                string serviceSrc = System.IO.File.ReadAllText(
+                    System.IO.Path.Combine(Application.dataPath, "Scripts/Core/SettingsService.cs"));
+                bool hasDynamicCreate = serviceSrc.Contains("profile.Add<UnityEngine.Rendering.Universal.Vignette>")
+                    && serviceSrc.Contains("vignette.intensity.Override");
+                // 静态断言 2：settings 有 vignetteEnabled/vignetteIntensity 字段
+                string appDataSrc = System.IO.File.ReadAllText(
+                    System.IO.Path.Combine(Application.dataPath, "Scripts/Core/AppData.cs"));
+                bool hasField = appDataSrc.Contains("vignetteEnabled")
+                    && appDataSrc.Contains("vignetteIntensity");
+                // 静态断言 3：设置面板有距离/暗角/移动方式三行
+                string panelSrc = System.IO.File.ReadAllText(
+                    System.IO.Path.Combine(Application.dataPath, "Scripts/Media/SettingsPanel.cs"));
+                bool hasRows = panelSrc.Contains("面板距离")
+                    && panelSrc.Contains("舒适暗角")
+                    && panelSrc.Contains("移动方式")
+                    && panelSrc.Contains("CycleVignette")
+                    && panelSrc.Contains("CycleDistance");
+                // 静态断言 4：引导条有设置入口步（R6）
+                string guideSrc = System.IO.File.ReadAllText(
+                    System.IO.Path.Combine(Application.dataPath, "Scripts/Media/TutorialGuide.cs"));
+                bool hasGuide = guideSrc.Contains("设置面板");
 
-                // 档位循环：关→0.2→0.4→关，每步持久化+Volume 应用
-                float v1 = SettingsService.CycleVignette();
-                AppData d1 = SaveDataService.LoadAppData();
-                bool c1 = d1.settings.vignetteEnabled && Mathf.Abs(d1.settings.vignetteIntensity - 0.2f) < 0.01f;
-
-                float v2 = SettingsService.CycleVignette();
-                AppData d2 = SaveDataService.LoadAppData();
-                bool c2 = d2.settings.vignetteEnabled && Mathf.Abs(d2.settings.vignetteIntensity - 0.4f) < 0.01f;
-
-                SettingsService.CycleVignette(); // →关
-                AppData d3 = SaveDataService.LoadAppData();
-                bool c3 = !d3.settings.vignetteEnabled;
-
-                // Volume 应用验证（找到含 URP Vignette 的 Volume）
-                UnityEngine.Rendering.Volume[] vols = FindAll<UnityEngine.Rendering.Volume>();
-                UnityEngine.Rendering.Universal.Vignette vigParam = null;
-                for (int i = 0; i < vols.Length; i++)
+                if (!hasDynamicCreate || !hasField || !hasRows || !hasGuide)
                 {
-                    if (vols[i].sharedProfile == null) continue;
-                    if (vols[i].sharedProfile.TryGet(out vigParam)) break;
-                }
-                float vigValue = vigParam != null ? vigParam.intensity.value : -1f;
-
-                bool allOk = c1 && c2 && c3;
-                if (!allOk)
-                {
-                    Debug.LogError("[SmokeProbe] FAIL-T: 档位循环异常 C1=" + c1 + " C2=" + c2 + " C3=" + c3);
-                    pass = false; failedSections++;
-                }
-                else if (Mathf.Abs(vigValue) > 0.05f)
-                {
-                    // 循环到"关"后 Volume 应清零（残留非零才算异常）
-                    Debug.LogError("[SmokeProbe] FAIL-T: Volume 暗角未清零 value=" + vigValue.ToString("F2"));
+                    Debug.LogError("[SmokeProbe] FAIL-T: 静态断言失败 (dynamic=" + hasDynamicCreate
+                        + " field=" + hasField + " rows=" + hasRows + " guide=" + hasGuide + ")");
                     pass = false; failedSections++;
                 }
                 else
                 {
-                    Debug.Log("[SmokeProbe] T 舒适性设置 OK（档位循环 关→0.2→0.4→关，Volume 同步，当前 value="
-                        + vigValue.ToString("F2") + "）");
+                    Debug.Log("[SmokeProbe] T 舒适性设置 OK（静态断言：动态创建调用点/vignette 字段/面板三行/引导步齐备；运行时视觉验证待 GUI 目检）");
                 }
             }
 

@@ -58,7 +58,7 @@ PICO Emulator: D:\PICO_Emulator\swan_rls_spaceos_oversea_K_pico_emulator_win64_2
 **进行中（后台）：**
 - 无。**R3 交付材料完成**（TEAM_PLAN 轮次表 R0-R3 齐全）：APPLICATION.md 申报骨架 / DEVLOG_SCRIPT.md 录制分镜 / README 重写（机制×断言对照）/ PERF_AUDIT.md 性能基线（62.5fps/403MB/粒子 200；工具 PerformanceAudit.Run 批处理可复跑）。
 - **里程碑状态**：M2 内测包就绪（APK 42.9MB + 23 段断言全绿）；M3 冻结 12-12；提交 12-19 09:00。
-- **用户侧待办**：GitHub 登录建库、按 DEVLOG_SCRIPT 录制、旁白素材、GUI 目检、申报【待填】项、Emulator/真机装 APK（PDC 应用管理或 adb）。
+- **用户侧待办**：GitHub 登录建库、按 DEVLOG_SCRIPT 录制、旁白素材、GUI 目检（含 Vignette 运行时视觉验证：batchmode TryGet 不到已转静态断言，见坑-044）、申报【待填】项、Emulator/真机装 APK（PDC 应用管理或 adb）。
 - **接手**：R4 = M2 内测反馈消化（发内测→收反馈→P0 修复）。
 
 ## 四、任务队列（按序执行，含精确命令）
