@@ -58,10 +58,20 @@ namespace MemoryCorridor.Core
             SpawnRoomAnchors(room);
             ApplyDome(room);
             ApplyAmbience(index);
+            ApplyTheme(room);
 
             if (OnRoomSwitched != null) OnRoomSwitched(index);
             Debug.Log("[RoomManager] 房间切换 → " + room.title + "（" + SpawnedAnchorCount + " 光点）");
             return true;
+        }
+
+        /// <summary>R16-3：主题色调落地（theme 字段此前闲置）——环境光+雾色按主题档切换。</summary>
+        private void ApplyTheme(RoomData room)
+        {
+            ThemeColors.ThemeSpec spec = ThemeColors.For(room.theme);
+            RenderSettings.ambientLight = spec.Ambient;
+            RenderSettings.fog = true;
+            RenderSettings.fogColor = spec.Fog;
         }
 
         public RoomData CurrentRoom()

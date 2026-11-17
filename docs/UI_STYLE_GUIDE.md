@@ -36,6 +36,14 @@
 | `BorderPx` | 2px | 描边宽 |
 | `RowHeightPx` | 64px | 开关行高 |
 | `PanelTitleSize` / `PanelBodySize` | 42/28 | 面板字号 |
+| `SymbolSize` | 0.10m | 记忆点符号浮标边长（R15 ①） |
+| `SymbolOffset` | 0.48m | 符号距光点中心上移（光晕壳外，R15 ①） |
+| `CardBoardW / CardBoardH` | 0.72/0.96m | 回忆卡板尺寸（R16-4 收敛） |
+| `CardShotW / CardShotH` | 0.60/0.36m | 卡片截图缩略框（R16-4 收敛） |
+| `BadgeIconSize` | 0.028m | 卡片音频角标图标（R16-1） |
+
+**R16-4 色彩新增**：`CaptionInk`（卡片时间）/`DimInk`（站数）/`RainBlue`/`RainInk`（雨夜校园主题）——四值已入 UiTokens，MemoryCardComposer/ThemeColors 全部引用令牌。
+**违规扫描口径（R16 终值）**：全工程 new Color 字面量（除 UiTokens.cs）**14→8 处**（LightPointAnchor [SerializeField]×6 + SmokeProbe 断言期望值×2，全部原白名单）——R16 新增组件零字面量，主题环境光/雾/证据底色 8 值全部令牌化（AmberAmbient/AmberFog/RainAmbient/RainFog/EvidenceBg）。只降不涨 ✅
 
 ## 3. 字号 dmm 换算口径
 

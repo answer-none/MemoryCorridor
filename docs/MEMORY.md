@@ -238,6 +238,8 @@
 - **坑-049（R12，第四犯）**：Find 排除 inactive——GameObject.Find 查星点标签（inactive）拿不到。**铁律重申**：运行时查找一律 `FindObjectsByType<T>(FindObjectsInactive.Include, …)` / 探针 helper 统一封装。
 - **坑-050（R12）**：builder DestroyAll 用排除 inactive 的 FindObjectsByType → **47 个 MemoryPanel 跨轮堆积**（FindFirst 拿到旧实例 → FAIL-H 假失败）。清理/查找类静态方法同样必须 Include。
 - **坑-051（R15）**：**batchmode 证据截图三坑**：①非 Play 模式 Editor `Camera.Render→RT` 渲染空帧（灯光/相机栈未就绪）——证据截图统一走 Play 模式协程内；②特写相机距光晕壳 <1.2m 时**壳的角尺寸大于 ortho 视野 → 壳填屏**（实测两轮：米白球+蓝天 / 天空盒渐变）——证据只摆符号 quad+底板，不依赖场景几何；③坑-041（ScreenCapture 不落盘）的替代路径 = **专用相机 Render→RT→ReadPixels→EncodeToPNG**（MemoryCardComposer/CaptureSymbolEvidence 已验证，PNG 字节数即落盘证据）。
+- **坑-052（R16）**：**运行时素材必须落 StreamingAssets 或 persistentDataPath**——MediaResolver.ResolveExisting 只解析这两根；程序化全景生成到 Assets/Art 下运行时解析不到（穹顶静默保留旧图）。资产路径：Assets/StreamingAssets/Panoramas/、Assets/StreamingAssets/Media/。
+- **坑-053（R16）**：**同秒产物文件名冲突**——PNG 落盘用 yyyyMMdd_HHmmss 时间戳，同一秒两张卡第二个覆盖第一个（对比图读到两张同图）。文件名加毫秒 _fff 或用序号。
 - **坑-043（R7 走查发现，R8 修复实证）**：**Quad 的 MeshCollider（凹面）设 isTrigger → PhysX abort → Unity 整体闪退**（Windows 事件日志 0x40000015 / KERNELBASE.dll 实证，用户 GUI Play 触发）。修复：trigger 一律用凸面 BoxCollider（SettingsPanel 开关行已换）。**通用铁律：世界空间 UI 牌（Quad+Sprite3D）挂 XRSimpleInteractable 时，一律 Destroy MeshCollider + AddComponent<BoxCollider>**。
 - **坑-041**：**batchmode Play 下 ScreenCapture 不产出文件**（截图请求被接受但写入依赖 GUI 设备呈现）——"实测画面证据"在批处理环境不可行，改用：①断言级证据（25 段）②用户 GUI 目检截图 ③真机录屏。CaptureProbe 代码保留（GUI Play 可用）
 - **坑-037**：**Play 模式中弹 TMP Importer 模态窗 = UI 卡死**（导入触发资源重载与 Play 冲突）——已根治：builder 静默导入 TMP Essentials（AssetDatabase.ImportPackage(path, false)），GUI 永不再弹。用户卡死时处置：任务管理器杀 Unity.exe → 删 Temp/UnityLockfile → 重跑流水线。

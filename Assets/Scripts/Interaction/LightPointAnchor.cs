@@ -36,6 +36,7 @@ namespace MemoryCorridor.Interaction
 
         private Material materialInstance;
         private float fadeFactor = 1f;
+        private float densityDim = 1f; // R16-2：过密簇视觉降密度系数（1=正常）
         private bool isPrivate;
         private bool isHighlighted;
         private Color activeColor;
@@ -78,7 +79,7 @@ namespace MemoryCorridor.Interaction
 
             float breathe = 1f - breatheAmplitude * 0.5f *
                 (1f + Mathf.Sin(2f * Mathf.PI * Time.time / breathePeriod));
-            float emissive = breathe * fadeFactor;
+            float emissive = breathe * fadeFactor * densityDim; // R16-2：过密簇成员压暗
             Color target = isHighlighted ? highlightColor : activeColor;
             materialInstance.SetColor("_EmissionColor", target * emissive * 2f);
             if (glowLight != null)
@@ -128,6 +129,15 @@ namespace MemoryCorridor.Interaction
         {
             symbol = symbolRef;
         }
+
+        /// <summary>R16-2：过密簇视觉降密度（0.55=压暗；不打散用户布点，只调观感）。</summary>
+        public void SetDensityDim(float dim)
+        {
+            densityDim = Mathf.Clamp01(dim);
+        }
+
+        /// <summary>当前降密度系数（探针断言读取）。</summary>
+        public float DensityDim => densityDim;
 
         /// <summary>符号浮标（冒烟/断言读取 kind 与可见性）。</summary>
         public LightPointSymbol Symbol => symbol;

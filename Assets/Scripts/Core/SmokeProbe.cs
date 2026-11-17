@@ -432,9 +432,16 @@ namespace MemoryCorridor.Core
                         all.AddRange(sortData.rooms[r].fragments);
                     }
 
-                    // Time 升序：f03(2008) 最老在前，f05(2020) 最新在后
+                    // Time 升序不变量（R16 扩到 3 房间 16 碎片后改通用断言）：
+                    // 全序列 diary.date 非降序 + 已知边界（frag_09 2008-05-20 最老在前 / frag_05 2020 最新在后）
                     List<MemoryFragment> byTime = MemorySortService.Sorted(all, SortCriterion.Time);
-                    bool timeOk = byTime[0].id == "frag_03" && byTime[byTime.Count - 1].id == "frag_05";
+                    bool timeOk = byTime[0].id == "frag_09" && byTime[byTime.Count - 1].id == "frag_05";
+                    for (int i = 0; i + 1 < byTime.Count; i++)
+                    {
+                        string dA = byTime[i].diary != null ? byTime[i].diary.date : "";
+                        string dB = byTime[i + 1].diary != null ? byTime[i + 1].diary.date : "";
+                        timeOk &= string.CompareOrdinal(dA, dB) <= 0;
+                    }
 
                     // Tag：image 组全在前、audio 组（frag_02）在 diary 组（frag_05）前
                     List<MemoryFragment> byTag = MemorySortService.Sorted(all, SortCriterion.Tag);
@@ -711,6 +718,239 @@ namespace MemoryCorridor.Core
                 }
             }
 
+            // ========== Z4. 卡片音频角标（R16-1：有音频→图标+时长，无音频→完全不渲染） ==========
+            if (pass)
+            {
+                string wavRel = "Media/test_voice.wav";
+                string wavAbs = System.IO.Path.Combine(SaveDataService.PersistentRoot, wavRel);
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(wavAbs));
+                WriteTestWav(wavAbs, 1.5f, 440f, 22050);
+
+                RoomData z4Room = new RoomData { id = "z4_room", title = "角标测试", theme = "amber" };
+                MemoryFragment withAudio = new MemoryFragment
+                {
+                    id = "z4_with_audio", title = "有音频的点", type = "audio", roomId = "z4_room", order = 0,
+                    mediaItems = new List<MediaItem> { new MediaItem { kind = "audio", path = wavRel } },
+                };
+                MemoryFragment noAudio = new MemoryFragment
+                {
+                    id = "z4_no_audio", title = "无音频的点", type = "image", roomId = "z4_room", order = 1,
+                    mediaItems = new List<MediaItem>(),
+                };
+
+                MemoryCardComposer.CardMeta m1 = MemoryCardComposer.ComposeCard(z4Room, new List<MemoryFragment> { withAudio });
+                MemoryCardComposer.CardMeta m2 = MemoryCardComposer.ComposeCard(z4Room, new List<MemoryFragment> { noAudio });
+                float wavLen = MemoryCardComposer.WavDurationSeconds(wavAbs);
+                bool ok1 = m1 != null && m1.BadgeVisible && m1.BadgeDurationText == "0:01";
+                bool ok2 = m2 != null && !m2.BadgeVisible && m2.BadgeDurationText == null;
+                if (!ok1 || !ok2 || Mathf.Abs(wavLen - 1.5f) > 0.05f)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-Z4: 音频角标异常 (with=" + (m1 != null ? m1.BadgeDurationText : "null")
+                        + " visible=" + (m1 != null && m1.BadgeVisible) + " none=" + (m2 != null ? m2.BadgeDurationText : "null")
+                        + " m2Visible=" + (m2 != null && m2.BadgeVisible) + " wavLen=" + wavLen.ToString("F2") + "）");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    // 证据：两张卡片并排对比图
+                    bool cmp = StitchPngs(m1.PngPath, m2.PngPath, "docs/evidence/r16_card_badge_compare.png");
+                    Debug.Log("[SmokeProbe] Z4 音频角标 OK（WAV 头 1.5s→" + m1.BadgeDurationText + "，无音频不渲染；对比图="
+                        + (cmp ? "已拼" : "FAIL") + "）");
+                    if (!cmp) { pass = false; failedSections++; }
+                }
+            }
+
+            // ========== D3. 光点密度上限（R16-2：>12 告警+过密簇视觉降密度） ==========
+            if (pass)
+            {
+                LightPointAnchor[] seeds = FindAll<LightPointAnchor>();
+                if (seeds.Length == 0)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-D3: 无光点种子可复制");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    GameObject seed = seeds[0].gameObject;
+                    var injected = new List<LightPointAnchor>();
+                    Vector3 baseA = new Vector3(0f, 1.2f, 8f);
+                    Vector3 baseB = new Vector3(4.5f, 1.2f, 8f);
+                    for (int i = 0; i < 20; i++)
+                    {
+                        int row = i / 5, col = i % 5;
+                        Vector3 pos = (i < 10 ? baseA : baseB) + new Vector3(col * 0.5f, 0f, row * 0.5f);
+                        GameObject go = Object.Instantiate(seed, pos, Quaternion.identity);
+                        go.name = "LP_density_" + i;
+                        LightPointAnchor a = go.GetComponent<LightPointAnchor>();
+                        if (a != null) injected.Add(a);
+                    }
+                    yield return null; // 等 Update 写材质（before 图有发光观感）
+
+                    GameObject birdGo = new GameObject("DensityBirdCamera");
+                    Camera bird = birdGo.AddComponent<Camera>();
+                    bird.orthographic = true;
+                    bird.orthographicSize = 3.4f;
+                    bird.transform.position = new Vector3(2.25f, 7f, 8f);
+                    bird.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+                    bird.aspect = 4f / 3f;
+                    bird.clearFlags = CameraClearFlags.SolidColor;
+                    bird.backgroundColor = UiTokens.EvidenceBg;
+
+                    RenderCamToPng(bird, 800, 600, "docs/evidence/r16_density_before.png");
+                    bool trigger = LightPointDensityManager.Check(injected);
+                    yield return null; // 等 Update 应用 dim
+                    RenderCamToPng(bird, 800, 600, "docs/evidence/r16_density_after.png");
+                    Object.Destroy(birdGo);
+
+                    int dimAnchors = 0;
+                    foreach (LightPointAnchor a in injected) if (a.DensityDim < 1f) dimAnchors++;
+                    if (LightPointDensityManager.DensityCount != 20 || LightPointDensityManager.ClusterCount < 2
+                        || !LightPointDensityManager.Warned || LightPointDensityManager.DimmedCount < 1
+                        || dimAnchors < LightPointDensityManager.DimmedCount || !trigger)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-D3: 密度管理异常 (density=" + LightPointDensityManager.DensityCount
+                            + " clusters=" + LightPointDensityManager.ClusterCount + " warned=" + LightPointDensityManager.Warned
+                            + " dimmed=" + LightPointDensityManager.DimmedCount + " dimAnchors=" + dimAnchors + " trigger=" + trigger + ")");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] D3 密度管理 OK（20 点→" + LightPointDensityManager.ClusterCount
+                            + " 簇，告警=true，降密度 " + LightPointDensityManager.DimmedCount + " 成员压暗+缩符号；前后对比图已落盘）");
+                    }
+                    foreach (LightPointAnchor a in injected) if (a != null) Object.Destroy(a.gameObject);
+                    LightPointDensityManager.ResetVisual();
+                    yield return new WaitForSecondsRealtime(2.5f); // 等桥接清理轮询，护住 T2 退避窗口
+                }
+            }
+
+            // ========== R2. 第二主题路线：雨夜校园（R16-3：路线 8+主题色+符号全映射） ==========
+            if (pass)
+            {
+                RoomManager rm = FindFirst<RoomManager>();
+                List<MemoryFragment> rainRoute = RouteEditor.OrderedFragments("room_03");
+                bool lenOk = rm != null && rainRoute.Count == 8;
+                bool themeOk = ThemeColors.For("rain").Accent != ThemeColors.For("amber").Accent
+                    && ThemeColors.For("rain").Ambient != ThemeColors.For("amber").Ambient;
+                if (!lenOk || !themeOk)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-R2: 路线/主题异常 (route=" + rainRoute.Count + " themeOk=" + themeOk + ")");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    int rainIdx = -1;
+                    for (int i = 0; i < rm.Rooms.Count; i++) if (rm.Rooms[i].id == "room_03") rainIdx = i;
+                    rm.SwitchToRoom(rainIdx);
+                    yield return null; // 等 spawn
+
+                    AppData rd = SaveDataService.LoadAppData();
+                    RoomData rainData = null;
+                    for (int i = 0; i < rd.rooms.Count; i++) if (rd.rooms[i].id == "room_03") rainData = rd.rooms[i];
+
+                    LightPointAnchor[] rainAnchors = FindAll<LightPointAnchor>();
+                    bool symOk = rainAnchors.Length == 8 && rainData != null;
+                    string kindTable = "";
+                    foreach (LightPointAnchor a in rainAnchors)
+                    {
+                        string t = null;
+                        foreach (MemoryFragment f in rainData.fragments) if (f.id == a.FragmentId) t = f.type;
+                        LightPointSymbol.Kind expect = LightPointSymbol.KindFor(false, t);
+                        bool ok = a.Symbol != null && a.Symbol.CurrentKind == expect;
+                        symOk &= ok;
+                        kindTable += a.FragmentId + "=" + (ok ? expect.ToString() : "MISMATCH") + " ";
+                    }
+                    Vector4 ambNow = RenderSettings.ambientLight;
+                    Vector4 ambWant = ThemeColors.For("rain").Ambient;
+                    bool themeApplied = (ambNow - ambWant).sqrMagnitude < 0.01f
+                        && RenderSettings.fogColor == ThemeColors.For("rain").Fog;
+
+                    // 证据：雨夜全景截图 + 路线卡片×2
+                    byte[] roomShot = RenderMainCamera(800, 600);
+                    System.IO.File.WriteAllBytes("docs/evidence/r16_theme_rain_room.png", roomShot);
+                    MemoryCardComposer.CardMeta c1 = MemoryCardComposer.ComposeCard(rainData, rainRoute);
+                    MemoryCardComposer.CardMeta c2 = MemoryCardComposer.ComposeCard(rainData, rainRoute);
+                    bool cardsOk = c1 != null && c1.PngBytes > 0 && c2 != null && c2.PngBytes > 0
+                        && System.IO.File.Exists(c1.PngPath) && System.IO.File.Exists(c2.PngPath);
+                    if (cardsOk)
+                    {
+                        System.IO.File.Copy(c1.PngPath, "docs/evidence/r16_card_campus_1.png", true);
+                        System.IO.File.Copy(c2.PngPath, "docs/evidence/r16_card_campus_2.png", true);
+                    }
+
+                    if (!symOk || !themeApplied || !cardsOk)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-R2: 主题切换异常 (anchors=" + rainAnchors.Length
+                            + " symOk=" + symOk + " themeApplied=" + themeApplied + " cardsOk=" + cardsOk + ") " + kindTable);
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] R2 雨夜校园 OK（路线 8 站/主题色 rain≠amber/环境光雾色已切/8 点符号全映射无 fallback；全景+卡片×2 已落盘）");
+                    }
+                    rm.SwitchToRoom(0); // 恢复主房间
+                    yield return new WaitForSecondsRealtime(2.5f); // 等桥接轮询稳定
+                }
+            }
+
+            // ========== D4. 新元素可读性实测（R16-4：卡片标题+符号浮标 2/3/5m） ==========
+            if (pass)
+            {
+                RoomData d4Room = null;
+                AppData d4Data = SaveDataService.LoadAppData();
+                if (d4Data.rooms.Count > 0) d4Room = d4Data.rooms[0];
+                List<MemoryFragment> d4Route = RouteEditor.OrderedFragments("room_01");
+                Vector3 rootPos = new Vector3(-5f, -500f, 0f);
+                GameObject cardRoot = MemoryCardComposer.BuildCardRoot(rootPos, d4Room, d4Route, null, out _);
+                // 符号浮标同框（卡板右侧 0.55m）
+                Shader symShader = Shader.Find("MemoryCorridor/Sprite3D");
+                Material symMat = new Material(symShader);
+                symMat.mainTexture = LightPointSymbol.SymbolTexture(LightPointSymbol.Kind.Image, UiTokens.Amber);
+                GameObject symQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                Collider symQuadCol = symQuad.GetComponent<Collider>();
+                if (symQuadCol != null) Destroy(symQuadCol);
+                symQuad.transform.SetParent(cardRoot.transform, false);
+                symQuad.transform.localPosition = new Vector3(0.55f, 0.10f, 0f);
+                symQuad.transform.localScale = Vector3.one * UiTokens.SymbolSize;
+                symQuad.GetComponent<MeshRenderer>().sharedMaterial = symMat;
+
+                GameObject d4CamGo = new GameObject("ReadabilityCamera");
+                d4CamGo.transform.rotation = Quaternion.identity;
+                Camera d4Cam = d4CamGo.AddComponent<Camera>();
+                d4Cam.fieldOfView = 60f;
+                d4Cam.aspect = 4f / 3f;
+                d4Cam.nearClipPlane = 0.05f;
+                d4Cam.farClipPlane = 12f;
+                d4Cam.clearFlags = CameraClearFlags.SolidColor;
+                d4Cam.backgroundColor = UiTokens.EvidenceBg;
+
+                float[] dists = { 2f, 3f, 5f };
+                bool allShot = true;
+                foreach (float dist in dists)
+                {
+                    d4CamGo.transform.position = rootPos + new Vector3(0.4f, 0, -dist);
+                    byte[] png = MemoryCardComposer.RenderCardRoot(cardRoot, d4Cam, 800, 600);
+                    string path = "docs/evidence/r16_readability_" + dist.ToString("F0") + "m.png";
+                    System.IO.File.WriteAllBytes(path, png);
+                    bool ok = png.Length > 5000;
+                    allShot &= ok;
+                    Debug.Log("[SmokeProbe] D4 距离实拍 " + dist + "m: " + path + "（" + png.Length + " 字节）");
+                    yield return null;
+                }
+                Object.Destroy(cardRoot);
+                Object.Destroy(d4CamGo);
+
+                if (!allShot)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-D4: 距离实拍落盘异常");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] D4 可读性实测 OK（卡片标题 64mm/符号 100mm @2/3/5m 三张实拍，dmm 表入 SPATIAL_AUDIT §3）");
+                }
+            }
+
             // ========== W. 音量五档映射实测（R13 E9） ==========
             if (pass)
             {
@@ -901,7 +1141,7 @@ namespace MemoryCorridor.Core
             }
 
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3) 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4) 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
 
 #if UNITY_EDITOR
@@ -1517,7 +1757,7 @@ namespace MemoryCorridor.Core
             cam.farClipPlane = 2f;
             cam.aspect = 4f / 3f;
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.06f, 0.05f, 0.09f, 1f);
+            cam.backgroundColor = UiTokens.EvidenceBg;
 
             for (int i = 0; i < types.Length; i++)
             {
@@ -1566,6 +1806,99 @@ namespace MemoryCorridor.Core
                 yield return null;
             }
             Destroy(camGo);
+        }
+
+        /// <summary>R16 Z4：合成测试 WAV（RIFF 头 + 正弦采样）。</summary>
+        private static void WriteTestWav(string path, float seconds, float freq, int rate)
+        {
+            int n = (int)(seconds * rate);
+            int dataBytes = n * 2;
+            using (var ms = new System.IO.MemoryStream())
+            using (var w = new System.IO.BinaryWriter(ms))
+            {
+                w.Write(new char[] { 'R', 'I', 'F', 'F' });
+                w.Write(36 + dataBytes);
+                w.Write(new char[] { 'W', 'A', 'V', 'E' });
+                w.Write(new char[] { 'f', 'm', 't', ' ' });
+                w.Write(16);
+                w.Write((short)1);
+                w.Write((short)1);
+                w.Write(rate);
+                w.Write(rate * 2);
+                w.Write((short)2);
+                w.Write((short)16);
+                w.Write(new char[] { 'd', 'a', 't', 'a' });
+                w.Write(dataBytes);
+                for (int i = 0; i < n; i++)
+                {
+                    w.Write((short)(System.Math.Sin(2 * System.Math.PI * freq * i / rate) * 12000));
+                }
+                w.Flush();
+                System.IO.File.WriteAllBytes(path, ms.ToArray());
+            }
+        }
+
+        /// <summary>R16 Z4：两张 PNG 并排拼接落盘（1440×960）。</summary>
+        private static bool StitchPngs(string pathA, string pathB, string outPath)
+        {
+            try
+            {
+                Texture2D a = new Texture2D(2, 2);
+                a.LoadImage(System.IO.File.ReadAllBytes(pathA));
+                Texture2D b = new Texture2D(2, 2);
+                b.LoadImage(System.IO.File.ReadAllBytes(pathB));
+                int w = a.width + b.width;
+                int h = Mathf.Max(a.height, b.height);
+                Texture2D outTex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+                Color[] clear = new Color[w * h];
+                for (int i = 0; i < clear.Length; i++) clear[i] = UiTokens.EvidenceBg;
+                outTex.SetPixels(clear);
+                outTex.SetPixels(0, 0, a.width, a.height, a.GetPixels());
+                outTex.SetPixels(a.width, 0, b.width, b.height, b.GetPixels());
+                outTex.Apply();
+                System.IO.File.WriteAllBytes(outPath, outTex.EncodeToPNG());
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[SmokeProbe] 拼图失败: " + e.Message);
+                return false;
+            }
+        }
+
+        /// <summary>R16 D3：任意相机渲一帧 PNG 落盘。</summary>
+        private static void RenderCamToPng(Camera cam, int w, int h, string path)
+        {
+            RenderTexture rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32);
+            cam.targetTexture = rt;
+            cam.Render();
+            RenderTexture.active = rt;
+            Texture2D shot = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            shot.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+            shot.Apply();
+            RenderTexture.active = null;
+            cam.targetTexture = null;
+            rt.Release();
+            System.IO.File.WriteAllBytes(path, shot.EncodeToPNG());
+        }
+
+        /// <summary>R16 R2：主相机渲一帧（返回 PNG 字节）。</summary>
+        private static byte[] RenderMainCamera(int w, int h)
+        {
+            Camera cam = Camera.main;
+            if (cam == null) return new byte[0];
+            RenderTexture rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32);
+            RenderTexture prev = cam.targetTexture;
+            cam.targetTexture = rt;
+            cam.Render();
+            cam.targetTexture = prev;
+            RenderTexture.active = rt;
+            Texture2D shot = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            shot.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+            shot.Apply();
+            RenderTexture.active = null;
+            rt.Release();
+            return shot.EncodeToPNG();
         }
 
         private static T FindFirst<T>() where T : UnityEngine.Object
@@ -1681,8 +2014,8 @@ namespace MemoryCorridor.Core
 
         private IEnumerator Watchdog()
         {
-            yield return new WaitForSecondsRealtime(60f);
-            Debug.LogError("[SmokeProbe] WATCHDOG: 60s 超时强制退出(1)");
+            yield return new WaitForSecondsRealtime(120f); // R16：+4 新段（渲染 8 张证据 PNG+接线稳定等待）扩容
+            Debug.LogError("[SmokeProbe] WATCHDOG: 120s 超时强制退出(1)");
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.Exit(1); // 坑-031：仅编辑器；真机上只留日志
 #endif

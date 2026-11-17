@@ -126,10 +126,12 @@ namespace MemoryCorridor.EditorTools
             UnityEngine.Object.DestroyImmediate(proto);
             Debug.Log("[SceneBuilder] LightPoint.prefab OK（含 XRSimpleInteractable）");
 
-            // 2) 演示数据（两房间五碎片，写 appdata.json）
+            // 2) 演示数据（三房间 16 碎片，写 appdata.json；R16-3 雨夜校园主题线）
+            GenerateRainPanorama();
             AppData demo = BuildDemoAppData();
             SaveDataService.SaveAppData(demo);
-            Debug.Log("[SceneBuilder] appdata.json 已写（2 房间 8 碎片）: " + SaveDataService.AppDataFilePath);
+            Debug.Log("[SceneBuilder] appdata.json 已写（3 房间 16 碎片）: " + SaveDataService.AppDataFilePath);
+            CheckDemoDensity();
 
             // 3) 布置场景（幂等）
             UnityEngine.SceneManagement.Scene scene = EditorSceneManager.OpenScene("Assets/Scenes/EditorScene.unity");
@@ -590,16 +592,207 @@ namespace MemoryCorridor.EditorTools
             });
             data.rooms.Add(room2);
 
+            // —— 房间三：雨夜校园（R16-3 第二主题路线，8 碎片，theme=rain）——
+            RoomData room3 = new RoomData
+            {
+                id = "room_03",
+                title = "雨夜校园",
+                panoramaPath = "Panoramas/rain_campus_night.jpg", // 程序化雨夜全景（GenerateRainPanorama）
+                theme = "rain",
+                ambientPath = "Media/room_03/rain_ambience.wav",  // ffmpeg 雨声（12s，随包）
+                visibility = "public",
+            };
+            room3.fragments.Add(new MemoryFragment
+            {
+                id = "frag_09", title = "晚自习教室", type = "image",
+                ownerMemberId = "mem_01", roomId = "room_03", order = 0,
+                createdAt = "2026-11-18T10:00:00+08:00",
+                diary = new DiaryEntry { date = "2008-05-20", text = "停电的晚自习，全班点起蜡烛，数学老师在门口看了很久没说话。" },
+                mediaItems = new List<MediaItem> { new MediaItem { kind = "image", path = "Media/room_03/classroom.jpg", caption = "烛光里的教室" } },
+                anchor = new FragmentAnchor { position = new float[] { -2.2f, 1.2f, 2.2f } },
+            });
+            room3.fragments.Add(new MemoryFragment
+            {
+                id = "frag_10", title = "广播站录音", type = "audio",
+                ownerMemberId = "mem_01", roomId = "room_03", order = 1,
+                createdAt = "2026-11-18T10:05:00+08:00",
+                diary = new DiaryEntry { date = "2008-06-01", text = "每周三下午的校园广播，我念了一篇作文，紧张到把'操场'念成'操操作场'。" },
+                mediaItems = new List<MediaItem> { new MediaItem { kind = "audio", path = "Media/room_03/rain_ambience.wav", caption = "那年广播的一段录音" } },
+                anchor = new FragmentAnchor { position = new float[] { 0f, 1.2f, 2.6f } },
+            });
+            room3.fragments.Add(new MemoryFragment
+            {
+                id = "frag_11", title = "操场夜跑", type = "diary",
+                ownerMemberId = "mem_01", roomId = "room_03", order = 2,
+                createdAt = "2026-11-18T10:10:00+08:00",
+                diary = new DiaryEntry { date = "2009-04-15", text = "中考前每晚绕操场跑四圈，雨越大跑得越快，好像跑赢雨就跑赢了一切。" },
+                anchor = new FragmentAnchor { position = new float[] { 2.2f, 1.2f, 2.2f } },
+            });
+            room3.fragments.Add(new MemoryFragment
+            {
+                id = "frag_12", title = "车棚躲雨", type = "mixed",
+                ownerMemberId = "mem_01", roomId = "room_03", order = 3,
+                createdAt = "2026-11-18T10:15:00+08:00",
+                diary = new DiaryEntry { date = "2009-06-08", text = "暴雨把所有人都堵在车棚，陌生人递来半包饼干，我们聊到雨停。" },
+                mediaItems = new List<MediaItem> { new MediaItem { kind = "image", path = "Media/room_03/bikeshed.jpg", caption = "雨幕里的车棚" } },
+                anchor = new FragmentAnchor { position = new float[] { 2.6f, 1.2f, 0f } },
+            });
+            room3.fragments.Add(new MemoryFragment
+            {
+                id = "frag_13", title = "传达室的伞", type = "image",
+                ownerMemberId = "mem_01", roomId = "room_03", order = 4,
+                createdAt = "2026-11-18T10:20:00+08:00",
+                diary = new DiaryEntry { date = "2008-09-10", text = "传达室大爷那把黑伞，谁淋雨都能借，还回来的时候常常换了个颜色。" },
+                mediaItems = new List<MediaItem> { new MediaItem { kind = "image", path = "Media/room_03/umbrella.jpg", caption = "门房的旧伞架" } },
+                anchor = new FragmentAnchor { position = new float[] { 2.2f, 1.2f, -2.2f } },
+            });
+            room3.fragments.Add(new MemoryFragment
+            {
+                id = "frag_14", title = "广播体操口令", type = "audio",
+                ownerMemberId = "mem_01", roomId = "room_03", order = 5,
+                createdAt = "2026-11-18T10:25:00+08:00",
+                diary = new DiaryEntry { date = "2009-10-20", text = "第七套广播体操现在开始，时代在召唤——这句口令到现在还会在脑子里自动播放。" },
+                mediaItems = new List<MediaItem> { new MediaItem { kind = "audio", path = "Media/room_03/rain_ambience.wav", caption = "操场喇叭的回响" } },
+                anchor = new FragmentAnchor { position = new float[] { 0f, 1.2f, -2.6f } },
+            });
+            room3.fragments.Add(new MemoryFragment
+            {
+                id = "frag_15", title = "毕业晚会告白", type = "diary",
+                ownerMemberId = "mem_01", roomId = "room_03", order = 6,
+                createdAt = "2026-11-18T10:30:00+08:00",
+                diary = new DiaryEntry { date = "2011-06-30", text = "晚会最后一首歌下雨停了，有人在天台上喊了全班的名字，没人问他是谁。" },
+                anchor = new FragmentAnchor { position = new float[] { -2.2f, 1.2f, -2.2f } },
+            });
+            room3.fragments.Add(new MemoryFragment
+            {
+                id = "frag_16", title = "天台看雨", type = "mixed",
+                ownerMemberId = "mem_01", roomId = "room_03", order = 7,
+                createdAt = "2026-11-18T10:35:00+08:00",
+                diary = new DiaryEntry { date = "2010-05-25", text = "逃了晚自习上天台，整座城市泡在雨声里，那一刻觉得考试什么的不重要。" },
+                mediaItems = new List<MediaItem> { new MediaItem { kind = "image", path = "Media/room_03/rooftop.jpg", caption = "天台俯瞰雨夜" } },
+                anchor = new FragmentAnchor { position = new float[] { -2.6f, 1.2f, 0f } },
+            });
+            data.rooms.Add(room3);
+
             return data;
+        }
+
+        /// <summary>
+        /// R16-2 数据级密度检查（构建期告警）：单房间光点 > 上限时 LogWarning。
+        /// 运行时视觉降密度由 LightPointDensityManager.Check 在探针/切房后执行。
+        /// </summary>
+        private static void CheckDemoDensity()
+        {
+            AppData data = SaveDataService.LoadAppData();
+            bool anyWarn = false;
+            for (int r = 0; r < data.rooms.Count; r++)
+            {
+                int count = data.rooms[r].fragments != null ? data.rooms[r].fragments.Count : 0;
+                if (count > LightPointDensityManager.WarnThreshold)
+                {
+                    Debug.LogWarning("[SceneBuilder] 密度告警: 房间 " + data.rooms[r].title + " 有 " + count
+                        + " 个光点 > 上限 " + LightPointDensityManager.WarnThreshold + "（运行时将自动视觉降密度）");
+                    anyWarn = true;
+                }
+            }
+            Debug.Log("[SceneBuilder] 密度检查 OK（告警=" + (anyWarn ? "有" : "无") + "，上限 "
+                + LightPointDensityManager.WarnThreshold + "）");
+        }
+
+        /// <summary>
+        /// R16-3：程序化"雨夜校园"全景（equirect 1024×512，零外部素材）：
+        /// 夜空垂直渐变 + 教学楼剪影与亮窗 + 地面雨光反射 + 雨丝短线，一次生成终身复用。
+        /// </summary>
+        private static void GenerateRainPanorama()
+        {
+            // 放 StreamingAssets/Panoramas（MediaResolver.ResolveExisting 的合法回退根）；
+            // Assets/Art 下运行时解析不到（坑-052：Runtime 素材必须落 StreamingAssets/persistent）
+            const string relPath = "Assets/StreamingAssets/Panoramas/rain_campus_night.jpg";
+            const int w = 1024;
+            const int h = 512;
+            string abs = relPath; // Unity cwd = 工程根
+            if (File.Exists(abs))
+            {
+                return; // 幂等
+            }
+
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            Color top = new Color(0.015f, 0.025f, 0.05f);
+            Color mid = new Color(0.06f, 0.09f, 0.15f);
+            Color ground = new Color(0.05f, 0.07f, 0.11f);
+            Color horizon = new Color(0.10f, 0.14f, 0.20f);
+            Color[] px = new Color[w * h];
+            System.Random rng = new System.Random(20261118); // 固定种子可复现
+
+            // 教学楼剪影参数（占 equirect 前半 0.15~0.5 水平带）
+            int horizonY = (int)(h * 0.55f);
+            var buildings = new List<Rect>();
+            for (int i = 0; i < 6; i++)
+            {
+                float bx = 0.06f + i * 0.155f + (float)rng.NextDouble() * 0.02f;
+                float bw = 0.10f + (float)rng.NextDouble() * 0.05f;
+                float bh = 0.18f + (float)rng.NextDouble() * 0.12f;
+                buildings.Add(new Rect(bx, horizonY, bw * w, bh * h));
+            }
+
+            for (int y = 0; y < h; y++)
+            {
+                float t = y / (float)h;
+                for (int x = 0; x < w; x++)
+                {
+                    float u = x / (float)w;
+                    Color c;
+                    if (t > 0.62f)
+                    {
+                        // 地面（雨光反射：随机亮斑）
+                        float s = (float)rng.NextDouble();
+                        c = Color.Lerp(ground, ground * 1.8f, s * 0.25f * Mathf.SmoothStep(1f, 0f, (t - 0.62f) / 0.38f));
+                    }
+                    else if (t > 0.55f)
+                    {
+                        c = horizon; // 地平线亮带
+                    }
+                    else
+                    {
+                        // 夜空垂直渐变
+                        c = Color.Lerp(mid, top, Mathf.SmoothStep(0f, 1f, t / 0.55f));
+                        // 建筑剪影
+                        foreach (Rect b in buildings)
+                        {
+                            if (x >= b.x && x <= b.x + b.width && y >= b.yMin && y <= b.yMin + b.height)
+                            {
+                                c = new Color(0.03f, 0.045f, 0.075f);
+                                // 亮窗（网格点，暖黄）
+                                if ((x % 24 == 12) && (y % 28 == 14) && (float)rng.NextDouble() > 0.45f)
+                                {
+                                    c = new Color(0.55f, 0.42f, 0.20f);
+                                }
+                            }
+                        }
+                        // 雨丝（垂直短线，亮 1.3×）
+                        if ((x * 7 + y * 31) % 97 == 0 && t < 0.55f)
+                        {
+                            c = Color.Lerp(c, Color.white, 0.10f);
+                        }
+                    }
+                    px[y * w + x] = c;
+                }
+            }
+            tex.SetPixels(px);
+            tex.Apply();
+            File.WriteAllBytes(abs, tex.EncodeToJPG(72));
+            Debug.Log("[SceneBuilder] 雨夜校园全景已生成: " + relPath + "（程序化，" + new FileInfo(abs).Length + " 字节）");
         }
 
         /// <summary>appdata.json 落盘回读校验（Newtonsoft 路径回归）。</summary>
         private static void VerifySaveRoundtrip()
         {
             AppData loaded = SaveDataService.LoadAppData();
-            bool ok = loaded.rooms.Count == 2
+            bool ok = loaded.rooms.Count == 3
                 && loaded.rooms[0].fragments.Count == 4
                 && loaded.rooms[1].fragments.Count == 4
+                && loaded.rooms[2].fragments.Count == 8
+                && loaded.rooms[2].theme == "rain"
                 && loaded.settings.fadeStartDays == 30
                 && loaded.rooms[0].fragments[2].lastVisitedAt == "2026-01-15T10:00:00Z"
                 && loaded.rooms[1].fragments[2].lastVisitedAt == "2026-05-15T10:00:00Z"
@@ -612,7 +805,7 @@ namespace MemoryCorridor.EditorTools
                 Debug.LogError("[SceneBuilder] FAIL: appdata.json 回读校验不通过");
                 throw new Exception("appdata.json 回读校验失败");
             }
-            Debug.Log("[SceneBuilder] appdata.json 回读校验 OK（2 房间/8 碎片/双褪色样例/私密样例/组合媒体/日记类型）");
+            Debug.Log("[SceneBuilder] appdata.json 回读校验 OK（3 房间/16 碎片/双褪色样例/私密样例/组合媒体/日记类型/雨夜主题）");
         }
     }
 }

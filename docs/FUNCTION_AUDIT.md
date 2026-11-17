@@ -37,6 +37,15 @@
 | R15-a | 记忆点符号浮标（MoL image 要素） | ✅ | Y5 段 | LightPointSymbol：五类型程序化贴图 billboard（image 山框/audio 声弧/diary 书页/mixed 菱星/private 锁形），色形双编码防混淆；类型映射+billboard 朝向+显隐联动断言；证据 docs/evidence/r15_symbol_frag_*.png ×4 |
 | R15-b | 回忆卡片版式合成 | ✅ | Z3 段 | MemoryCardComposer 720×960：房间标题+走读完成真实截图缩略+路径点串（末站高亮）+关键词+时间+站数；专用相机渲染绕坑-041，PNG 落盘 persistentDataPath/screenshots/；证据 docs/evidence/r15_memory_card.png |
 
+## R16 功能完善轮新增（2026-11-18，BENCHMARK ③④⑤ 落地）
+
+| # | 功能 | 状态 | 断言 | 说明 |
+|---|---|---|---|---|
+| R16-a | 卡片音频角标 | ✅ | Z4 段 | 有音频（mediaItems 含可解析 audio）→ 右上角"声波图标+时长"（WAV 头精确解析/MP3 估算）；无音频完全不渲染；证据 r16_card_badge_compare.png 并排对比 |
+| R16-b | 单房间密度上限 | ✅ | D3 段 + builder 数据级检查 | 20 点→2 簇、告警=true、9 成员/簇压暗×0.55+符号×0.7（不打散布点）；证据 r16_density_before/after.png |
+| R16-c | 第二主题路线"雨夜校园" | ✅ | R2 段 | room_03×8 碎片（image/audio/diary/mixed 各 2）全有标题+正文+符号；theme=rain 环境光/雾色真落地（ThemeColors）；程序化雨夜全景 17KB+ffmpeg 雨声 517KB；证据 r16_theme_rain_room.png+卡片×2 |
+| R16-d | UI/空间合规收尾 | ✅ | D4 段 | R15/R16 元素全令牌化（SymbolSize/CardBoard/BadgeIcon 等 9 新令牌，零新增字面量）；卡片+符号 2/3/5m 可读性实拍×3+dmm 表入 SPATIAL_AUDIT §4 |
+
 ## 非功能项
 
 | 项 | 状态 | 证据 |

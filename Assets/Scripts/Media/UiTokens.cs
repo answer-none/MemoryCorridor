@@ -29,6 +29,15 @@ namespace MemoryCorridor.Media
         public static readonly Color CrossWhite = new Color(0.95f, 0.92f, 0.88f, 1f);   // ✕ 白
         public static readonly Color LabelBg = new Color(0.10f, 0.08f, 0.13f, 0.9f);    // 星点标签底
         public static readonly Color LabelInk = new Color(0.92f, 0.88f, 0.82f, 1f);     // 星点标签墨
+        public static readonly Color CaptionInk = new Color(0.70f, 0.66f, 0.62f, 1f);   // 卡片时间等次要文字
+        public static readonly Color DimInk = new Color(0.60f, 0.56f, 0.52f, 1f);       // 卡片站数等三级文字
+        public static readonly Color RainBlue = new Color(0.45f, 0.62f, 0.82f, 1f);     // 雨夜校园主题强调色（R16）
+        public static readonly Color RainInk = new Color(0.22f, 0.28f, 0.38f, 1f);      // 雨夜校园环境基调（R16）
+        public static readonly Color AmberAmbient = new Color(0.62f, 0.52f, 0.40f, 1f); // amber 主题环境光（R16-3）
+        public static readonly Color AmberFog = new Color(0.16f, 0.12f, 0.10f, 1f);     // amber 主题雾色（R16-3）
+        public static readonly Color RainAmbient = new Color(0.30f, 0.36f, 0.46f, 1f);  // rain 主题环境光（R16-3）
+        public static readonly Color RainFog = new Color(0.06f, 0.09f, 0.14f, 1f);      // rain 主题雾色（R16-3）
+        public static readonly Color EvidenceBg = new Color(0.06f, 0.05f, 0.09f, 1f);   // 证据截图相机深底（R16）
 
         // —— 尺寸/间距（像素，面板 620×460 坐标系）——
         public const float CornerRadius = 24f;    // 面板圆角
@@ -36,6 +45,15 @@ namespace MemoryCorridor.Media
         public const float BadgeRadius = 12f;     // 徽章圆角
         public const float BorderPx = 2f;         // 描边宽
         public const float RowHeightPx = 64f;     // 开关行高
+
+        // —— 世界空间元素（米，R15/R16 新令牌，UI_STYLE_GUIDE §2）——
+        public const float SymbolSize = 0.10f;        // 记忆点符号浮标边长
+        public const float SymbolOffset = 0.48f;      // 符号距光点中心上移（光晕壳外）
+        public const float CardBoardW = 0.72f;        // 回忆卡片宽
+        public const float CardBoardH = 0.96f;        // 回忆卡片高
+        public const float CardShotW = 0.60f;         // 卡片截图缩略框宽
+        public const float CardShotH = 0.36f;         // 卡片截图缩略框高
+        public const float BadgeIconSize = 0.028f;    // 卡片音频角标图标边长
 
         /// <summary>面板标题字号（620 宽面板）。</summary>
         public const float PanelTitleSize = 42f;

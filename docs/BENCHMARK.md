@@ -32,7 +32,7 @@
 
 ## 五条可落地优点
 
-### ① 显式对象-位置绑定：记忆点要有"图像"要素（**本轮已落地**）
+### ① 显式对象-位置绑定：记忆点要有"图像"要素（**R15 已落地**）
 
 - **来源**：Reggente et al. 2020（https://research.manchester.ac.uk/en/publications/the-method-of-loci-in-virtual-reality-explicit-binding-of-objects）
 - **它怎么做的**：MoL 在 VR 中生效的机制不是"有个位置"就够，而是把**要记的内容物**（对象）显式放置并与位置绑定——回忆时位置线索会带出内容形象。
@@ -43,7 +43,7 @@
 - **成本/风险**：1 个组件 + 程序化贴图（零外部素材），约 150 行——**成本低**。风险：符号太小难辨识（已用 0.10m≈悬停预览卡尺寸）；billboard 每帧朝向相机（缓存 Camera.main，无 FindObjects 开销）。
 - **落地证据**：`Assets/Scripts/Interaction/LightPointSymbol.cs` + smoke Y5 段断言（kind 映射/billboard 朝向/显隐联动）。
 
-### ② 多线索回忆卡片：截图→带路径缩略+时间+关键词的卡片版式（**本轮已落地**）
+### ② 多线索回忆卡片：截图→带路径缩略+时间+关键词的卡片版式（**R15 已落地；R16-1 增补音频角标**）
 
 - **来源**：Hagström et al. 2024（https://onlinelibrary.wiley.com/doi/full/10.1111/sjop.70089）+ Revisit（时间线+声音线索，https://www.facebook.com/groups/Quest2Community/posts/1700504777762578）
 - **它怎么做的**：Hagström：多线索编码（visuo-spatial+verbal）使 VR MoL 长期回忆准确率更高；Revisit：给漫步叠加时间线视觉与声音，强化"这段记忆"的包裹感。
@@ -54,21 +54,21 @@
 - **成本/风险**：卡片合成器约 220 行（复用 RoundedRectTexture/UiTextFactory），**成本低**。风险：专用相机渲染需临时禁用其他相机（已做保存/恢复）；无截图相机时降级为 ThumbBg 占位（不阻断）。
 - **落地证据**：`Assets/Scripts/Media/MemoryCardComposer.cs` + RoutePlayer 接线 + smoke Z3 段断言（PNG 落盘字节数>0 + 元数据含标题/关键词/时间/站数）。
 
-### ③ 极简引导即可教会 MoL（已有对应实现，BENCHMARK 登记）
+### ③ 极简引导即可教会 MoL（**R16-3 部分落地**：新主题引导走 TutorialGuide 同链路；动态提示语记下轮）
 
 - **来源**：Moll et al. 2023（https://link.springer.com/article/10.1007/s10055-022-00700-z）
 - **它怎么做的**：VR 中 MoL 可用极简训练教会，无需长时间方法讲解。
 - **我们已有**：TutorialGuide 5 步引导（含设置入口提示，smoke P2 段断言）+ WelcomeBoard 首访告示——与"极简引导"结论一致。**本轮不动**。
 - **未来可加**：走读首站引导文案追加一句"记住这个位置与它上面的符号"（呼应 ①）。成本一行文案，风险无。
 
-### ④ 怀旧疗法的多感官线索（已有对应实现，BENCHMARK 登记）
+### ④ 怀旧疗法的多感官线索（**R16-1 已落地**：卡片音频角标——图标+时长，有音频才显示；R8 视频链路+走近听声已有）
 
 - **来源**：VR-RT 综述 2024（https://pmc.ncbi.nlm.nih.gov/articles/PMC11599890）
 - **它怎么做的**：多模态刺激（声音+图像+空间）是 VR 怀旧疗法改善记忆与情绪的核心机制。
 - **我们已有**：光点走近听声（audio 类 + SpatialAudioAnchor）+ 全景穹顶（PanoramaDome）+ 视频记忆（R8）+ 环境音（AmbienceController）。**本轮不动**。
 - **未来可加**：卡片上标注"含音频/含视频"角标（符号复用 ① 的贴图）。成本极低，风险无。
 
-### ⑤ 认知负荷控制（已有对应实现，BENCHMARK 登记）
+### ⑤ 认知负荷控制（**R16-2 已落地**：单房间光点 >12 告警 + 过密簇视觉降密度（压暗+缩符号不打散布点）；单焦点/距离/暗角已有）
 
 - **来源**：认知负荷自适应 VR 记忆宫殿（arXiv 2506.02700，https://arxiv.org/abs/2506.02700）+ Guided Meditation VR / Mindergy VR 的低密度环境实践
 - **它怎么做的**：按个体认知负荷调节环境复杂度；冥想类应用用单焦点+低密度环境控制注意负担。
