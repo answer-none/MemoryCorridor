@@ -102,6 +102,25 @@ namespace MemoryCorridor.EditorTools
                 protoAnchor.SetGlowShell(shellRenderer);
             }
 
+            // R15 ①：符号浮标（MoL image 要素——billboard 类型小牌，实例绑定碎片时换贴图）
+            Shader symShader = glowShellShader != null ? glowShellShader : Shader.Find("MemoryCorridor/Sprite3D");
+            if (symShader != null)
+            {
+                GameObject symGo = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                symGo.name = "Symbol";
+                symGo.transform.SetParent(proto.transform, false);
+                symGo.transform.localPosition = Vector3.up * 0.48f; // 光晕壳外（壳半径 0.36m），不挡视线
+                symGo.transform.localScale = Vector3.one * 0.10f;
+                Collider symCollider = symGo.GetComponent<Collider>();
+                if (symCollider != null) UnityEngine.Object.DestroyImmediate(symCollider);
+                MeshRenderer symRenderer = symGo.GetComponent<MeshRenderer>();
+                Material symMat = new Material(symShader);
+                symRenderer.sharedMaterial = symMat;
+                LightPointSymbol sym = symGo.AddComponent<LightPointSymbol>();
+                sym.Configure(symRenderer);
+                protoAnchor.SetSymbol(sym);
+            }
+
             proto.AddComponent<XRSimpleInteractable>();
             GameObject lightPrefab = PrefabUtility.SaveAsPrefabAsset(proto, "Assets/Prefabs/LightPoint.prefab");
             UnityEngine.Object.DestroyImmediate(proto);

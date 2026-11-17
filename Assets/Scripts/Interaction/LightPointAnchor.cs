@@ -27,6 +27,9 @@ namespace MemoryCorridor.Interaction
         [SerializeField] private Renderer glowShellRenderer; // R3 美学：光晕外球
         [SerializeField] private float baseScale = 0.45f; // 坑-039：光点基础尺寸（避免大球挡视线）
 
+        [Header("符号浮标（R15 ①：MoL image 要素）")]
+        [SerializeField] private LightPointSymbol symbol; // billboard 类型小牌（builder 注入）
+
         [Header("呼吸动画")]
         [SerializeField] private float breathePeriod = 3f;
         [SerializeField] private float breatheAmplitude = 0.25f;
@@ -57,6 +60,7 @@ namespace MemoryCorridor.Interaction
             if (pointRenderer != null) pointRenderer.enabled = visible;
             if (glowShellRenderer != null) glowShellRenderer.enabled = visible;
             if (glowLight != null) glowLight.enabled = visible;
+            if (symbol != null) symbol.SetVisible(visible); // R15 ①：符号随显隐设置联动
         }
 
         private void Awake()
@@ -112,7 +116,21 @@ namespace MemoryCorridor.Interaction
                     default: activeColor = defaultColor; break;
                 }
             }
+            // R15 ①：按类型应用符号浮标（色形双编码——形状互不相似 + 同色系）
+            if (symbol != null)
+            {
+                symbol.Apply(LightPointSymbol.KindFor(isPrivateFragment, fragmentType), activeColor);
+            }
         }
+
+        /// <summary>注入符号浮标（builder 在预制体上挂载后调用）。</summary>
+        public void SetSymbol(LightPointSymbol symbolRef)
+        {
+            symbol = symbolRef;
+        }
+
+        /// <summary>符号浮标（冒烟/断言读取 kind 与可见性）。</summary>
+        public LightPointSymbol Symbol => symbol;
 
         /// <summary>当前主色（冒烟/配色断言读取）。</summary>
         public Color CurrentColor => activeColor;

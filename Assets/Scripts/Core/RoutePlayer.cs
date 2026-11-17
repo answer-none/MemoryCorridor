@@ -107,18 +107,29 @@ namespace MemoryCorridor.Core
             }
         }
 
-        /// <summary>R12 C：ScreenCapture 截图保存到 persistentDataPath/screenshots/。</summary>
+        /// <summary>R12 C：截图标志（坑-041：batchmode 下 ScreenCapture 不落盘——标志作为运行时证据）。</summary>
         public bool LastCaptureRequested { get; private set; }
+
+        /// <summary>R15 ②：卡片版式合成是否成功落盘（PNG 字节数>0）。</summary>
+        public bool LastCardComposed { get; private set; }
 
         private void CaptureMemoryShot()
         {
-            LastCaptureRequested = true; // 坑-041：batchmode 下 ScreenCapture 不落盘——标志作为运行时证据
-            string dir = System.IO.Path.Combine(Application.persistentDataPath, "screenshots");
-            System.IO.Directory.CreateDirectory(dir);
-            string fileName = "memory_shot_" + System.DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
-            string path = System.IO.Path.Combine(dir, fileName);
-            ScreenCapture.CaptureScreenshot(path);
-            Debug.Log("[RoutePlayer] 回忆卡片截图: " + path);
+            LastCaptureRequested = true;
+            // R15 ②：卡片版式合成（截图缩略+路径点串+时间+关键词，本地生成不联网）
+            RoomData room = (roomManager != null) ? roomManager.CurrentRoom() : null;
+            MemoryCardComposer.CardMeta meta = MemoryCardComposer.ComposeCard(room, route);
+            LastCardComposed = meta != null && meta.PngBytes > 0;
+            if (meta == null)
+            {
+                // 兜底：合成失败退回 ScreenCapture（GUI 模式可用）
+                string dir = System.IO.Path.Combine(Application.persistentDataPath, "screenshots");
+                System.IO.Directory.CreateDirectory(dir);
+                string fileName = "memory_shot_" + System.DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
+                string path = System.IO.Path.Combine(dir, fileName);
+                ScreenCapture.CaptureScreenshot(path);
+                Debug.Log("[RoutePlayer] 卡片合成失败，退回 ScreenCapture: " + path);
+            }
         }
 
         /// <summary>回访：更新 lastVisitedAt 并把该光点褪色复位（创新点"记忆褪色"的闭环）。</summary>

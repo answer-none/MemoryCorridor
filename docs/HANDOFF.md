@@ -46,20 +46,14 @@ Unity Editor: D:\unityanzhuang1\2022.3.62f3c1\Editor\Unity.exe
 PICO Emulator: D:\PICO_Emulator\swan_rls_spaceos_oversea_K_pico_emulator_win64_20260902\start-emulator.bat
 ```
 
-## 三、当前状态快照（2026-11-12 00:20 左右）
+## 三、当前状态快照（2026-11-18 R15 收口后）
 
-**已完成：**
-- 环境检测全过（Unity/Hub/VS2022+Unity工作负载/PDC/Emulator/adb，详见 MEMORY.md §1）
-- 竞品调研 + 借鉴合并进 V2（差异化：褪色/隐私导出/锚定重演三独有）
-- 素材 17 件全部落盘且授权合规（全景2、照片10、占位音频3、字体2——字体已下完并同步到 D 盘，字节数与 GitHub release 一致）
-- Git 仓库初始化，首个提交 `7b64e29`（方案+素材+文档基线）
-- Unity 种子工程创建并合并进仓库；manifest 依赖写死；SetupWizard 已放入 `Assets/Editor/`
-
-**进行中（后台）：**
-- 无。**R3 交付材料完成**（TEAM_PLAN 轮次表 R0-R3 齐全）：APPLICATION.md 申报骨架 / DEVLOG_SCRIPT.md 录制分镜 / README 重写（机制×断言对照）/ PERF_AUDIT.md 性能基线（62.5fps/403MB/粒子 200；工具 PerformanceAudit.Run 批处理可复跑）。
-- **里程碑状态**：M2 内测包就绪（APK 42.9MB + 23 段断言全绿）；M3 冻结 12-12；提交 12-19 09:00。
-- **用户侧待办**：GitHub 登录建库、按 DEVLOG_SCRIPT 录制、旁白素材、GUI 目检（含 Vignette 运行时视觉验证：batchmode TryGet 不到已转静态断言，见坑-044）、申报【待填】项、Emulator/真机装 APK（PDC 应用管理或 adb）。
-- **接手**：R4 = M2 内测反馈消化（发内测→收反馈→P0 修复）。
+**已完成（详见 TEAM_PLAN 轮次表 R0-R15）：**
+- R15 对标学习轮：联网检索 8 产品+4 论文 → docs/BENCHMARK.md 五条可落地优点；落地 ①记忆点符号浮标（LightPointSymbol，MoL image 要素，色形双编码）②回忆卡片版式合成（MemoryCardComposer 720×960：标题+真实截图缩略+路径点串+关键词+时间+站数）；smoke 31 段全绿（+Y5/Z3）；证据 docs/evidence/r15_symbol_*.png ×4 + r15_memory_card.png
+- P0/P1 全 13 项功能 ✅（FUNCTION_AUDIT.md 含 R15 增补）；UI 令牌化净违规 0；空间合规运行时实测达标；闪退根治（坑-043）+40 分钟长跑零崩溃
+- **里程碑状态**：内测交付态（APK ≈47.7MB + 31 段断言全绿）；M3 冻结 12-12；提交 12-19 09:00。
+- **用户侧待办**：GUI 目检（含符号浮标/卡片观感/Vignette 运行时）、devlog 录制、旁白录音、申报名单【待填】、Emulator/真机装 APK、token Revoke。
+- **接手**：R16 候选=新房间主题 / 单房间光点密度上限提示（BENCHMARK ⑤）/ 卡片"含音频"角标（BENCHMARK ④）。
 
 ## 四、任务队列（按序执行，含精确命令）
 

@@ -30,12 +30,19 @@
 ## P2（二期，仅文档承诺）
 云端同步 / 链接分享 / 实时共创 / 3DGS —— 不实现，申报文档"二期规划"承载。
 
+## R15 对标学习轮新增（2026-11-18，BENCHMARK.md ①②落地）
+
+| # | 功能 | 状态 | 断言 | 说明 |
+|---|---|---|---|---|
+| R15-a | 记忆点符号浮标（MoL image 要素） | ✅ | Y5 段 | LightPointSymbol：五类型程序化贴图 billboard（image 山框/audio 声弧/diary 书页/mixed 菱星/private 锁形），色形双编码防混淆；类型映射+billboard 朝向+显隐联动断言；证据 docs/evidence/r15_symbol_frag_*.png ×4 |
+| R15-b | 回忆卡片版式合成 | ✅ | Z3 段 | MemoryCardComposer 720×960：房间标题+走读完成真实截图缩略+路径点串（末站高亮）+关键词+时间+站数；专用相机渲染绕坑-041，PNG 落盘 persistentDataPath/screenshots/；证据 docs/evidence/r15_memory_card.png |
+
 ## 非功能项
 
 | 项 | 状态 | 证据 |
 |---|---|---|
-| 23+ 段自动化回归 | ✅ | smoke31 全绿（每轮新增段） |
-| Android 构建回归 | ✅ | 42.9MB APK（build7） |
+| 23+ 段自动化回归 | ✅ | smoke31→93 全绿（每轮新增段，当前 31 段） |
+| Android 构建回归 | ✅ | 42.9MB→47.7MB APK（逐轮回归） |
 | 性能基线 | ✅ | PERF_AUDIT.md（62.5fps/403MB/粒子 200） |
 | 音效体系 | ✅ | SfxLibrary 程序合成（chime/hover/铃/缝纫/翻页）+ASSET_LIST 登记 |
 | 旁白文案 | ✅ | NARRATION_SCRIPT.md（8 条碎片段落式旁白，录音即用） |

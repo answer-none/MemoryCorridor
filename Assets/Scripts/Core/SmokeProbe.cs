@@ -628,7 +628,86 @@ namespace MemoryCorridor.Core
                 }
                 else
                 {
-                    Debug.Log("[SmokeProbe] Z2 回忆卡片截图 OK（CaptureMemoryShot 已调，PNG 落盘待 GUI 目检）");
+                    Debug.Log("[SmokeProbe] Z2 回忆卡片截图 OK（CaptureMemoryShot 已调，落盘证据见 Z3）");
+                }
+            }
+
+            // ========== Y5. 记忆点符号浮标（R15 ①：MoL image 要素，色形双编码） ==========
+            if (pass)
+            {
+                LightPointAnchor[] symAnchors = FindAll<LightPointAnchor>();
+                AppData symData = SaveDataService.LoadAppData();
+                Camera symCam = Camera.main;
+                bool symOk = symAnchors.Length > 0 && symData != null;
+                int symFound = 0;
+                string symTable = "";
+                foreach (LightPointAnchor a in symAnchors)
+                {
+                    if (a == null || a.Symbol == null) { symOk = false; continue; }
+                    LightPointSymbol sym = a.Symbol;
+                    // 类型映射断言：按 fragmentId 查 type/visibility 与 KindFor 一致
+                    string expectType = null; bool expectPrivate = false;
+                    foreach (RoomData rd in symData.rooms)
+                    {
+                        if (rd.fragments == null) continue;
+                        foreach (MemoryFragment mf in rd.fragments)
+                        {
+                            if (mf.id == a.FragmentId) { expectType = mf.type; expectPrivate = mf.visibility == "private"; break; }
+                        }
+                    }
+                    LightPointSymbol.Kind expectKind = LightPointSymbol.KindFor(expectPrivate, expectType);
+                    bool kindOk = sym.CurrentKind == expectKind;
+                    // billboard 断言：+z 背向主相机（dot>0.85）
+                    bool billboardOk = symCam == null
+                        || Vector3.Dot(sym.transform.forward,
+                            (sym.transform.position - symCam.transform.position).normalized) > 0.85f;
+                    if (kindOk && billboardOk) symFound++;
+                    else symOk = false;
+                    symTable += sym.CurrentKind + "(" + (kindOk ? "✓" : "✗") + (billboardOk ? "b✓" : "b✗") + ") ";
+                }
+                // 显隐联动断言：SetMarkerVisible(false) → 符号隐藏 → 恢复
+                bool linkOk = true;
+                if (symAnchors.Length > 0 && symAnchors[0] != null && symAnchors[0].Symbol != null)
+                {
+                    symAnchors[0].SetMarkerVisible(false);
+                    linkOk = !symAnchors[0].Symbol.IsVisible;
+                    symAnchors[0].SetMarkerVisible(true);
+                    linkOk = linkOk && symAnchors[0].Symbol.IsVisible;
+                }
+                if (!symOk || !linkOk || symFound != symAnchors.Length)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-Y5: 符号浮标异常 (found=" + symFound + "/" + symAnchors.Length
+                        + " link=" + linkOk + ") " + symTable);
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] Y5 记忆点符号 OK（" + symFound + " 点色形双编码，类型映射+billboard+显隐联动全过）");
+                    yield return CaptureSymbolEvidence(); // R15 证据：符号特写实拍落盘（Play 模式渲染，绕坑-041）
+                }
+            }
+
+            // ========== Z3. 回忆卡片版式合成（R15 ②：截图缩略+路径点串+时间+关键词，本地生成） ==========
+            if (pass)
+            {
+                RoutePlayer cardRp = FindFirst<RoutePlayer>();
+                MemoryCardComposer.CardMeta meta = MemoryCardComposer.LastComposeMeta;
+                bool composed = cardRp != null && cardRp.LastCardComposed && meta != null && meta.PngBytes > 0;
+                bool fileExists = meta != null && System.IO.File.Exists(meta.PngPath);
+                bool metaOk = meta != null && !string.IsNullOrEmpty(meta.Title)
+                    && !string.IsNullOrEmpty(meta.Keywords) && meta.StationCount > 0;
+                bool timeOk = meta != null && System.DateTime.TryParse(meta.TimeText, out _);
+                if (!composed || !fileExists || !metaOk || !timeOk)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-Z3: 卡片合成异常 (composed=" + composed + " file=" + fileExists
+                        + " meta=" + metaOk + " time=" + timeOk + ")");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] Z3 回忆卡片 OK（" + meta.PngBytes + " 字节落盘，标题=" + meta.Title
+                        + " 站数=" + meta.StationCount + " 关键词=" + meta.Keywords
+                        + " 缩略=" + (meta.ShotCaptured ? "真实截图" : "占位") + "）");
                 }
             }
 
@@ -822,7 +901,7 @@ namespace MemoryCorridor.Core
             }
 
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3) 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
 
 #if UNITY_EDITOR
@@ -1412,6 +1491,83 @@ namespace MemoryCorridor.Core
         }
 
         // ---------- 工具 ----------
+        /// <summary>
+        /// R15 证据：符号特写（四类型+私密各一张 800×600，落 docs/evidence/）。
+        /// 卡片合成同款管线（Sprite3D quad+正交相机+RT ReadPixels），隔离区 (5,-500,0) 摆放
+        /// 「CardBg 底板 + 符号 quad」——不实例化光点本体。
+        /// 坑-051：特写相机距光晕壳 <1.2m 时壳的角尺寸大于 ortho 视野 → 壳填屏（两轮实测）；
+        /// 证据截图只摆符号 quad，不依赖场景几何。batchmode 非 Play 相机渲染另见坑-051①。
+        /// </summary>
+        private IEnumerator CaptureSymbolEvidence()
+        {
+            Shader spriteShader = Shader.Find("MemoryCorridor/Sprite3D");
+            if (spriteShader == null) yield break;
+
+            string[] types = { "image", "audio", "diary", "mixed", "private" };
+            Color[] inks = { UiTokens.Amber, UiTokens.Cyan, UiTokens.Cream, UiTokens.WarmOrange, UiTokens.WarmRed };
+            Vector3 basePos = new Vector3(5f, -500f, 0f);
+
+            GameObject camGo = new GameObject("SymbolEvidenceCamera");
+            camGo.transform.position = basePos + new Vector3(0, 0, -1f);
+            camGo.transform.rotation = Quaternion.identity;
+            Camera cam = camGo.AddComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = 0.18f;
+            cam.nearClipPlane = 0.1f;
+            cam.farClipPlane = 2f;
+            cam.aspect = 4f / 3f;
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = new Color(0.06f, 0.05f, 0.09f, 1f);
+
+            for (int i = 0; i < types.Length; i++)
+            {
+                GameObject rootGo = new GameObject("SymEvidence_" + types[i]);
+                rootGo.transform.position = basePos + new Vector3(0, 0, i * 0.2f);
+
+                Texture2D boardTex = RoundedRectTexture.RoundedRect(400, 400, 24, UiTokens.CardBg, UiTokens.LineSoft, 2);
+                Material boardMat = new Material(spriteShader);
+                boardMat.mainTexture = boardTex;
+                GameObject board = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                Collider boardCol = board.GetComponent<Collider>();
+                if (boardCol != null) Destroy(boardCol);
+                board.name = "Board";
+                board.transform.SetParent(rootGo.transform, false);
+                board.transform.localPosition = new Vector3(0, 0, 0.01f);
+                board.transform.localScale = new Vector3(0.30f, 0.30f, 1);
+                board.GetComponent<MeshRenderer>().sharedMaterial = boardMat;
+
+                Material symMat = new Material(spriteShader);
+                symMat.mainTexture = LightPointSymbol.SymbolTexture((LightPointSymbol.Kind)i, inks[i]);
+                GameObject sym = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                Collider symCol = sym.GetComponent<Collider>();
+                if (symCol != null) Destroy(symCol);
+                sym.name = "Sym";
+                sym.transform.SetParent(rootGo.transform, false);
+                sym.transform.localPosition = Vector3.zero;
+                sym.transform.localScale = new Vector3(0.16f, 0.16f, 1);
+                sym.GetComponent<MeshRenderer>().sharedMaterial = symMat;
+
+                RenderTexture rt = new RenderTexture(800, 600, 24, RenderTextureFormat.ARGB32);
+                cam.targetTexture = rt;
+                cam.Render();
+                RenderTexture.active = rt;
+                Texture2D shot = new Texture2D(800, 600, TextureFormat.RGBA32, false);
+                shot.ReadPixels(new Rect(0, 0, 800, 600), 0, 0);
+                shot.Apply();
+                RenderTexture.active = null;
+                cam.targetTexture = null;
+                rt.Release();
+
+                string path = "docs/evidence/r15_symbol_" + types[i] + ".png";
+                System.IO.File.WriteAllBytes(path, shot.EncodeToPNG());
+                Destroy(shot);
+                Destroy(rootGo);
+                Debug.Log("[SmokeProbe] Y5 符号特写: " + path);
+                yield return null;
+            }
+            Destroy(camGo);
+        }
+
         private static T FindFirst<T>() where T : UnityEngine.Object
         {
             // R12：统一含 inactive——P 段隐藏告示牌/L 段隐藏面板后，D 段仍可读（坑-049 第四犯教训）
