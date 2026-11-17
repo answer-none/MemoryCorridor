@@ -18,6 +18,7 @@ namespace MemoryCorridor.Media
         private TextMesh distanceToggleText;
         private TextMesh vignetteToggleText;
         private TextMesh locomotionToggleText;
+        private TextMesh volumeToggleText;
         private bool showPoints = true;
         private bool showLabels = true;
         private bool dimmed;
@@ -31,6 +32,7 @@ namespace MemoryCorridor.Media
         public string PointsToggleText => pointsToggleText != null ? pointsToggleText.text : null;
         public string LabelsToggleText => labelsToggleText != null ? labelsToggleText.text : null;
         public string DistanceToggleText => distanceToggleText != null ? distanceToggleText.text : null;
+        public string VolumeToggleText => volumeToggleText != null ? volumeToggleText.text : null;
         public bool IsDimmed => dimmed;
 
         private static readonly Color OnColor = UiTokens.OnColor;
@@ -92,6 +94,14 @@ namespace MemoryCorridor.Media
             RefreshTexts();
         }
 
+        private void CycleVolume()
+        {
+            int cur = SettingsService.GetVolumePercent();
+            int next = (cur + 25) % 125; // 0→25→50→75→100→0
+            SettingsService.SetVolumePercent(next);
+            RefreshTexts();
+        }
+
         private void CycleVignette()
         {
             SettingsService.CycleVignette();
@@ -107,6 +117,7 @@ namespace MemoryCorridor.Media
 
         private void RefreshTexts()
         {
+            if (volumeToggleText != null) volumeToggleText.text = "主音量：" + SettingsService.GetVolumePercent() + "%";
             if (pointsToggleText != null) pointsToggleText.text = "光点标记：" + (showPoints ? "开" : "关");
             if (labelsToggleText != null) labelsToggleText.text = "星点标签：" + (showLabels ? "开" : "关");
             if (distanceToggleText != null)
@@ -160,10 +171,10 @@ namespace MemoryCorridor.Media
             Shader spriteShader = Shader.Find("MemoryCorridor/Sprite3D");
             Material boardMat = new Material(spriteShader);
             boardMat.mainTexture = RoundedRectTexture.RoundedRect(
-                460, 620, 18, UiTokens.CardBg, UiTokens.LineSoft, 2);
+                460, 780, 18, UiTokens.CardBg, UiTokens.LineSoft, 2);
             boardMat.SetColor("_Color", Color.white);
             boardRenderer.material = boardMat;
-            transform.localScale = new Vector3(0.46f, 0.62f, 1f);
+            transform.localScale = new Vector3(0.46f, 0.78f, 1f);
 
             Font font = UiTextFactory.Legacy;
 
@@ -181,11 +192,12 @@ namespace MemoryCorridor.Media
             titleTm.alignment = TextAlignment.Center;
             titleTm.color = UiTokens.Amber;
 
-            pointsToggleText = BuildToggleRow("TogglePoints", 140f, font, "光点标记：开", TogglePoints);
-            labelsToggleText = BuildToggleRow("ToggleLabels", 40f, font, "星点标签：开", ToggleLabels);
-            distanceToggleText = BuildToggleRow("RowDistance", -60f, font, "面板距离：2.4 米", CycleDistance);
-            vignetteToggleText = BuildToggleRow("RowVignette", -160f, font, "舒适暗角：关", CycleVignette);
-            locomotionToggleText = BuildToggleRow("RowLocomotion", -260f, font, "移动方式：传送", CycleLocomotion);
+            volumeToggleText = BuildToggleRow("RowVolume", 220f, font, "主音量：100%", CycleVolume);
+            pointsToggleText = BuildToggleRow("TogglePoints", 120f, font, "光点标记：开", TogglePoints);
+            labelsToggleText = BuildToggleRow("ToggleLabels", 20f, font, "星点标签：开", ToggleLabels);
+            distanceToggleText = BuildToggleRow("RowDistance", -80f, font, "面板距离：2.4 米", CycleDistance);
+            vignetteToggleText = BuildToggleRow("RowVignette", -180f, font, "舒适暗角：关", CycleVignette);
+            locomotionToggleText = BuildToggleRow("RowLocomotion", -280f, font, "移动方式：传送", CycleLocomotion);
 
             RefreshTexts();
         }

@@ -94,6 +94,30 @@ namespace MemoryCorridor.Core
                 : 2.4f;
         }
 
+        /// <summary>
+        /// R13 E9：设置主音量百分比（0-100）并持久化+应用到 AudioListener。
+        /// 映射：AudioListener.volume 为线性 0-1；感知响度 dB = 20×log10(volume)。
+        /// 0%→静音(-∞dB)、25%→-12dB、50%→-6dB、75%→-2.5dB、100%→0dB（对数刻度）。
+        /// </summary>
+        public static float SetVolumePercent(int percent)
+        {
+            float v = Mathf.Clamp01(percent / 100f);
+            AppData data = SaveDataService.LoadAppData();
+            if (data != null && data.settings != null)
+            {
+                data.settings.masterVolume = v;
+                SaveDataService.SaveAppData(data);
+            }
+            AudioListener.volume = v;
+            return v;
+        }
+
+        /// <summary>读当前主音量百分比（0-100）。</summary>
+        public static int GetVolumePercent()
+        {
+            return Mathf.RoundToInt(AudioListener.volume * 100f);
+        }
+
         /// <summary>循环舒适暗角档位（关→0.2→0.4→关）并持久化+立即应用。</summary>
         public static float CycleVignette()
         {

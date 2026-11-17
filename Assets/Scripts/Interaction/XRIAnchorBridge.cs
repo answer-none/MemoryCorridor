@@ -28,6 +28,8 @@ namespace MemoryCorridor.Interaction
         private Dictionary<string, MemoryFragment> fragmentsById;
         private int wiredLoggedCount = -1;
         private float wireTimer;
+        /// <summary>R13 E11：EnsureWired 轮询计数（探针量化退避效果用）。</summary>
+        public static int WirePollCount { get; private set; }
         private string pendingFragmentId;
         private bool pendingPanelShown;
 
@@ -144,6 +146,7 @@ namespace MemoryCorridor.Interaction
             if (wireTimer >= 0.5f)
             {
                 wireTimer = 0f;
+                WirePollCount++; // R13 E11：退避后 2s ≈ 4 次（旧版每帧 ≈120 次）
                 EnsureWired();
             }
             TickHoveredAnchors();

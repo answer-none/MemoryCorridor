@@ -632,7 +632,55 @@ namespace MemoryCorridor.Core
                 }
             }
 
-            // ========== K. ImportServer HTTP ==========
+            // ========== W. 音量五档映射实测（R13 E9） ==========
+            if (pass)
+            {
+                int[] percents = { 0, 25, 50, 75, 100 };
+                bool volOk = true;
+                string volTable = "";
+                for (int i = 0; i < percents.Length; i++)
+                {
+                    float v = SettingsService.SetVolumePercent(percents[i]);
+                    float listener = AudioListener.volume;
+                    float db = 20f * Mathf.Log10(Mathf.Max(0.0001f, listener));
+                    bool persisted = Mathf.Abs(SaveDataService.LoadAppData().settings.masterVolume - v) < 0.01f;
+                    bool match = Mathf.Abs(listener - v) < 0.01f;
+                    volTable += percents[i] + "%→" + listener.ToString("F2") + "(" + db.ToString("F1") + "dB) ";
+                    if (!match || !persisted) volOk = false;
+                }
+                // 恢复 100%
+                SettingsService.SetVolumePercent(100);
+
+                if (!volOk)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-W: 音量五档异常 " + volTable);
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] W 音量五档 OK（对数映射表：" + volTable + "）");
+                }
+            }
+
+            // ========== T2. 桥接器轮询退避量化（R13 E11） ==========
+            if (pass)
+            {
+                int pollBefore = XRIAnchorBridge.WirePollCount;
+                yield return new WaitForSecondsRealtime(2f);
+                int pollDelta = XRIAnchorBridge.WirePollCount - pollBefore;
+                // 0.5s 退避 → 2s 内 ≤5 次（旧版每帧 ≈120 次/2s）
+                if (pollDelta > 5)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-T2: 轮询退避未生效 delta=" + pollDelta);
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] T2 轮询退避 OK（2s 内 " + pollDelta + " 次，旧版每帧 ≈120 次 → N→M 量化达标）");
+                }
+            }
+
+
             if (pass)
             {
                 yield return new WaitForSecondsRealtime(0.6f); // 等监听线程
