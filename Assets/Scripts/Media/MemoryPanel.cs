@@ -160,7 +160,7 @@ namespace MemoryCorridor.Media
             photoFrameGo.transform.SetParent(transform, false);
             Image photoFrame = photoFrameGo.AddComponent<Image>();
             photoFrame.sprite = Sprite.Create(
-                RoundedRectTexture.RoundedRect(560, 250, 20, new Color(0.16f, 0.13f, 0.19f, 1f), UiTokens.Amber, 2),
+                RoundedRectTexture.RoundedRect(560, 250, 20, UiTokens.FrameBg, UiTokens.Amber, 2),
                 new Rect(0f, 0f, 560f, 250f), new Vector2(0.5f, 0.5f), 100f);
             photoFrame.raycastTarget = false;
             Stretch(photoFrameGo.GetComponent<RectTransform>(), 0.045f, 0.435f, 0.955f, 0.945f);
@@ -218,7 +218,7 @@ namespace MemoryCorridor.Media
 
             MeshRenderer buttonRenderer = buttonGo.AddComponent<MeshRenderer>();
             Material buttonMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            buttonMat.SetColor("_BaseColor", new Color(0.5f, 0.3f, 0.3f, 1f));
+            buttonMat.SetColor("_BaseColor", UiTokens.CloseBg);
             buttonRenderer.material = buttonMat;
 
             GameObject crossGo = new GameObject("Cross");
@@ -234,7 +234,7 @@ namespace MemoryCorridor.Media
             crossTm.characterSize = 0.02f;
             crossTm.anchor = TextAnchor.MiddleCenter;
             crossTm.alignment = TextAlignment.Center;
-            crossTm.color = new Color(0.95f, 0.92f, 0.88f, 1f);
+            crossTm.color = UiTokens.CrossWhite;
 
             closeInteractable = buttonGo.AddComponent<UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable>();
             closeInteractable.selectEntered.AddListener(delegate (

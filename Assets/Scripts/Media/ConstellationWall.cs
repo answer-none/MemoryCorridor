@@ -152,8 +152,8 @@ namespace MemoryCorridor.Media
                 Shader spriteShader2 = Shader.Find("MemoryCorridor/Sprite3D");
                 Material labelBoardMat = new Material(spriteShader2);
                 labelBoardMat.mainTexture = RoundedRectTexture.RoundedRect(
-                    280, 72, 14, new Color(0.10f, 0.08f, 0.13f, 0.9f),
-                    new Color(0.91f, 0.64f, 0.29f), 2);
+                    280, 72, 14, UiTokens.LabelBg,
+                    UiTokens.Amber, 2);
                 labelBoardMat.SetColor("_Color", Color.white);
                 labelBoardRenderer.material = labelBoardMat;
 
@@ -171,7 +171,7 @@ namespace MemoryCorridor.Media
                 labelTm.characterSize = 0.07f; // R12: 6 -> 38 dmm
                 labelTm.anchor = TextAnchor.MiddleCenter;
                 labelTm.alignment = TextAlignment.Center;
-                labelTm.color = new Color(0.92f, 0.88f, 0.82f, 1f);
+                labelTm.color = UiTokens.LabelInk;
                 stars.Add(star);
             }
 

@@ -9,7 +9,7 @@ namespace MemoryCorridor.Media
     /// </summary>
     public class PulseEmissive : MonoBehaviour
     {
-        [SerializeField] private Color baseColor = new Color(0.91f, 0.64f, 0.29f, 1f);
+        [SerializeField] private Color baseColor = UiTokens.Amber;
         [SerializeField] private float baseIntensity = 1.2f;
         [SerializeField] private float pulseRange = 0.8f;
         [SerializeField] private float speed = 1.6f;

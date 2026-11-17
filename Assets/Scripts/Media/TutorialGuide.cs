@@ -88,8 +88,8 @@ namespace MemoryCorridor.Media
             Shader spriteShader = Shader.Find("MemoryCorridor/Sprite3D");
             Material boardMat = new Material(spriteShader);
             boardMat.mainTexture = RoundedRectTexture.RoundedRect(
-                760, 130, 16, new Color(0.10f, 0.08f, 0.13f, 0.86f),
-                new Color(0.91f, 0.64f, 0.29f), 2);
+                760, 130, 16, UiTokens.HudBg,
+                UiTokens.Amber, 2);
             boardMat.SetColor("_Color", Color.white);
             boardRenderer.material = boardMat;
             transform.localScale = new Vector3(0.62f, 0.11f, 1f);

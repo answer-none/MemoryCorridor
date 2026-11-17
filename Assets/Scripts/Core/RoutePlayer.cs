@@ -103,7 +103,22 @@ namespace MemoryCorridor.Core
             if (buildWall && wasTouring && constellationWall != null && route.Count > 0)
             {
                 constellationWall.Build(route);
+                CaptureMemoryShot(); // R12 C：漫游完成自动截图（回忆卡片）
             }
+        }
+
+        /// <summary>R12 C：ScreenCapture 截图保存到 persistentDataPath/screenshots/。</summary>
+        public bool LastCaptureRequested { get; private set; }
+
+        private void CaptureMemoryShot()
+        {
+            LastCaptureRequested = true; // 坑-041：batchmode 下 ScreenCapture 不落盘——标志作为运行时证据
+            string dir = System.IO.Path.Combine(Application.persistentDataPath, "screenshots");
+            System.IO.Directory.CreateDirectory(dir);
+            string fileName = "memory_shot_" + System.DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
+            string path = System.IO.Path.Combine(dir, fileName);
+            ScreenCapture.CaptureScreenshot(path);
+            Debug.Log("[RoutePlayer] 回忆卡片截图: " + path);
         }
 
         /// <summary>回访：更新 lastVisitedAt 并把该光点褪色复位（创新点"记忆褪色"的闭环）。</summary>

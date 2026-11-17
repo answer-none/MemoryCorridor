@@ -24,7 +24,7 @@ namespace MemoryCorridor.Media
             main.startLifetime = 9f;
             main.startSpeed = 0.04f;
             main.startSize = 0.02f;
-            main.startColor = new Color(0.91f, 0.72f, 0.45f, 0.55f); // 暖琥珀尘埃
+            main.startColor = UiTokens.DustAmberDim; // 暖琥珀尘埃
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.gravityModifier = 0f;
             main.loop = true;
@@ -41,7 +41,7 @@ namespace MemoryCorridor.Media
             Shader spriteShader = Shader.Find("MemoryCorridor/Sprite3D");
             Material mat = new Material(spriteShader);
             mat.mainTexture = RoundedRectTexture.RadialGlow(
-                64, new Color(0.91f, 0.72f, 0.45f, 0.85f), 2.5f);
+                64, UiTokens.DustAmber, 2.5f);
             mat.SetColor("_Color", Color.white);
             renderer.material = mat;
             renderer.renderMode = ParticleSystemRenderMode.Billboard;

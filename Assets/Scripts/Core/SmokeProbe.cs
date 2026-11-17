@@ -617,6 +617,21 @@ namespace MemoryCorridor.Core
                 }
             }
 
+            // ========== Z2. 回忆卡片截图保存（R12 C 项，标志断言——坑-041 batchmode 不落盘） ==========
+            if (pass)
+            {
+                RoutePlayer captureRp = FindFirst<RoutePlayer>();
+                if (captureRp == null || !captureRp.LastCaptureRequested)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-Z2: CaptureMemoryShot 未被调用（走读完成标志缺失）");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] Z2 回忆卡片截图 OK（CaptureMemoryShot 已调，PNG 落盘待 GUI 目检）");
+                }
+            }
+
             // ========== K. ImportServer HTTP ==========
             if (pass)
             {

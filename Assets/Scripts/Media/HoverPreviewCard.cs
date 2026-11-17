@@ -66,8 +66,8 @@ namespace MemoryCorridor.Media
             Shader spriteShader = Shader.Find("MemoryCorridor/Sprite3D");
             Material boardMat = new Material(spriteShader);
             boardMat.mainTexture = RoundedRectTexture.RoundedRect(
-                360, 160, 16, new Color(0.12f, 0.10f, 0.15f, 0.94f),
-                new Color(0.91f, 0.64f, 0.29f), 2);
+                360, 160, 16, UiTokens.PanelBg,
+                UiTokens.Amber, 2);
             boardMat.SetColor("_Color", Color.white);
             boardRenderer.material = boardMat;
             transform.localScale = new Vector3(0.36f, 0.16f, 1f);
@@ -83,14 +83,14 @@ namespace MemoryCorridor.Media
             thumbGo.transform.localScale = new Vector3(0.42f, 0.62f, 1f);
             thumbRenderer = thumbGo.GetComponent<MeshRenderer>();
             Material thumbMat = new Material(lit);
-            thumbMat.SetColor("_BaseColor", new Color(0.2f, 0.18f, 0.22f, 1f));
+            thumbMat.SetColor("_BaseColor", UiTokens.ThumbBg);
             thumbRenderer.material = thumbMat;
 
             Font font = UiTextFactory.Legacy;
             titleText = CreateText("TitleText", new Vector3(0.02f, 0.038f, -0.01f), font,
-                44, 0.012f, new Color(0.91f, 0.64f, 0.29f));
+                44, 0.012f, UiTokens.Amber);
             dateText = CreateText("DateText", new Vector3(0.02f, -0.042f, -0.01f), font,
-                32, 0.010f, new Color(0.92f, 0.88f, 0.82f));
+                32, 0.010f, UiTokens.Cream);
 
             rootObject.SetActive(false);
         }

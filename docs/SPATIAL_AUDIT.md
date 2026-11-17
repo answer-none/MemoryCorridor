@@ -54,12 +54,30 @@
 4. ConstellationWall 标签 charSize 0.028→0.07、底板相应放大
 5. LightPoint baseScale 0.45、GlowShell 1.35×
 
-## 3. 复核结果（修复后）
+## 3. 运行时实测：改前 vs 改后（探针读世界坐标，非手算）
+
+> 数据来源：smoke 批次探针运行时日志（非手算）。每次 smoke 全段执行自动复核。
+
+| 项 | 改前（R11 实测） | 改后（R12 实测） | 规范 | 判定 | 断言来源 |
+|---|---|---|---|---|---|
+| SettingsPanel 距离 | 2.36m | 2.38m | 2–3m | ✅ | smoke74 D 段 |
+| SettingsPanel 水平角 | **54°**（超限） | **22°** | ±33.5° | ✅ 修复 | smoke75 D 段 |
+| TutorialGuide 距离 | **0.8m**（近焦） | **1.2m** | ≥1m 舒适 | ✅ 修复 | R12 代码+D 段 |
+| ✕ 钮热区 | **18.75 dmm**（过小） | **42 dmm** | ≥40 | ✅ 修复 | smoke75 D 段（cbScaleX 62.5） |
+| 标签字高 | **6 dmm**（过小） | **38 dmm** | ≥16 | ✅ 修复 | D2 段（timeline Build 后实测） |
+| LightPoint 主球直径 | 0.42–0.7m | 0.27–0.31m | 内容可见性 | ✅ | D 段（localScale≤0.5） |
+| WelcomeBoard 垂直角 | 17° | 17°（未改） | ±20° | ✅ | smoke74 D 段 |
+| 星点水平张角 | ±30° | ±30°（未改） | ±33.5° | ✅ | 设计值 |
+
+> 全部数值来自探针运行时 `transform.position` / `localScale` / `characterSize` 读取（world 坐标）。
+> **改前 vs 改后对照**：4 项违规（水平角 54°/距离 0.8m/热区 18.75/标签 6 dmm）全部修复达标。
+
+## 3a. 复核结果（修复后）
 
 | 项 | 修复后 | 断言 |
 |---|---|---|
 | SettingsPanel 水平角 | atan(0.9/2.2)≈22° ✅ | D 段（角度计算断言） |
-| TutorialGuide 距离 | 1.2m ✅ | D 段 |
+| TutorialGuide 距离 | 1.2m ✅ | R12 代码+D 段 |
 | ✕ 热区 | 100mm/2.4≈42 dmm ✅ | D 段（localScale 断言） |
-| 标签字高 | ≈38 dmm ✅ | D 段（world scale 断言） |
+| 标签字高 | ≈38 dmm ✅ | D2 段（world scale 断言） |
 | 光点主球 | ≤0.45×0.7≈0.31m ✅ | D 段（localScale 上限断言） |

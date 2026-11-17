@@ -21,6 +21,21 @@ namespace MemoryCorridor.Media
         public static readonly Color LineSoft = new Color(0.91f, 0.64f, 0.29f, 0.55f);  // 柔描边
         public static readonly Color OnColor = new Color(0.55f, 0.85f, 0.55f, 1f);      // 开关"开"
         public static readonly Color OffColor = new Color(0.75f, 0.5f, 0.5f, 1f);       // 开关"关"
+        public static readonly Color DustAmber = new Color(0.91f, 0.72f, 0.45f, 0.85f); // 星尘粒子
+        public static readonly Color DustAmberDim = new Color(0.91f, 0.72f, 0.45f, 0.55f); // 星尘粒子（半透明）
+        public static readonly Color FrameBg = new Color(0.16f, 0.13f, 0.19f, 1f);      // 照片框底
+        public static readonly Color ThumbBg = new Color(0.2f, 0.18f, 0.22f, 1f);       // 缩略占位
+        public static readonly Color CloseBg = new Color(0.5f, 0.3f, 0.3f, 1f);         // ✕ 底
+        public static readonly Color CrossWhite = new Color(0.95f, 0.92f, 0.88f, 1f);   // ✕ 白
+        public static readonly Color LabelBg = new Color(0.10f, 0.08f, 0.13f, 0.9f);    // 星点标签底
+        public static readonly Color LabelInk = new Color(0.92f, 0.88f, 0.82f, 1f);     // 星点标签墨
+
+        // —— 尺寸/间距（像素，面板 620×460 坐标系）——
+        public const float CornerRadius = 24f;    // 面板圆角
+        public const float CardRadius = 16f;      // 卡片圆角
+        public const float BadgeRadius = 12f;     // 徽章圆角
+        public const float BorderPx = 2f;         // 描边宽
+        public const float RowHeightPx = 64f;     // 开关行高
 
         /// <summary>面板标题字号（620 宽面板）。</summary>
         public const float PanelTitleSize = 42f;
