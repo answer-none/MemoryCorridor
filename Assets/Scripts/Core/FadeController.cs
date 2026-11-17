@@ -38,7 +38,7 @@ namespace MemoryCorridor.Core
             }
 
             Interaction.LightPointAnchor[] anchors =
-                UnityEngine.Object.FindObjectsByType<Interaction.LightPointAnchor>(UnityEngine.FindObjectsSortMode.None);
+                UnityEngine.Object.FindObjectsByType<Interaction.LightPointAnchor>(UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
             int applied = 0;
             for (int i = 0; i < anchors.Length; i++)
             {

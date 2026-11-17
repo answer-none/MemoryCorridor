@@ -213,8 +213,8 @@ namespace MemoryCorridor.Media
             const float PixelScale = 0.0016f;
             GameObject buttonGo = new GameObject("CloseButton");
             buttonGo.transform.SetParent(transform, false);
-            buttonGo.transform.localPosition = new Vector3(262f, 196f, -10f);
-            buttonGo.transform.localScale = new Vector3(0.045f / PixelScale, 0.045f / PixelScale, 1f);
+            buttonGo.transform.localPosition = new Vector3(240f, 192f, -10f);
+            buttonGo.transform.localScale = new Vector3(0.10f / PixelScale, 0.10f / PixelScale, 1f); // R12: 18.75 -> 42 dmm
 
             MeshRenderer buttonRenderer = buttonGo.AddComponent<MeshRenderer>();
             Material buttonMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));

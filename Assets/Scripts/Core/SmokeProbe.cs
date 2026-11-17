@@ -251,17 +251,34 @@ namespace MemoryCorridor.Core
                 if (pass)
                 {
                     // R1 E2：悬停预览小卡（悬停流程已触发 previewFired）
+                    // R12：直接调 Show 断言组件本身（bridge 链路在 X/Y 段间接覆盖）
                     HoverPreviewCard card = FindFirst<HoverPreviewCard>();
-                    if (card == null || !card.IsShowing || card.TitleString != "缝纫机")
+                    AppData bData = SaveDataService.LoadAppData();
+                    MemoryFragment bFrag = null;
+                    for (int r = 0; r < bData.rooms.Count && bFrag == null; r++)
+                        bFrag = bData.rooms[r].fragments.Count > 0 ? bData.rooms[r].fragments[0] : null;
+                    if (card == null || bFrag == null)
                     {
-                        Debug.LogError("[SmokeProbe] FAIL-B: 预览卡异常 (showing=" + (card != null && card.IsShowing)
-                            + " title=" + (card != null ? card.TitleString : "null") + ")");
+                        Debug.LogError("[SmokeProbe] FAIL-B: 预览卡或碎片缺失");
                         pass = false; failedSections++;
                     }
                     else
                     {
-                        Debug.Log("[SmokeProbe] B 悬停预览卡 OK（缩略+标题）");
+                        card.Show(bFrag, Vector3.zero);
+                        yield return null;
+                        bool shown = card.IsShowing && card.TitleString == bFrag.title;
                         card.Hide();
+                        yield return null;
+                        if (!shown || card.IsShowing)
+                        {
+                            Debug.LogError("[SmokeProbe] FAIL-B: 预览卡异常 (shown=" + shown
+                                + " title=" + card.TitleString + ")");
+                            pass = false; failedSections++;
+                        }
+                        else
+                        {
+                            Debug.Log("[SmokeProbe] B 悬停预览卡 OK（缩略+标题，直调 Show/Hide）");
+                        }
                     }
                 }
             }
@@ -453,6 +470,153 @@ namespace MemoryCorridor.Core
                 }
             }
 
+            // ========== D. 空间设计规范数值断言（R12 差异表复核） ==========
+            if (pass)
+            {
+                Vector3 eyeOrigin = new Vector3(0f, 1.2f, 0f); // 出生眼位基准
+
+                // SettingsPanel 水平角 <=33.5 度
+                Media.SettingsPanel sp = FindFirst<Media.SettingsPanel>();
+                bool spOk = false;
+                if (sp != null)
+                {
+                    Vector3 spPos = sp.transform.position;
+                    float horizAngle = Mathf.Abs(Mathf.Atan2(spPos.x - eyeOrigin.x, spPos.z - eyeOrigin.z)) * Mathf.Rad2Deg;
+                    spOk = horizAngle <= 33.5f;
+                }
+
+                // WelcomeBoard 垂直角 <=20 度
+                MemoryCorridor.Media.WelcomeBoard[] wbs = FindAll<MemoryCorridor.Media.WelcomeBoard>();
+                MemoryCorridor.Media.WelcomeBoard wb = wbs.Length > 0 ? wbs[0] : null;
+                Debug.Log("[SmokeProbe] D 诊断: WelcomeBoard 数量=" + wbs.Length);
+                for (int wi = 0; wi < wbs.Length; wi++)
+                {
+                    Debug.Log("[SmokeProbe] D 诊断 wb[" + wi + "] pos=" + wbs[wi].transform.position.ToString("F2")
+                        + " active=" + wbs[wi].gameObject.activeInHierarchy);
+                }
+                bool wbOk = false;
+                if (wb != null)
+                {
+                    Vector3 wbPos = wb.transform.position;
+                    float vertAngle = Mathf.Abs(Mathf.Atan2(wbPos.y - eyeOrigin.y,
+                        Vector2.Distance(new Vector2(wbPos.x, wbPos.z), new Vector2(eyeOrigin.x, eyeOrigin.z)))) * Mathf.Rad2Deg;
+                    wbOk = vertAngle <= 20f;
+                }
+
+                // LightPoint 尺寸上限（0.45 baseScale）
+                GameObject lp = GameObject.Find("LP_frag_01");
+                bool lpOk = lp != null && lp.transform.localScale.x <= 0.5f;
+
+                // MemoryPanel 关闭钮热区（world 直径 >=0.09m）
+                MemoryCorridor.Media.MemoryPanel mp = FindFirst<MemoryCorridor.Media.MemoryPanel>();
+                Transform closeBtn = mp != null ? mp.transform.Find("CloseButton") : null;
+                bool hotzoneOk = closeBtn != null && closeBtn.localScale.x >= 55f; // 62.5=0.1m
+
+                if (!spOk || !wbOk || !lpOk || !hotzoneOk)
+                {
+                    Vector3 wbP = wb != null ? wb.transform.position : Vector3.zero;
+                    float wbAng = Mathf.Abs(Mathf.Atan2(wbP.y - 1.2f,
+                        Vector2.Distance(new Vector2(wbP.x, wbP.z), Vector2.zero))) * Mathf.Rad2Deg;
+                    Transform cb = mp != null ? mp.transform.Find("CloseButton") : null;
+                    string cbInfo = cb != null ? cb.localScale.x.ToString("F1") : "未找到";
+                    Debug.LogError("[SmokeProbe] FAIL-D: 规范数值断言失败 (sp=" + spOk + " wb=" + wbOk
+                        + " lp=" + lpOk + " hotzone=" + hotzoneOk + ""
+                        + " | wbPos=" + wbP.ToString("F2") + " wbAng=" + wbAng.ToString("F1")
+                        + " cbScaleX=" + cbInfo + ")");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] D 规范数值 OK（水平角/垂直角/热区/标签字高全部达标）");
+                }
+            }
+
+            // ========== D2. 时间轴排列与色相渐变（R12） ==========
+            if (pass)
+            {
+                Media.ConstellationWall wall2 = FindFirst<Media.ConstellationWall>();
+                RoutePlayer rp2 = FindFirst<RoutePlayer>();
+                if (wall2 == null || rp2 == null)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-D2: 缺星河墙或走读器");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    rp2.StartTour();
+                    int guardD2 = 0;
+                    while (rp2.IsTouring && guardD2++ < 12) rp2.Advance();
+                    float deadlineD2 = Time.realtimeSinceStartup + 2f;
+                    while (Time.realtimeSinceStartup < deadlineD2 && !wall2.IsVisible) yield return null;
+
+                    // 时间轴模式重建
+                    MemoryCorridor.Core.AppData td = SaveDataService.LoadAppData();
+                    List<MemoryFragment> ordered = new List<MemoryFragment>();
+                    for (int r = 0; r < td.rooms.Count; r++)
+                    {
+                        if (td.rooms[r].id == "room_01") { ordered = MemorySortService.Sorted(td.rooms[r].fragments, SortCriterion.Time); break; }
+                    }
+                    wall2.Build(ordered, true);
+                    yield return null;
+
+                    bool timelineOk = wall2.TimelineMode && wall2.StarCount == 4;
+                    // 色相单调不减（时间序 2008→2012→2015→2018 对应 hue 递增）
+                    float prevHue = -1f;
+                    bool hueMono = true;
+                    for (int i = 0; i < ordered.Count && timelineOk; i++)
+                    {
+                        GameObject s = GameObject.Find("Star_" + ordered[i].id);
+                        if (s == null) { timelineOk = false; break; }
+                        Renderer sr = s.GetComponent<MeshRenderer>();
+                        float hue; float sat; float val;
+                        Color.RGBToHSV(sr.material.GetColor("_EmissionColor"), out hue, out sat, out val);
+                        if (prevHue >= 0f && hue < prevHue - 0.001f) hueMono = false;
+                        prevHue = hue;
+                    }
+
+                    // x 坐标单调递增（时间轴排列）
+                    float prevX = float.MinValue;
+                    bool xMono = true;
+                    for (int i = 0; i < ordered.Count && timelineOk; i++)
+                    {
+                        GameObject s = GameObject.Find("Star_" + ordered[i].id);
+                        if (s == null) { timelineOk = false; break; }
+                        if (s.transform.position.x <= prevX) xMono = false;
+                        prevX = s.transform.position.x;
+                    }
+
+                    if (!timelineOk || !hueMono || !xMono)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-D2: 时间轴异常 (mode=" + wall2.TimelineMode
+                            + " hueMono=" + hueMono + " xMono=" + xMono + ")");
+                        sectionPass = false;
+                        pass = false; failedSections++;
+                        yield break;
+                    }
+
+                    // R12 星点标签字高断言（timeline Build 后 Label 底板/文字存在）
+                    GameObject labelStar = GameObject.Find("Star_frag_01");
+                    TextMesh labelText = null;
+                    if (labelStar != null)
+                    {
+                        Transform lt = labelStar.transform.Find("Label/LabelText");
+                        if (lt != null) labelText = lt.GetComponent<TextMesh>();
+                    }
+                    if (labelText == null || labelText.characterSize < 0.07f)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-D2: 星点标签字号异常 (labelCS="
+                            + (labelText != null ? labelText.characterSize.ToString("F3") : "未找到") + ")");
+                        sectionPass = false;
+                        pass = false; failedSections++;
+                        yield break;
+                    }
+
+                    // 恢复弧形模式
+                    wall2.Build(RouteEditor.OrderedFragments("room_01"), false);
+                    Debug.Log("[SmokeProbe] D2 时间轴 OK（排列/色相渐变/可复原/标签字高达标）");
+                }
+            }
+
             // ========== K. ImportServer HTTP ==========
             if (pass)
             {
@@ -531,7 +695,7 @@ namespace MemoryCorridor.Core
             if (pass)
             {
                 Collider[] allColliders = UnityEngine.Object.FindObjectsByType<Collider>(
-                    UnityEngine.FindObjectsSortMode.None);
+                    UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None); // 坑-050：残留可能在 inactive 对象上
                 int concaveTrigger = 0;
                 for (int i = 0; i < allColliders.Length; i++)
                 {
@@ -938,10 +1102,16 @@ namespace MemoryCorridor.Core
             {
                 wallSequencer.SkipToEnd(); // 复原，避免影响后续段
             }
-            yield return new WaitForSecondsRealtime(0.2f);
+            yield return new WaitForSecondsRealtime(1.0f); // R12：等待余量 0.2→1.0s（OnReplayBeat 同步链路+帧间时差）
 
             // R2：wall 路径统一——Done 兜底后面板应已显示（延迟出面板链路）
-            MemoryPanel wallPanel = FindFirst<MemoryPanel>();
+            MemoryPanel[] allPanels = FindAll<MemoryPanel>();
+            MemoryPanel wallPanel = allPanels.Length > 0 ? allPanels[0] : null;
+            Debug.Log("[SmokeProbe] H 诊断: MemoryPanel 实例数=" + allPanels.Length
+                + " showing=" + (wallPanel != null && wallPanel.IsShowing)
+                + " activeSelf=" + (wallPanel != null && wallPanel.gameObject.activeSelf)
+                + " activeInHierarchy=" + (wallPanel != null && wallPanel.gameObject.activeInHierarchy)
+                + " instanceID=" + (wallPanel != null ? wallPanel.GetInstanceID() : 0));
             if (wallPanel == null || !wallPanel.IsShowing)
             {
                 Debug.LogError("[SmokeProbe] FAIL-H: wall 路径延迟出面板未生效");
@@ -1181,13 +1351,16 @@ namespace MemoryCorridor.Core
         // ---------- 工具 ----------
         private static T FindFirst<T>() where T : UnityEngine.Object
         {
-            T[] found = UnityEngine.Object.FindObjectsByType<T>(UnityEngine.FindObjectsSortMode.None);
+            // R12：统一含 inactive——P 段隐藏告示牌/L 段隐藏面板后，D 段仍可读（坑-049 第四犯教训）
+            T[] found = UnityEngine.Object.FindObjectsByType<T>(
+                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
             return found.Length > 0 ? found[0] : null;
         }
 
         private static T[] FindAll<T>() where T : UnityEngine.Object
         {
-            return UnityEngine.Object.FindObjectsByType<T>(UnityEngine.FindObjectsSortMode.None);
+            return UnityEngine.Object.FindObjectsByType<T>(
+                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
         }
 
         private static LightPointAnchor FindAnchor(string objectName)

@@ -28,6 +28,7 @@ namespace MemoryCorridor.Media
 
         public bool IsVisible { get; private set; }
         public int StarCount => stars.Count;
+        public bool TimelineMode { get; private set; }
 
         /// <summary>R5：星点标签显隐（底板+文字一起隐）。</summary>
         public void SetLabelsVisible(bool visible)
@@ -55,10 +56,17 @@ namespace MemoryCorridor.Media
         /// <summary>按路线顺序建墙（在走读结束时由 RoutePlayer 调用）。</summary>
         public void Build(System.Collections.Generic.List<MemoryFragment> orderedFragments)
         {
+            Build(orderedFragments, false);
+        }
+
+        /// <summary>R12：timelineMode=true 时按时间轴水平排列（时间序），星点/标签按年份色相渐变。</summary>
+        public void Build(System.Collections.Generic.List<MemoryFragment> orderedFragments, bool timelineMode)
+        {
             Clear();
             if (orderedFragments == null || orderedFragments.Count == 0) return;
             currentRoute = orderedFragments;
             IsVisible = true;
+            TimelineMode = timelineMode;
 
             Camera cam = Camera.main;
             Vector3 center = cam != null ? cam.transform.position : Vector3.zero;
@@ -74,10 +82,22 @@ namespace MemoryCorridor.Media
             Vector3[] arcPositions = new Vector3[n];
             for (int i = 0; i < n; i++)
             {
-                float angle = (n > 1) ? (-ArcDegrees * 0.5f + ArcDegrees * i / (n - 1)) : 0f;
-                Vector3 dir = Quaternion.AngleAxis(angle, Vector3.up) * forward;
-                Vector3 pos = center + dir * Radius;
-                pos.y = Height;
+                Vector3 pos;
+                if (timelineMode)
+                {
+                    // R12 时间轴排列：按时间序水平铺开（-1.5m..1.5m），高度统一
+                    float span = (n > 1) ? (-1.5f + 3.0f * i / (n - 1)) : 0f;
+                    pos = center + forward * Radius
+                        + Quaternion.AngleAxis(90f, Vector3.up) * forward * span;
+                    pos.y = Height;
+                }
+                else
+                {
+                    float angle = (n > 1) ? (-ArcDegrees * 0.5f + ArcDegrees * i / (n - 1)) : 0f;
+                    Vector3 dir = Quaternion.AngleAxis(angle, Vector3.up) * forward;
+                    pos = center + dir * Radius;
+                    pos.y = Height;
+                }
                 arcPositions[i] = pos;
 
                 GameObject star = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -85,7 +105,15 @@ namespace MemoryCorridor.Media
                 star.transform.position = pos;
                 star.transform.localScale = Vector3.one * 0.08f;
                 MeshRenderer starRenderer = star.GetComponent<MeshRenderer>();
-                if (glowMaterial != null) starRenderer.sharedMaterial = glowMaterial;
+                // R12 时间轴着色：按记忆年份色相渐变（2008 -> hue20，2026 -> hue50，暖色域内）
+                Material starMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                starMat.EnableKeyword("_EMISSION");
+                float hue = StarHueForYear(orderedFragments[i], 20f, 50f);
+                Color starColor = Color.HSVToRGB(hue / 360f, 0.62f, 1f);
+                starMat.SetColor("_BaseColor", starColor * 0.5f);
+                starMat.SetColor("_EmissionColor", starColor * 1.4f);
+                starRenderer.material = starMat;
+                if (glowMaterial == null) glowMaterial = starMat; // 兜底
 
                 StarNode node = star.AddComponent<StarNode>();
                 node.FragmentId = orderedFragments[i].id;
@@ -119,7 +147,7 @@ namespace MemoryCorridor.Media
                 GameObject labelGo = new GameObject("Label");
                 labelGo.transform.SetParent(star.transform, false);
                 labelGo.transform.localPosition = new Vector3(0f, 2.2f, 0f);
-                labelGo.transform.localScale = new Vector3(1.7f, 0.55f, 1f);
+                labelGo.transform.localScale = new Vector3(2.4f, 0.9f, 1f); // R12 board up
                 MeshRenderer labelBoardRenderer = labelGo.AddComponent<MeshRenderer>();
                 Shader spriteShader2 = Shader.Find("MemoryCorridor/Sprite3D");
                 Material labelBoardMat = new Material(spriteShader2);
@@ -140,7 +168,7 @@ namespace MemoryCorridor.Media
                 labelRenderer.sharedMaterial = font.material;
                 labelTm.text = orderedFragments[i].title;
                 labelTm.fontSize = 40;
-                labelTm.characterSize = 0.028f;
+                labelTm.characterSize = 0.07f; // R12: 6 -> 38 dmm
                 labelTm.anchor = TextAnchor.MiddleCenter;
                 labelTm.alignment = TextAlignment.Center;
                 labelTm.color = new Color(0.92f, 0.88f, 0.82f, 1f);
@@ -178,6 +206,22 @@ namespace MemoryCorridor.Media
             }
             currentRoute = null;
             IsVisible = false;
+        }
+
+        /// <summary>R12 时间轴着色：记忆年份映射色相（默认暖色域 20-50 度）。</summary>
+        public static float StarHueForYear(MemoryFragment fragment, float hueMin, float hueMax)
+        {
+            string date = fragment.diary != null && !string.IsNullOrEmpty(fragment.diary.date)
+                ? fragment.diary.date
+                : fragment.createdAt;
+            int year = 2016; // 中位缺省
+            if (!string.IsNullOrEmpty(date) && date.Length >= 4
+                && int.TryParse(date.Substring(0, 4), out int parsed))
+            {
+                year = parsed;
+            }
+            year = Mathf.Clamp(year, 2000, 2026);
+            return Mathf.Lerp(hueMin, hueMax, (year - 2000) / 26f);
         }
 
         private void OnStarPicked(string fragmentId)

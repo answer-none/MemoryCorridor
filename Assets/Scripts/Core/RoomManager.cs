@@ -71,11 +71,14 @@ namespace MemoryCorridor.Core
         }
 
         /// <summary>带淡入淡出的房间切换（§5.3 零硬切；无 fader 时退化为直切）。</summary>
+        /// <summary>带淡入淡出的房间切换（§5.3 零硬切；无 fader 时退化为直切）。
+        /// R12 迷失防护：淡入完成后 0.5s 观感稳定期，期间玩家确认方位（期间协程未返回=交互未开放）。</summary>
         public IEnumerator SwitchToRoomWithFade(int index)
         {
             if (fader != null) yield return fader.FadeOut(0.3f);
             SwitchToRoom(index);
             if (fader != null) yield return fader.FadeIn(0.3f);
+            yield return new WaitForSeconds(0.5f); // R12 空间迷失防护：观感稳定期
         }
 
         private void UnloadCurrentAnchors()
@@ -138,7 +141,7 @@ namespace MemoryCorridor.Core
 
         private static T FindFirstLive<T>() where T : UnityEngine.Object
         {
-            T[] found = FindObjectsByType<T>(FindObjectsSortMode.None);
+            T[] found = FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             return found.Length > 0 ? found[0] : null;
         }
     }

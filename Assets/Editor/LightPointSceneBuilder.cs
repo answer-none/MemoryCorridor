@@ -242,6 +242,7 @@ namespace MemoryCorridor.EditorTools
             if (beaconCollider != null) UnityEngine.Object.DestroyImmediate(beaconCollider);
             beacon.GetComponent<MeshRenderer>().sharedMaterial = glowMat;
             beacon.AddComponent<StardustBeacon>();
+            beacon.AddComponent<Media.PulseEmissive>(); // R12 path：呼吸式微高亮（单焦点）
 
             ReplaySequencer sequencer = new GameObject("ReplaySequencer").AddComponent<ReplaySequencer>();
 
@@ -272,7 +273,7 @@ namespace MemoryCorridor.EditorTools
             GameObject settingsGo = new GameObject("SettingsPanel");
             settingsGo.AddComponent<MeshRenderer>();
             Media.SettingsPanel settingsPanel = settingsGo.AddComponent<Media.SettingsPanel>();
-            settingsGo.transform.position = new Vector3(1.9f, 1.5f, 1.4f);
+            settingsGo.transform.position = new Vector3(0.9f, 1.5f, 2.2f); // R12 差异表：水平角 54°→22°
 
             // 坑-026：全部跨对象引用走 Configure 序列化字段（编辑期属性赋值不持久化）
             bridge.Configure(panel, routePlayer, sequencer, previewCard, chime, wall,
@@ -333,6 +334,7 @@ namespace MemoryCorridor.EditorTools
                 postMat.SetColor("_BaseColor", AmberGlow * 0.6f);
                 postMat.SetColor("_EmissionColor", AmberGlow * 1.2f);
                 postRenderer.material = postMat;
+                post.AddComponent<Media.PulseEmissive>(); // R12 path：门柱呼吸式微高亮
             }
             GameObject beam = GameObject.CreatePrimitive(PrimitiveType.Cube);
             beam.name = "Beam";
@@ -386,7 +388,9 @@ namespace MemoryCorridor.EditorTools
 
         private static void DestroyAll<T>(string label) where T : Component
         {
-            T[] stale = UnityEngine.Object.FindObjectsByType<T>(UnityEngine.FindObjectsSortMode.None);
+            // 坑-050：排除 inactive 的查找会让 inactive 面板/引导牌跨轮堆积——cleanup 必须含 inactive
+            T[] stale = UnityEngine.Object.FindObjectsByType<T>(
+                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
             for (int i = 0; i < stale.Length; i++)
             {
                 UnityEngine.Object.DestroyImmediate(stale[i].gameObject);

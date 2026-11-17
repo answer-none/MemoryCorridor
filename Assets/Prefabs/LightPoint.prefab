@@ -400,7 +400,7 @@ MonoBehaviour:
   mixedColor: {r: 0.95, g: 0.55, b: 0.35, a: 1}
   selectChime: {fileID: 8300000, guid: beb3c46d209142a48bb63c16e4c61d84, type: 3}
   glowShellRenderer: {fileID: 3714745524756567915}
-  baseScale: 0.7
+  baseScale: 0.45
   breathePeriod: 3
   breatheAmplitude: 0.25
 --- !u!114 &4994410173813387786

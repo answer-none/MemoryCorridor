@@ -111,6 +111,9 @@ namespace MemoryCorridor.Interaction
 
         private void OnReplayBeat(ReplaySequencer.ReplayState state)
         {
+            Debug.Log("[XRIAnchorBridge] OnReplayBeat: state=" + state + " source="
+                + (replaySequencer != null ? replaySequencer.LastPlaySource : "null")
+                + " pending=" + (pendingFragmentId ?? "null") + " shown=" + pendingPanelShown);
             if (replaySequencer == null || string.IsNullOrEmpty(pendingFragmentId)) return;
 
             string source = replaySequencer.LastPlaySource;

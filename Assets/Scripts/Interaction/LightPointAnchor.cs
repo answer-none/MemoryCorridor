@@ -25,7 +25,7 @@ namespace MemoryCorridor.Interaction
         [Header("音效（R1 E5：选中反馈，内聚于光点本体）")]
         [SerializeField] private AudioClip selectChime;
         [SerializeField] private Renderer glowShellRenderer; // R3 美学：光晕外球
-        [SerializeField] private float baseScale = 0.7f; // 坑-039：光点基础尺寸（避免大球挡视线）
+        [SerializeField] private float baseScale = 0.45f; // 坑-039：光点基础尺寸（避免大球挡视线）
 
         [Header("呼吸动画")]
         [SerializeField] private float breathePeriod = 3f;

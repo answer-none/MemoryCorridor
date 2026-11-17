@@ -118,7 +118,7 @@ namespace MemoryCorridor.Media
             if (cam != null)
             {
                 Vector3 forward = Vector3.ProjectOnPlane(cam.transform.forward, Vector3.up).normalized;
-                transform.position = cam.transform.position + forward * 0.8f + Vector3.down * 0.32f;
+                transform.position = cam.transform.position + forward * 1.2f + Vector3.down * 0.42f; // R12: 0.8m -> 1.2m
                 transform.rotation = Quaternion.LookRotation(forward);
             }
 

@@ -168,13 +168,13 @@ namespace MemoryCorridor.Core
         public static void ApplyLocomotion(string mode)
         {
             var teleport = Object.FindObjectsByType<TeleportationProvider>(
-                UnityEngine.FindObjectsSortMode.None);
+                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
             var snap = Object.FindObjectsByType<ActionBasedSnapTurnProvider>(
-                UnityEngine.FindObjectsSortMode.None);
+                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
             var dynamicMove = Object.FindObjectsByType<DynamicMoveProvider>(
-                UnityEngine.FindObjectsSortMode.None);
+                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
             var continuous = Object.FindObjectsByType<ActionBasedContinuousTurnProvider>(
-                UnityEngine.FindObjectsSortMode.None);
+                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
 
             bool teleportOn = mode == "teleport";
             for (int i = 0; i < teleport.Length; i++) teleport[i].enabled = teleportOn;
