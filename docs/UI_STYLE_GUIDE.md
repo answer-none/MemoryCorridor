@@ -43,6 +43,7 @@
 | `BadgeIconSize` | 0.028m | 卡片音频角标图标（R16-1） |
 
 **R16-4 色彩新增**：`CaptionInk`（卡片时间）/`DimInk`（站数）/`RainBlue`/`RainInk`（雨夜校园主题）——四值已入 UiTokens，MemoryCardComposer/ThemeColors 全部引用令牌。
+**R17 新控件令牌化**：主题行（SettingsPanel 板体 460×940 令牌纹理+UiTextFactory）、讲解 HUD（LabelBg/ThumbBg/Amber/CaptionInk/LineSoft 全令牌）、对照/参数卡板（CardBg/LineSoft/CaptionInk/DimInk/EvidenceBg）——R17 零新增 new Color 字面量。
 **违规扫描口径（R16 终值）**：全工程 new Color 字面量（除 UiTokens.cs）**14→8 处**（LightPointAnchor [SerializeField]×6 + SmokeProbe 断言期望值×2，全部原白名单）——R16 新增组件零字面量，主题环境光/雾/证据底色 8 值全部令牌化（AmberAmbient/AmberFog/RainAmbient/RainFog/EvidenceBg）。只降不涨 ✅
 
 ## 3. 字号 dmm 换算口径

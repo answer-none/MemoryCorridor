@@ -276,6 +276,11 @@ namespace MemoryCorridor.EditorTools
             RoutePlayer routePlayer = new GameObject("RoutePlayer").AddComponent<RoutePlayer>();
             routePlayer.Configure(beacon, roomManager, fade, wall);
 
+            // R17-2：音频讲解自动播放控制（进房自动播/视线离开或走远暂停/回来续播 + HUD 进度条）
+            Media.AutoNarrationController narration = new GameObject("AutoNarrationController")
+                .AddComponent<Media.AutoNarrationController>();
+            narration.Configure(roomManager);
+
             XRIAnchorBridge bridge = new GameObject("XRIAnchorBridge").AddComponent<XRIAnchorBridge>();
             AudioClip chime = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/sfx_lightpoint_chime.wav");
 
@@ -769,10 +774,10 @@ namespace MemoryCorridor.EditorTools
                                 }
                             }
                         }
-                        // 雨丝（垂直短线，亮 1.3×）
-                        if ((x * 7 + y * 31) % 97 == 0 && t < 0.55f)
+                        // 雨丝（垂直短线，R17 增强：更密更亮，雨夜主题肉眼可辨）
+                        if ((x * 7 + y * 31) % 53 == 0 && t < 0.55f)
                         {
-                            c = Color.Lerp(c, Color.white, 0.10f);
+                            c = Color.Lerp(c, Color.white, 0.28f);
                         }
                     }
                     px[y * w + x] = c;

@@ -33,9 +33,9 @@ namespace MemoryCorridor.Media
         public static readonly Color DimInk = new Color(0.60f, 0.56f, 0.52f, 1f);       // 卡片站数等三级文字
         public static readonly Color RainBlue = new Color(0.45f, 0.62f, 0.82f, 1f);     // 雨夜校园主题强调色（R16）
         public static readonly Color RainInk = new Color(0.22f, 0.28f, 0.38f, 1f);      // 雨夜校园环境基调（R16）
-        public static readonly Color AmberAmbient = new Color(0.62f, 0.52f, 0.40f, 1f); // amber 主题环境光（R16-3）
+        public static readonly Color AmberAmbient = new Color(0.95f, 0.80f, 0.55f, 1f); // amber 主题环境光（R17 拉大与 rain 可辨差）
         public static readonly Color AmberFog = new Color(0.16f, 0.12f, 0.10f, 1f);     // amber 主题雾色（R16-3）
-        public static readonly Color RainAmbient = new Color(0.30f, 0.36f, 0.46f, 1f);  // rain 主题环境光（R16-3）
+        public static readonly Color RainAmbient = new Color(0.18f, 0.24f, 0.38f, 1f);  // rain 主题环境光（R17 拉大可辨差）
         public static readonly Color RainFog = new Color(0.06f, 0.09f, 0.14f, 1f);      // rain 主题雾色（R16-3）
         public static readonly Color EvidenceBg = new Color(0.06f, 0.05f, 0.09f, 1f);   // 证据截图相机深底（R16）
 

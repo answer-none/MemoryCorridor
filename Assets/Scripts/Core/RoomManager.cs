@@ -24,6 +24,9 @@ namespace MemoryCorridor.Core
         public List<RoomData> Rooms { get; private set; }
         public int SpawnedAnchorCount { get; private set; }
 
+        /// <summary>R17-1：运行时主题 id（用户选择优先于房间 theme；default/rain）。</summary>
+        public string ActiveThemeId { get; private set; } = "default";
+
         /// <summary>房间切换完成事件（RoutePlayer 订阅停止走读）。</summary>
         public event Action<int> OnRoomSwitched;
 
@@ -44,6 +47,10 @@ namespace MemoryCorridor.Core
         {
             AppData data = SaveDataService.LoadAppData();
             Rooms = (data != null && data.rooms != null) ? data.rooms : new List<RoomData>();
+            if (data != null && data.settings != null && !string.IsNullOrEmpty(data.settings.activeThemeId))
+            {
+                ActiveThemeId = data.settings.activeThemeId; // R17-1：恢复上次选择
+            }
             SwitchToRoom(0);
         }
 
@@ -65,13 +72,65 @@ namespace MemoryCorridor.Core
             return true;
         }
 
-        /// <summary>R16-3：主题色调落地（theme 字段此前闲置）——环境光+雾色按主题档切换。</summary>
+        /// <summary>R16-3：主题色调落地——环境光+雾色+指数雾密度按运行时选择（用户选择优先于房间固有 theme）。</summary>
         private void ApplyTheme(RoomData room)
         {
-            ThemeColors.ThemeSpec spec = ThemeColors.For(room.theme);
+            ThemeColors.ThemeSpec spec = ThemeColors.For(ActiveThemeId);
             RenderSettings.ambientLight = spec.Ambient;
             RenderSettings.fog = true;
             RenderSettings.fogColor = spec.Fog;
+            RenderSettings.fogMode = FogMode.Exponential; // R17：密度雾（主题间雾密度差异可见）
+            RenderSettings.fogDensity = spec.FogDensity;
+        }
+
+        /// <summary>R17-1：直接设置主题（探针/引导用；与 CycleTheme 同样即时生效+持久化）。</summary>
+        public void SetTheme(string themeId, bool withFade)
+        {
+            if (withFade && fader != null) StartCoroutine(CycleThemeWithFade(themeId));
+            else SetThemeImmediate(themeId);
+        }
+
+        /// <summary>
+        /// R17-1：循环切换主题（default→rain→default），即时生效并持久化；
+        /// withFade=true 时包 0.3s 全屏淡入淡出避免闪跳（设置面板入口用）。
+        /// </summary>
+        public string CycleTheme(bool withFade)
+        {
+            string next = ThemeColors.NextOf(ActiveThemeId);
+            if (withFade && fader != null)
+            {
+                StartCoroutine(CycleThemeWithFade(next));
+            }
+            else
+            {
+                SetThemeImmediate(next);
+            }
+            return ActiveThemeId;
+        }
+
+        private System.Collections.IEnumerator CycleThemeWithFade(string next)
+        {
+            yield return fader.FadeOut(0.15f);
+            SetThemeImmediate(next);
+            yield return fader.FadeIn(0.15f); // 合计 0.3s：避免主题参数硬跳
+        }
+
+        private void SetThemeImmediate(string themeId)
+        {
+            ActiveThemeId = themeId;
+            ThemeColors.ThemeSpec spec = ThemeColors.For(themeId);
+            RenderSettings.ambientLight = spec.Ambient;
+            RenderSettings.fogColor = spec.Fog;
+            RenderSettings.fogMode = FogMode.Exponential;
+            RenderSettings.fogDensity = spec.FogDensity;
+
+            AppData data = SaveDataService.LoadAppData();
+            if (data != null && data.settings != null)
+            {
+                data.settings.activeThemeId = themeId;
+                SaveDataService.SaveAppData(data); // 持久化（切房/重启保持）
+            }
+            Debug.Log("[RoomManager] 主题切换 → " + themeId);
         }
 
         public RoomData CurrentRoom()

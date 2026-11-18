@@ -46,6 +46,15 @@
 | R16-c | 第二主题路线"雨夜校园" | ✅ | R2 段 | room_03×8 碎片（image/audio/diary/mixed 各 2）全有标题+正文+符号；theme=rain 环境光/雾色真落地（ThemeColors）；程序化雨夜全景 17KB+ffmpeg 雨声 517KB；证据 r16_theme_rain_room.png+卡片×2 |
 | R16-d | UI/空间合规收尾 | ✅ | D4 段 | R15/R16 元素全令牌化（SymbolSize/CardBoard/BadgeIcon 等 9 新令牌，零新增字面量）；卡片+符号 2/3/5m 可读性实拍×3+dmm 表入 SPATIAL_AUDIT §4 |
 
+## R17 功能完善轮新增（2026-11-19）
+
+| # | 功能 | 状态 | 断言 | 说明 |
+|---|---|---|---|---|
+| R17-a | 运行时主题选择 | ✅ | W1 段 | SettingsPanel"场景主题"行（default→rain 循环，0.3s 淡入即时生效+持久化）；切 2 次读回 activeThemeId + RenderSettings 环境光/雾色/雾密度实测跟随；对照卡板量化差异 avg=22.4/255≥20 & ratio=46%≥30%；雾改 Exponential（0.02/0.14） |
+| R17-b | 音频讲解播放控制 | ✅ | A2 段 | AutoNarrationController：进房自动播/视线离开或走远>2m 暂停/回来续播（offset=1.2s>0 不重头）/静音点静默；HUD（标题+进度条+当前/总时长） |
+| R17-c | 性能预算实测 | ✅ | P3 段 | 3 机位×10 帧：最差 0.4ms/37 DC（Renderer 上界）/8k tri，全达标；PERF_BUDGET.md 落盘（含 R15/R16 元素开销占比） |
+| R17-d | 令牌不回退 | ✅ | 静态扫描 | R17 新控件零 new Color 字面量，白名单维持 8 处 |
+
 ## 非功能项
 
 | 项 | 状态 | 证据 |

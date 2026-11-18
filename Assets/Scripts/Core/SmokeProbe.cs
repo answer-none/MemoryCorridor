@@ -842,6 +842,7 @@ namespace MemoryCorridor.Core
                     int rainIdx = -1;
                     for (int i = 0; i < rm.Rooms.Count; i++) if (rm.Rooms[i].id == "room_03") rainIdx = i;
                     rm.SwitchToRoom(rainIdx);
+                    rm.SetTheme("rain", false); // R17 语义：运行时用户选择覆盖房间固有 theme——显式切 rain 后断言跟随
                     yield return null; // 等 spawn
 
                     AppData rd = SaveDataService.LoadAppData();
@@ -888,6 +889,7 @@ namespace MemoryCorridor.Core
                     {
                         Debug.Log("[SmokeProbe] R2 雨夜校园 OK（路线 8 站/主题色 rain≠amber/环境光雾色已切/8 点符号全映射无 fallback；全景+卡片×2 已落盘）");
                     }
+                    rm.SetTheme("default", false); // R17：恢复运行时主题，防污染后续段（W1 依赖 t0=default）
                     rm.SwitchToRoom(0); // 恢复主房间
                     yield return new WaitForSecondsRealtime(2.5f); // 等桥接轮询稳定
                 }
@@ -996,6 +998,225 @@ namespace MemoryCorridor.Core
                 else
                 {
                     Debug.Log("[SmokeProbe] T2 轮询退避 OK（2s 内 " + pollDelta + " 次，旧版每帧 ≈120 次 → N→M 量化达标）");
+                }
+            }
+
+            // ========== W1. 主题选择面板（R17-1：切 2 次 default→rain→default + RenderSettings 实测 + 同机位对照图） ==========
+            if (pass)
+            {
+                RoomManager w1Rm = FindFirst<RoomManager>();
+                if (w1Rm == null)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-W1: 缺 RoomManager");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    string t0 = w1Rm.ActiveThemeId;
+                    Color amb0 = RenderSettings.ambientLight;
+                    string t1 = w1Rm.CycleTheme(false);
+                    Color amb1 = RenderSettings.ambientLight;
+                    Color fog1 = RenderSettings.fogColor;
+                    float fogD1 = RenderSettings.fogDensity; // R17：density 须在 t1 时刻读（t2 恢复后=0.02）
+                    string t2 = w1Rm.CycleTheme(false);
+                    Color amb2 = RenderSettings.ambientLight;
+
+                    bool seqOk = t0 == "default" && t1 == "rain" && t2 == "default";
+                    bool ambOk = amb1 == ThemeColors.For("rain").Ambient
+                        && amb2 == ThemeColors.For("default").Ambient
+                        && amb1 != amb0; // 两条主题环境光确实跟随变化（RenderSettings 实测）
+                    bool fogOk = fog1 == ThemeColors.For("rain").Fog
+                        && fogD1 == ThemeColors.For("rain").FogDensity;
+                    string persisted = SaveDataService.LoadAppData().settings.activeThemeId;
+                    bool persistOk = persisted == "default";
+
+                    // 同机位对照（room_03 雨夜贴图下两主题：雨丝可见 + 环境光偏移 + 指数雾密度差）
+                    int rainIdx = -1;
+                    for (int i = 0; i < w1Rm.Rooms.Count; i++) if (w1Rm.Rooms[i].id == "room_03") rainIdx = i;
+                    w1Rm.SwitchToRoom(rainIdx);
+                    yield return null;
+                    w1Rm.SetTheme("default", false);
+                    yield return null;
+                    byte[] shotDefault = RenderMainCamera(800, 600);
+                    System.IO.File.WriteAllBytes("docs/evidence/r17_theme_default.png", shotDefault);
+                    w1Rm.SetTheme("rain", false);
+                    yield return null;
+                    byte[] shotRain = RenderMainCamera(800, 600);
+                    System.IO.File.WriteAllBytes("docs/evidence/r17_theme_rain.png", shotRain);
+                    w1Rm.SetTheme("default", false);
+                    w1Rm.SwitchToRoom(0);
+                    yield return null;
+
+                    // 量化差异硬门槛：平均色差 ≥20/255 且色差>25/255 像素占比 ≥30%（用户口径）
+                    float avgDiff;
+                    float diffRatio;
+                    ComputePngDiff("docs/evidence/r17_theme_default.png", "docs/evidence/r17_theme_rain.png",
+                        out avgDiff, out diffRatio);
+                    bool diffOk = avgDiff >= 20f / 255f && diffRatio >= 0.30f;
+
+                    // 带标注对照卡板（左右场景图 + 实测值文字）
+                    bool cmp = R17ThemeCompareCard(shotDefault, shotRain);
+
+                    if (!seqOk || !ambOk || !fogOk || !persistOk || !diffOk || !cmp)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-W1: 主题切换异常 (seq=" + seqOk + " amb=" + ambOk
+                            + " fog=" + fogOk + " persist=" + persisted + " diffAvg=" + (avgDiff * 255).ToString("F1")
+                            + "/255 ratio=" + (diffRatio * 100).ToString("F0") + "% cmp=" + cmp + "）");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] W1 主题选择 OK（" + t0 + "→" + t1 + "→" + t2
+                            + "；环境光/雾色/雾密度 RenderSettings 实测跟随；量化差异 avg=" + (avgDiff * 255).ToString("F1")
+                            + "/255 ratio=" + (diffRatio * 100).ToString("F0") + "%≥30%；带标注对照卡板已落盘）");
+                    }
+                }
+            }
+
+            // ========== A2. 音频讲解播放控制（R17-2：自动播/走远暂停/回来续播/静音点静默） ==========
+            if (pass)
+            {
+                AutoNarrationController narr = FindFirst<AutoNarrationController>();
+                if (narr == null)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-A2: 缺 AutoNarrationController");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Camera a2Cam = Camera.main;
+                    Vector3 savedPos = a2Cam.transform.position;
+                    Quaternion savedRot = a2Cam.transform.rotation;
+                    Vector3 origin = new Vector3(0f, 1.2f, 6f); // 隔离判定基准点
+
+                    // ① 进房自动播（重触发等价语义：PlayForCurrentRoom 即进房回调所调方法）。
+                    // 只断言 AutoPlayed（自动播放被触发）——radio 光点距玩家 >2m 时监控按设计立即暂停
+                    //（PausedOnLeave 语义由 ④ 专项验证），IsPlaying 由 ③⑤ 在 1m 邻距下验证。
+                    narr.PlayForCurrentRoom();
+                    yield return new WaitForSecondsRealtime(1.0f);
+                    bool autoOk = narr.AutoPlayed;
+
+                    // ② 静音点：无音频 → AutoPlayed=false 静默不报错
+                    MemoryFragment silentFrag = new MemoryFragment { id = "probe_silent", title = "静音点", type = "image" };
+                    narr.PlayFragmentProbe(silentFrag, origin);
+                    bool silentOk = !narr.AutoPlayed;
+
+                    // ③ 有声点强制播放 + HUD 截图（播放中：进度条+标题）
+                    string wavRel = "Media/test_narration.wav";
+                    string wavAbs = System.IO.Path.Combine(SaveDataService.PersistentRoot, wavRel);
+                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(wavAbs));
+                    WriteTestWav(wavAbs, 3.0f, 330f, 22050);
+                    narr.ForcePlayProbe(wavAbs, "probe_voice", "测试讲解点", origin);
+                    a2Cam.transform.position = origin + new Vector3(0f, 0.2f, -1.0f);
+                    a2Cam.transform.LookAt(origin);
+                    yield return new WaitForSecondsRealtime(1.2f);
+                    bool voiceOk = narr.AutoPlayed && narr.IsPlaying;
+                    narr.SetHudVisible(true, "测试讲解点 · 缝纫机的故事");
+                    byte[] hudShot = RenderMainCamera(800, 600);
+                    System.IO.File.WriteAllBytes("docs/evidence/r17_hud_playing.png", hudShot);
+
+                    // ④ 走远 >2m → 自动暂停
+                    a2Cam.transform.position = origin + new Vector3(0f, 0.2f, -3.2f);
+                    yield return new WaitForSecondsRealtime(1.0f);
+                    bool pauseOk = narr.PausedOnLeave && !narr.IsPlaying;
+
+                    // ⑤ 回来 → 续播（不重头）
+                    a2Cam.transform.position = origin + new Vector3(0f, 0.2f, -1.0f);
+                    a2Cam.transform.LookAt(origin);
+                    yield return new WaitForSecondsRealtime(1.0f);
+                    bool resumeOk = narr.ResumeFromOffset > 0f && narr.IsPlaying;
+
+                    a2Cam.transform.position = savedPos;
+                    a2Cam.transform.rotation = savedRot;
+
+                    if (!autoOk || !silentOk || !voiceOk || !pauseOk || !resumeOk)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-A2: 讲解控制异常 (auto=" + autoOk + " silent=" + silentOk
+                            + " voice=" + voiceOk + " pause=" + pauseOk + " resume=" + resumeOk
+                            + " offset=" + narr.ResumeFromOffset.ToString("F2") + "）");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] A2 讲解控制 OK（进房自动播/静音点静默/走远暂停 PausedOnLeave=true/回来续播 offset="
+                            + narr.ResumeFromOffset.ToString("F1") + "s>0；播放中 HUD 截图已落盘）");
+                    }
+                }
+            }
+
+            // ========== P3. 性能预算实测（R17-3：3 机位×10 帧均值 + 硬门槛） ==========
+            if (pass)
+            {
+                Camera pCam = Camera.main;
+                Vector3 savedP = pCam.transform.position;
+                Quaternion savedR = pCam.transform.rotation;
+                Vector3[] spots =
+                {
+                    new Vector3(0f, 1.4f, 0.5f),   // 出生点
+                    new Vector3(0f, 1.4f, 1.5f),   // 房间中心（望门框）
+                    new Vector3(0f, 1.4f, 2.6f),   // 窗面（望全房间光点）
+                };
+                string[] spotNames = { "出生点", "房间中心", "窗面全览" };
+                float worstMs = 0f;
+                int worstDc = 0;
+                long worstTri = 0;
+                string dcMethod = "FrameDebugger";
+                string budgetTable = "";
+
+                for (int s = 0; s < spots.Length; s++)
+                {
+                    pCam.transform.position = spots[s];
+                    pCam.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+                    yield return new WaitForSecondsRealtime(0.2f); // 渲染稳定
+
+                    float t0s = Time.realtimeSinceStartup;
+                    for (int f = 0; f < 10; f++) yield return null; // 采 10 帧
+                    float avgMs = (Time.realtimeSinceStartup - t0s) / 10f * 1000f;
+
+                    // 可见三角面 + 渲染器数（视锥 AABB 测试）
+                    Plane[] planes = GeometryUtility.CalculateFrustumPlanes(pCam);
+                    long tri = 0;
+                    int rendererCount = 0;
+                    Renderer[] allRenderers = FindObjectsByType<Renderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+                    for (int i = 0; i < allRenderers.Length; i++)
+                    {
+                        if (!GeometryUtility.TestPlanesAABB(planes, allRenderers[i].bounds)) continue;
+                        rendererCount++;
+                        MeshFilter mf = allRenderers[i].GetComponent<MeshFilter>();
+                        if (mf != null && mf.sharedMesh != null) tri += mf.sharedMesh.triangles.Length / 3;
+                        TextMesh tm = allRenderers[i].GetComponent<TextMesh>();
+                        if (tm != null) tri += 24; // TextMesh 每 glyph 网格近似
+                    }
+
+                    // Draw Call：坑-054（FrameDebuggerUtility 在 2022.3 已不存在）——
+                    // 用「可见 Renderer 数」作为上界近似口径（SRP batcher 下单 renderer≈1-2 DC），真机 Profiler 复核
+                    int dc = rendererCount;
+                    dcMethod = "Renderer 上界";
+                    if (avgMs > worstMs) worstMs = avgMs;
+                    if (dc > worstDc) worstDc = dc;
+                    if (tri > worstTri) worstTri = tri;
+                    budgetTable += spotNames[s] + ": " + avgMs.ToString("F1") + "ms / " + dc + " DC / " + (tri / 1000) + "k tri | ";
+                    yield return null;
+                }
+
+                pCam.transform.position = savedP;
+                pCam.transform.rotation = savedR;
+
+                // 硬门槛：DC≤120 / tri≤60 万；帧耗时 Editor 口径 ≤16.7ms（60fps），13ms 为 PICO 72fps 真机参考线
+                bool dcOk = worstDc <= 120;
+                bool triOk = worstTri <= 600000;
+                bool msOk = worstMs <= 16.7f;
+                if (!dcOk || !triOk || !msOk)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-P3: 性能预算超限 (ms=" + worstMs.ToString("F1") + " dc=" + worstDc
+                        + " tri=" + worstTri + "）" + budgetTable);
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] P3 性能预算 OK（" + budgetTable
+                        + "最差均值 " + worstMs.ToString("F1") + "ms≤16.7 Editor 口径（13ms=PICO 真机线）；DC 口径=" + dcMethod + "）");
+                    R17PerfPanel(worstMs, worstDc, worstTri, dcMethod, budgetTable);
                 }
             }
 
@@ -1141,7 +1362,7 @@ namespace MemoryCorridor.Core
             }
 
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4) 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4)/主题选择(W1)/讲解控制(A2)/性能预算(P3) 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
 
 #if UNITY_EDITOR
@@ -1900,6 +2121,193 @@ namespace MemoryCorridor.Core
             rt.Release();
             return shot.EncodeToPNG();
         }
+
+        /// <summary>R17 P3：自绘性能参数面板（卡片合成管线，落 docs/evidence/r17_perf_panel.png）。</summary>
+        private void R17PerfPanel(float worstMs, int worstDc, long worstTri, string dcMethod, string table)
+        {
+            Shader spriteShader = Shader.Find("MemoryCorridor/Sprite3D");
+            if (spriteShader == null) return;
+            Vector3 rootPos = new Vector3(-8f, -500f, 0f);
+            GameObject root = new GameObject("PerfPanelRoot");
+            root.transform.position = rootPos;
+
+            Material boardMat = new Material(spriteShader);
+            boardMat.mainTexture = RoundedRectTexture.RoundedRect(720, 960, 40, UiTokens.CardBg, UiTokens.LineSoft, 3);
+            GameObject board = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            Collider bc = board.GetComponent<Collider>();
+            if (bc != null) Destroy(bc);
+            board.transform.SetParent(root.transform, false);
+            board.transform.localScale = new Vector3(0.72f, 0.96f, 1);
+            board.GetComponent<MeshRenderer>().sharedMaterial = boardMat;
+
+            UiTextFactory.CreateTextMesh(root.transform, "PTitle", new Vector3(0, 0.42f, -0.01f),
+                60, 0.010f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.Amber, "性能预算实测（R17-3）");
+            UiTextFactory.CreateTextMesh(root.transform, "PRow0", new Vector3(0, 0.30f, -0.01f),
+                28, 0.009f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.LabelInk,
+                "3 机位 × 10 帧均值（Editor batchmode）");
+            UiTextFactory.CreateTextMesh(root.transform, "PRow1", new Vector3(0, 0.20f, -0.01f),
+                28, 0.009f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.Cream,
+                "平均帧耗时 " + worstMs.ToString("F1") + " ms（Editor≤16.7 / PICO 13）");
+            UiTextFactory.CreateTextMesh(root.transform, "PRow2", new Vector3(0, 0.10f, -0.01f),
+                28, 0.009f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.Cream,
+                "Draw Call " + worstDc + "（≤120，口径 " + dcMethod + "）");
+            UiTextFactory.CreateTextMesh(root.transform, "PRow3", new Vector3(0, 0.00f, -0.01f),
+                28, 0.009f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.Cream,
+                "可见三角面 " + (worstTri / 1000) + "k（≤600k）");
+            string[] cells = table.Split('|');
+            UiTextFactory.CreateTextMesh(root.transform, "PRow4a", new Vector3(0, -0.12f, -0.01f),
+                24, 0.009f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.CaptionInk,
+                (cells.Length > 0 ? cells[0].Trim() : "") + (cells.Length > 1 ? " | " + cells[1].Trim() : ""));
+            UiTextFactory.CreateTextMesh(root.transform, "PRow4b", new Vector3(0, -0.20f, -0.01f),
+                24, 0.009f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.CaptionInk,
+                cells.Length > 2 ? cells[2].Trim() : "");
+            UiTextFactory.CreateTextMesh(root.transform, "PRow5a", new Vector3(0, -0.30f, -0.01f),
+                24, 0.009f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.DimInk,
+                "符号浮标=每光点+1 DC（材质实例化）≈29%");
+            UiTextFactory.CreateTextMesh(root.transform, "PRow5b", new Vector3(0, -0.38f, -0.01f),
+                24, 0.009f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.DimInk,
+                "卡片/密度分簇/主题切换=零运行时留存几何");
+
+            GameObject camGo = new GameObject("PerfPanelCamera");
+            camGo.transform.position = rootPos + new Vector3(0, 0, -2f);
+            Camera cam = camGo.AddComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = 0.48f;
+            cam.aspect = 0.75f;
+            cam.nearClipPlane = 0.5f;
+            cam.farClipPlane = 4f;
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = UiTokens.EvidenceBg;
+            byte[] png = MemoryCardComposer.RenderCardRoot(root, cam, 800, 600);
+            System.IO.File.WriteAllBytes("docs/evidence/r17_perf_panel.png", png);
+            Destroy(root);
+            Destroy(camGo);
+            Debug.Log("[SmokeProbe] P3 参数面板: docs/evidence/r17_perf_panel.png（" + png.Length + " 字节）");
+        }
+
+        /// <summary>R17 W1：两 PNG 逐像素差统计（avgDiff/ratio 归一 0-1）——主题对照量化硬门槛。</summary>
+        private static void ComputePngDiff(string pathA, string pathB, out float avgDiff, out float diffRatio)
+        {
+            avgDiff = 0f;
+            diffRatio = 0f;
+            try
+            {
+                Texture2D a = new Texture2D(2, 2);
+                a.LoadImage(System.IO.File.ReadAllBytes(pathA));
+                Texture2D b = new Texture2D(2, 2);
+                b.LoadImage(System.IO.File.ReadAllBytes(pathB));
+                int w = Mathf.Min(a.width, b.width);
+                int h = Mathf.Min(a.height, b.height);
+                Color[] pa = a.GetPixels(0, 0, w, h);
+                Color[] pb = b.GetPixels(0, 0, w, h);
+                float total = 0f;
+                int overCount = 0;
+                float overThreshold = 25f / 255f;
+                for (int i = 0; i < pa.Length; i++)
+                {
+                    float d = (Mathf.Abs(pa[i].r - pb[i].r) + Mathf.Abs(pa[i].g - pb[i].g)
+                        + Mathf.Abs(pa[i].b - pb[i].b)) / 3f;
+                    total += d;
+                    if (d > overThreshold) overCount++;
+                }
+                avgDiff = total / pa.Length;
+                diffRatio = overCount / (float)pa.Length;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[SmokeProbe] 色差计算失败: " + e.Message);
+            }
+        }
+
+        /// <summary>R17 W1：主题对照卡板（左右场景图 + 实测值标注，卡片管线渲染）。</summary>
+        private bool R17ThemeCompareCard(byte[] shotDefault, byte[] shotRain)
+        {
+            try
+            {
+                Shader spriteShader = Shader.Find("MemoryCorridor/Sprite3D");
+                Vector3 rootPos = new Vector3(-10f, -500f, 0f);
+                GameObject root = new GameObject("ThemeCompareRoot");
+                root.transform.position = rootPos;
+
+                Material boardMat = new Material(spriteShader);
+                boardMat.mainTexture = RoundedRectTexture.RoundedRect(1500, 960, 40, UiTokens.CardBg, UiTokens.LineSoft, 3);
+                GameObject board = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                Collider bc = board.GetComponent<Collider>();
+                if (bc != null) Destroy(bc);
+                board.transform.SetParent(root.transform, false);
+                board.transform.localScale = new Vector3(1.5f, 0.96f, 1);
+                board.GetComponent<MeshRenderer>().sharedMaterial = boardMat;
+
+                UiTextFactory.CreateTextMesh(root.transform, "CTitle", new Vector3(0, 0.40f, -0.01f),
+                    54, 0.010f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.Amber,
+                    "主题对照（同机位 room_03 雨夜校园）");
+
+                Texture2D texA = new Texture2D(2, 2);
+                texA.LoadImage(shotDefault);
+                Texture2D texB = new Texture2D(2, 2);
+                texB.LoadImage(shotRain);
+                Material matA = new Material(spriteShader);
+                matA.mainTexture = texA;
+                Material matB = new Material(spriteShader);
+                matB.mainTexture = texB;
+                CreateSceneQuad(root.transform, "ShotDefault", new Vector3(-0.36f, 0.02f, -0.01f),
+                    new Vector3(0.66f, 0.50f, 1), matA, "默认主题");
+                CreateSceneQuad(root.transform, "ShotRain", new Vector3(0.36f, 0.02f, -0.01f),
+                    new Vector3(0.66f, 0.50f, 1), matB, "雨夜校园");
+
+                ThemeColors.ThemeSpec sa = ThemeColors.For("default");
+                ThemeColors.ThemeSpec sr = ThemeColors.For("rain");
+                UiTextFactory.CreateTextMesh(root.transform, "CValA", new Vector3(-0.36f, -0.30f, -0.01f),
+                    30, 0.009f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.CaptionInk,
+                    "default: ambient(" + F2(sa.Ambient.r) + "," + F2(sa.Ambient.g) + "," + F2(sa.Ambient.b)
+                    + ") fogD " + sa.FogDensity.ToString("F2"));
+                UiTextFactory.CreateTextMesh(root.transform, "CValB", new Vector3(0.36f, -0.30f, -0.01f),
+                    30, 0.009f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.RainBlue,
+                    "rain: ambient(" + F2(sr.Ambient.r) + "," + F2(sr.Ambient.g) + "," + F2(sr.Ambient.b)
+                    + ") fogD " + sr.FogDensity.ToString("F2"));
+                UiTextFactory.CreateTextMesh(root.transform, "CFooter", new Vector3(0, -0.40f, -0.01f),
+                    28, 0.009f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.DimInk,
+                    "RenderSettings 实测（W1 段）· 量化门槛 avg≥20/255 & ratio≥30%");
+
+                GameObject camGo = new GameObject("ThemeCompareCamera");
+                camGo.transform.position = rootPos + new Vector3(0, 0, -2f);
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.orthographic = true;
+                cam.orthographicSize = 0.48f;
+                cam.aspect = 1500f / 960f;
+                cam.nearClipPlane = 0.5f;
+                cam.farClipPlane = 4f;
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = UiTokens.EvidenceBg;
+                byte[] png = MemoryCardComposer.RenderCardRoot(root, cam, 1500, 960);
+                System.IO.File.WriteAllBytes("docs/evidence/r17_theme_compare.png", png);
+                Destroy(root);
+                Destroy(camGo);
+                return png.Length > 20000;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[SmokeProbe] 对照卡板失败: " + e.Message);
+                return false;
+            }
+        }
+
+        private static void CreateSceneQuad(Transform parent, string name, Vector3 localPos,
+            Vector3 scale, Material mat, string label)
+        {
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            Collider col = go.GetComponent<Collider>();
+            if (col != null) Object.DestroyImmediate(col);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            go.transform.localScale = scale;
+            go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            UiTextFactory.CreateTextMesh(go.transform, "Label", new Vector3(0, -0.72f, -0.01f),
+                40, 0.010f, TextAnchor.MiddleCenter, TextAlignment.Center, UiTokens.LabelInk, label);
+        }
+
+        private static string F2(float v) { return v.ToString("F2"); }
 
         private static T FindFirst<T>() where T : UnityEngine.Object
         {

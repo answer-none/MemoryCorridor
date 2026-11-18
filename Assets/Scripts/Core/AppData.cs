@@ -16,6 +16,7 @@ namespace MemoryCorridor.Core
         public bool vignetteEnabled = false; // R11 舒适性：舒适暗角开关
         public float vignetteIntensity = 0.3f; // R11 舒适性：暗角强度（0-0.4）
         public string locomotionMode = "teleport"; // R11 舒适性：teleport / smooth
+        public string activeThemeId = "default"; // R17-1：运行时主题选择（default/rain 循环，切房保持用户选择）
         public int fadeStartDays = 30;
         public float fadeFloor = 0.25f;
     }

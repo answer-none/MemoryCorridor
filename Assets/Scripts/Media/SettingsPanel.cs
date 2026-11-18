@@ -18,6 +18,7 @@ namespace MemoryCorridor.Media
         private TextMesh distanceToggleText;
         private TextMesh vignetteToggleText;
         private TextMesh locomotionToggleText;
+        private TextMesh themeToggleText; // R17-1：场景主题选择行
         private TextMesh volumeToggleText;
         private bool showPoints = true;
         private bool showLabels = true;
@@ -34,6 +35,7 @@ namespace MemoryCorridor.Media
         public string DistanceToggleText => distanceToggleText != null ? distanceToggleText.text : null;
         public string VolumeToggleText => volumeToggleText != null ? volumeToggleText.text : null;
         public bool IsDimmed => dimmed;
+        public string ThemeRowText => themeToggleText != null ? themeToggleText.text : null; // R17 探针断言
 
         private static readonly Color OnColor = UiTokens.OnColor;
         private static readonly Color OffColor = UiTokens.OffColor;
@@ -115,6 +117,20 @@ namespace MemoryCorridor.Media
             RefreshTexts();
         }
 
+        /// <summary>R17-1：场景主题循环切换（default→rain→default，0.3s 淡入即时生效）。</summary>
+        private void CycleThemeRow()
+        {
+            RoomManager rm = FindRoomManager();
+            if (rm != null) rm.CycleTheme(true);
+            RefreshTexts();
+        }
+
+        private static RoomManager FindRoomManager()
+        {
+            RoomManager[] found = FindObjectsByType<RoomManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            return found.Length > 0 ? found[0] : null;
+        }
+
         private void RefreshTexts()
         {
             if (volumeToggleText != null) volumeToggleText.text = "主音量：" + SettingsService.GetVolumePercent() + "%";
@@ -126,9 +142,18 @@ namespace MemoryCorridor.Media
                 vignetteToggleText.text = "舒适暗角：" + FormatVignette();
             if (locomotionToggleText != null)
                 locomotionToggleText.text = "移动方式：" + (SettingsService.GetLocomotion() == "smooth" ? "平滑" : "传送");
+            if (themeToggleText != null) themeToggleText.text = "场景主题：" + ThemeDisplayName();
 
             if (pointsToggleText != null) pointsToggleText.color = showPoints ? OnColor : OffColor;
             if (labelsToggleText != null) labelsToggleText.color = showLabels ? OnColor : OffColor;
+        }
+
+        /// <summary>当前主题显示名（读 RoomManager 运行时选择，缺省回退持久化值）。</summary>
+        private string ThemeDisplayName()
+        {
+            RoomManager rm = FindRoomManager();
+            string id = rm != null ? rm.ActiveThemeId : SaveDataService.LoadAppData().settings.activeThemeId;
+            return id == "rain" ? "雨夜校园" : "默认";
         }
 
         private string FormatVignette()
@@ -171,16 +196,16 @@ namespace MemoryCorridor.Media
             Shader spriteShader = Shader.Find("MemoryCorridor/Sprite3D");
             Material boardMat = new Material(spriteShader);
             boardMat.mainTexture = RoundedRectTexture.RoundedRect(
-                460, 780, 18, UiTokens.CardBg, UiTokens.LineSoft, 2);
+                460, 940, 18, UiTokens.CardBg, UiTokens.LineSoft, 2);
             boardMat.SetColor("_Color", Color.white);
             boardRenderer.material = boardMat;
-            transform.localScale = new Vector3(0.46f, 0.78f, 1f);
+            transform.localScale = new Vector3(0.46f, 0.90f, 1f);
 
             Font font = UiTextFactory.Legacy;
 
             GameObject titleGo = new GameObject("Title");
             titleGo.transform.SetParent(transform, false);
-            titleGo.transform.localPosition = new Vector3(0f, 240f, -0.01f);
+            titleGo.transform.localPosition = new Vector3(0f, 380f, -0.01f);
             MeshRenderer titleRenderer = titleGo.AddComponent<MeshRenderer>();
             TextMesh titleTm = titleGo.AddComponent<TextMesh>();
             titleTm.font = font;
@@ -192,12 +217,13 @@ namespace MemoryCorridor.Media
             titleTm.alignment = TextAlignment.Center;
             titleTm.color = UiTokens.Amber;
 
-            volumeToggleText = BuildToggleRow("RowVolume", 220f, font, "主音量：100%", CycleVolume);
-            pointsToggleText = BuildToggleRow("TogglePoints", 120f, font, "光点标记：开", TogglePoints);
-            labelsToggleText = BuildToggleRow("ToggleLabels", 20f, font, "星点标签：开", ToggleLabels);
-            distanceToggleText = BuildToggleRow("RowDistance", -80f, font, "面板距离：2.4 米", CycleDistance);
-            vignetteToggleText = BuildToggleRow("RowVignette", -180f, font, "舒适暗角：关", CycleVignette);
-            locomotionToggleText = BuildToggleRow("RowLocomotion", -280f, font, "移动方式：传送", CycleLocomotion);
+            volumeToggleText = BuildToggleRow("RowVolume", 300f, font, "主音量：100%", CycleVolume);
+            pointsToggleText = BuildToggleRow("TogglePoints", 200f, font, "光点标记：开", TogglePoints);
+            labelsToggleText = BuildToggleRow("ToggleLabels", 100f, font, "星点标签：开", ToggleLabels);
+            distanceToggleText = BuildToggleRow("RowDistance", 0f, font, "面板距离：2.4 米", CycleDistance);
+            vignetteToggleText = BuildToggleRow("RowVignette", -100f, font, "舒适暗角：关", CycleVignette);
+            locomotionToggleText = BuildToggleRow("RowLocomotion", -200f, font, "移动方式：传送", CycleLocomotion);
+            themeToggleText = BuildToggleRow("RowTheme", -300f, font, "场景主题：默认", CycleThemeRow);
 
             RefreshTexts();
         }
