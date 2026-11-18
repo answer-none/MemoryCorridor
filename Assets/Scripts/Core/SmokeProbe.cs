@@ -18,6 +18,9 @@ namespace MemoryCorridor.Core
         private bool previewFired;
         private bool selectedFired;
 
+        /// <summary>断言段总数（R18 汇总行 SMOKE: N/N PASS 用；新增段必须同步更新）。</summary>
+        private const int TotalSections = 36;
+
         private void Awake()
         {
             StartCoroutine(Watchdog());
@@ -1364,6 +1367,9 @@ namespace MemoryCorridor.Core
             Debug.Log(pass
                 ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4)/主题选择(W1)/讲解控制(A2)/性能预算(P3) 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
+            // R18：机器可读汇总行（验收口径：Temp/smoke*.log 末尾 SMOKE: N/N PASS）
+            Debug.Log("[SmokeProbe] SMOKE: " + (TotalSections - failedSections) + "/" + TotalSections + " PASS"
+                + (failedSections > 0 ? "（失败段数=" + failedSections + "）" : "（全绿）"));
 
 #if UNITY_EDITOR
             yield return new WaitForSeconds(0.3f);
