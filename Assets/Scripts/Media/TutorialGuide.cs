@@ -102,8 +102,8 @@ namespace MemoryCorridor.Media
             Font font = UiTextFactory.Legacy;
             hintText.font = font;
             textRenderer.sharedMaterial = font.material;
-            hintText.fontSize = 46;
-            hintText.characterSize = 0.011f;
+            hintText.fontSize = UiTokens.GuideFontSize;
+            hintText.characterSize = UiTokens.GuideCharSize;
             hintText.anchor = TextAnchor.MiddleCenter;
             hintText.alignment = TextAlignment.Center;
             hintText.color = UiTokens.Cream;

@@ -1,4 +1,5 @@
 using System;
+using MemoryCorridor.Media;
 using UnityEngine;
 
 namespace MemoryCorridor.Interaction
@@ -15,12 +16,12 @@ namespace MemoryCorridor.Interaction
         [SerializeField] private Light glowLight;
 
         [Header("配色（按记忆类型，见视觉规范 §4.1）")]
-        [SerializeField] private Color defaultColor = new Color(0.91f, 0.64f, 0.29f); // 琥珀=图片
-        [SerializeField] private Color highlightColor = new Color(0.35f, 0.78f, 0.88f); // 青蓝（悬停态）
-        [SerializeField] private Color privateColor = new Color(0.78f, 0.42f, 0.42f);  // 暖红（私密）
-        [SerializeField] private Color audioColor = new Color(0.35f, 0.78f, 0.88f);    // 青蓝=录音
-        [SerializeField] private Color diaryColor = new Color(0.92f, 0.88f, 0.82f);    // 米白=日记
-        [SerializeField] private Color mixedColor = new Color(0.95f, 0.55f, 0.35f);    // 暖橙=混合
+        [SerializeField] private Color defaultColor = UiTokens.Amber; // 琥珀=图片（R18-2 令牌化默认值）
+        [SerializeField] private Color highlightColor = UiTokens.Cyan; // 青蓝（悬停态）
+        [SerializeField] private Color privateColor = UiTokens.WarmRed; // 暖红（私密）
+        [SerializeField] private Color audioColor = UiTokens.Cyan;    // 青蓝=录音
+        [SerializeField] private Color diaryColor = UiTokens.Cream;    // 米白=日记
+        [SerializeField] private Color mixedColor = UiTokens.WarmOrange;    // 暖橙=混合
 
         [Header("音效（R1 E5：选中反馈，内聚于光点本体）")]
         [SerializeField] private AudioClip selectChime;

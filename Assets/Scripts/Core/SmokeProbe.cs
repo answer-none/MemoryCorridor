@@ -942,6 +942,21 @@ namespace MemoryCorridor.Core
                     Debug.Log("[SmokeProbe] D4 距离实拍 " + dist + "m: " + path + "（" + png.Length + " 字节）");
                     yield return null;
                 }
+
+                // R18-2：正文可读性 2m/3m 特写（关键词行=卡板正文层级，真实渲染复用 R16 管线）
+                foreach (float dist in new float[] { 2f, 3f })
+                {
+                    d4CamGo.transform.position = rootPos + new Vector3(0f, -0.13f, -dist); // 对准 Keywords 行
+                    d4CamGo.transform.rotation = Quaternion.identity;
+                    byte[] png = MemoryCardComposer.RenderCardRoot(cardRoot, d4Cam, 800, 600);
+                    string path = "docs/evidence/r18_readability_body_" + dist.ToString("F0") + "m.png";
+                    System.IO.File.WriteAllBytes(path, png);
+                    bool ok = png.Length > 5000;
+                    allShot &= ok;
+                    Debug.Log("[SmokeProbe] R18 正文可读性实拍 " + dist + "m: " + path + "（" + png.Length + " 字节）");
+                    yield return null;
+                }
+                d4CamGo.transform.position = rootPos + new Vector3(0.4f, 0, -5f);
                 Object.Destroy(cardRoot);
                 Object.Destroy(d4CamGo);
 

@@ -44,7 +44,10 @@
 
 **R16-4 色彩新增**：`CaptionInk`（卡片时间）/`DimInk`（站数）/`RainBlue`/`RainInk`（雨夜校园主题）——四值已入 UiTokens，MemoryCardComposer/ThemeColors 全部引用令牌。
 **R17 新控件令牌化**：主题行（SettingsPanel 板体 460×940 令牌纹理+UiTextFactory）、讲解 HUD（LabelBg/ThumbBg/Amber/CaptionInk/LineSoft 全令牌）、对照/参数卡板（CardBg/LineSoft/CaptionInk/DimInk/EvidenceBg）——R17 零新增 new Color 字面量。
-**违规扫描口径（R16 终值）**：全工程 new Color 字面量（除 UiTokens.cs）**14→8 处**（LightPointAnchor [SerializeField]×6 + SmokeProbe 断言期望值×2，全部原白名单）——R16 新增组件零字面量，主题环境光/雾/证据底色 8 值全部令牌化（AmberAmbient/AmberFog/RainAmbient/RainFog/EvidenceBg）。只降不涨 ✅
+**违规扫描口径（R18-2 清零终值）**：四模式扫描（new Color/new Color32/sizeDelta=Vector2 字面量/fontSize=数字/characterSize=数字）**26 处 → 5 处（净违规 0）**：
+- 替换 21 处：LightPointAnchor 配色默认值×6（引用 UiTokens 令牌，保留 SerializeField 可调）、ConstellationWall 星标字号×2、MemoryPanel（画布 sizeDelta/标题/正文/✕/分隔线）×6、SettingsPanel 字号×4、TutorialGuide×2、MemoryCardComposer 连线色派生×1——新增 10 个字号/尺寸令牌（StarLabel/Cross/SettingsTitle/Row/Guide 的 FontSize+CharSize、PanelSize）。
+- **豁免清单（5 处，均有理由）**：①SmokeProbe 断言期望值×2——断言独立性原则：引用 UiTokens 会与被测对象同源导致断言恒真（假绿）；②MemoryCardComposer DotTexture 纯白 (1,1,1,a)——贴图 tint 基色（结构性常量）；③④透明黑 (0,0,0,0)×2（卡片 RT 透明底/SceneFader 转场初始态）——结构必需，R12 白名单已登记 SceneFader 语义。
+- 扫描命令同 §5（python 四正则），新增字号令牌见表 2。
 
 ## 3. 字号 dmm 换算口径
 

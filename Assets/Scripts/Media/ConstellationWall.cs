@@ -167,8 +167,8 @@ namespace MemoryCorridor.Media
                 labelTm.font = font;
                 labelRenderer.sharedMaterial = font.material;
                 labelTm.text = orderedFragments[i].title;
-                labelTm.fontSize = 40;
-                labelTm.characterSize = 0.07f; // R12: 6 -> 38 dmm
+                labelTm.fontSize = UiTokens.StarLabelFontSize;
+                labelTm.characterSize = UiTokens.StarLabelCharSize; // R12: 6 -> 38 dmm
                 labelTm.anchor = TextAnchor.MiddleCenter;
                 labelTm.alignment = TextAlignment.Center;
                 labelTm.color = UiTokens.LabelInk;

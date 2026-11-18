@@ -59,5 +59,18 @@ namespace MemoryCorridor.Media
         public const float PanelTitleSize = 42f;
         /// <summary>面板正文字号。</summary>
         public const float PanelBodySize = 28f;
+        /// <summary>面板画布尺寸（R18-2 令牌化）。</summary>
+        public static readonly Vector2 PanelSize = new Vector2(620f, 460f);
+        // —— 字号/字符尺寸令牌（R18-2 清零：TextMesh 字符高 = fontSize × charSize / 10）——
+        public const int StarLabelFontSize = 40;
+        public const float StarLabelCharSize = 0.07f;
+        public const int CrossFontSize = 64;
+        public const float CrossCharSize = 0.02f;
+        public const int SettingsTitleFontSize = 46;
+        public const float SettingsTitleCharSize = 0.013f;
+        public const int RowFontSize = 40;
+        public const float RowCharSize = 0.0105f;
+        public const int GuideFontSize = 46;
+        public const float GuideCharSize = 0.011f;
     }
 }

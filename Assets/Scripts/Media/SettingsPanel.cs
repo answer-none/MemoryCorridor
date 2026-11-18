@@ -211,8 +211,8 @@ namespace MemoryCorridor.Media
             titleTm.font = font;
             titleRenderer.sharedMaterial = font.material;
             titleTm.text = "设置";
-            titleTm.fontSize = 46;
-            titleTm.characterSize = 0.013f;
+            titleTm.fontSize = UiTokens.SettingsTitleFontSize;
+            titleTm.characterSize = UiTokens.SettingsTitleCharSize;
             titleTm.anchor = TextAnchor.MiddleCenter;
             titleTm.alignment = TextAlignment.Center;
             titleTm.color = UiTokens.Amber;
@@ -256,8 +256,8 @@ namespace MemoryCorridor.Media
             TextMesh tm = textGo.AddComponent<TextMesh>();
             tm.font = font;
             textRenderer.sharedMaterial = font.material;
-            tm.fontSize = 40;
-            tm.characterSize = 0.0105f;
+            tm.fontSize = UiTokens.RowFontSize;
+            tm.characterSize = UiTokens.RowCharSize;
             tm.anchor = TextAnchor.MiddleCenter;
             tm.alignment = TextAlignment.Center;
             tm.color = UiTokens.Cream;

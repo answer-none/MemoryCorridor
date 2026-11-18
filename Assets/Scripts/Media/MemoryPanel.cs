@@ -145,7 +145,7 @@ namespace MemoryCorridor.Media
             canvas = gameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
             RectTransform root = canvas.GetComponent<RectTransform>();
-            root.sizeDelta = new Vector2(620f, 460f);
+            root.sizeDelta = UiTokens.PanelSize;
             transform.localScale = Vector3.one * 0.0016f; // ≈1.0m × 0.74m
 
             // R3 美学升级：圆角底板（程序化贴图，UI_DESIGN §1 形状 tokens）
@@ -175,7 +175,7 @@ namespace MemoryCorridor.Media
             titleGo.transform.SetParent(transform, false);
             titleText = titleGo.AddComponent<TextMeshProUGUI>();
             EnsureFont(titleText);
-            titleText.fontSize = 42f;
+            titleText.fontSize = (int)UiTokens.PanelTitleSize;
             titleText.color = UiTokens.Amber;
             titleText.alignment = TextAlignmentOptions.Center;
             titleText.raycastTarget = false;
@@ -184,7 +184,7 @@ namespace MemoryCorridor.Media
             GameObject dividerGo = new GameObject("Divider");
             dividerGo.transform.SetParent(transform, false);
             Image divider = dividerGo.AddComponent<Image>();
-            divider.color = new Color(UiTokens.Amber.r, UiTokens.Amber.g, UiTokens.Amber.b, 0.55f); // 标题分隔线（UI_DESIGN §1）
+            divider.color = UiTokens.LineSoft; // 标题分隔（=Amber@0.55 令牌）线（UI_DESIGN §1）
             divider.raycastTarget = false;
             Stretch(dividerGo.GetComponent<RectTransform>(), 0.04f, 0.295f, 0.96f, 0.302f);
 
@@ -192,7 +192,7 @@ namespace MemoryCorridor.Media
             bodyGo.transform.SetParent(transform, false);
             bodyText = bodyGo.AddComponent<TextMeshProUGUI>();
             EnsureFont(bodyText);
-            bodyText.fontSize = 28f;
+            bodyText.fontSize = (int)UiTokens.PanelBodySize;
             bodyText.color = UiTokens.Cream;
             bodyText.alignment = TextAlignmentOptions.Top;
             bodyText.enableWordWrapping = true; // TMP 3.0.9：无 textWrappingMode（坑-029）
@@ -230,8 +230,8 @@ namespace MemoryCorridor.Media
             crossTm.font = font;
             crossRenderer.sharedMaterial = font.material;
             crossTm.text = "×";
-            crossTm.fontSize = 64;
-            crossTm.characterSize = 0.02f;
+            crossTm.fontSize = UiTokens.CrossFontSize;
+            crossTm.characterSize = UiTokens.CrossCharSize;
             crossTm.anchor = TextAnchor.MiddleCenter;
             crossTm.alignment = TextAlignment.Center;
             crossTm.color = UiTokens.CrossWhite;

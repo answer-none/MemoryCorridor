@@ -296,7 +296,7 @@ namespace MemoryCorridor.Media
                 if (i > 0)
                 {
                     Material lineMat = new Material(flatMat);
-                    lineMat.SetColor("_Color", new Color(UiTokens.LineSoft.r, UiTokens.LineSoft.g, UiTokens.LineSoft.b, 1f));
+                    Color lineSolid = UiTokens.LineSoft; lineSolid.a = 1f; lineMat.SetColor("_Color", lineSolid); // LineSoft 不透明派生（R18-2 去字面量）
                     CreateQuad(root.transform, "DotLine" + i, new Vector3(x - spacing * 0.5f, -0.02f, -0.005f),
                         new Vector3(spacing, 0.006f, 1), lineMat);
                 }
