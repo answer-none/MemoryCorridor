@@ -19,7 +19,7 @@ namespace MemoryCorridor.Core
         private bool selectedFired;
 
         /// <summary>断言段总数（R18 汇总行 SMOKE: N/N PASS 用；新增段必须同步更新）。</summary>
-        private const int TotalSections = 43;
+        private const int TotalSections = 46;
 
         private void Awake()
         {
@@ -1220,10 +1220,10 @@ namespace MemoryCorridor.Core
                 pCam.transform.position = savedP;
                 pCam.transform.rotation = savedR;
 
-                // 硬门槛：DC≤120 / tri≤60 万；帧耗时 Editor 口径 ≤16.7ms（60fps），13ms 为 PICO 72fps 真机参考线
+                // 硬门槛：DC≤120 / tri≤60 万；R22：帧耗时硬线统一 13ms（batchmode 实测 0.8ms 级余量充足）
                 bool dcOk = worstDc <= 120;
                 bool triOk = worstTri <= 600000;
-                bool msOk = worstMs <= 16.7f;
+                bool msOk = worstMs <= 13f;
                 if (!dcOk || !triOk || !msOk)
                 {
                     Debug.LogError("[SmokeProbe] FAIL-P3: 性能预算超限 (ms=" + worstMs.ToString("F1") + " dc=" + worstDc
@@ -1233,7 +1233,7 @@ namespace MemoryCorridor.Core
                 else
                 {
                     Debug.Log("[SmokeProbe] P3 性能预算 OK（" + budgetTable
-                        + "最差均值 " + worstMs.ToString("F1") + "ms≤16.7 Editor 口径（13ms=PICO 真机线）；DC 口径=" + dcMethod + "）");
+                        + "最差均值 " + worstMs.ToString("F1") + "ms≤13ms 硬线（R22 收紧）；DC 口径=" + dcMethod + "）");
                     R17PerfPanel(worstMs, worstDc, worstTri, dcMethod, budgetTable);
                 }
             }
@@ -1478,6 +1478,100 @@ namespace MemoryCorridor.Core
                 }
             }
 
+            // ========== E8. 编辑持久化文件级读回（R22：appdata.json 字节级 Contains + 字段一致，2 条断言） ==========
+            if (pass)
+            {
+                var rEdit = MemoryCardEditService.Apply("frag_02", "老收音机·持久化标记", "2015-10-01", "戏曲频道（R22 持久化标记正文）。");
+                string json = System.IO.File.ReadAllText(SaveDataService.AppDataFilePath);
+                AppData back = SaveDataService.LoadAppData();
+                MemoryFragment b02 = null;
+                for (int r = 0; r < back.rooms.Count && b02 == null; r++)
+                    for (int f = 0; f < back.rooms[r].fragments.Count && b02 == null; f++)
+                        if (back.rooms[r].fragments[f].id == "frag_02") b02 = back.rooms[r].fragments[f];
+                bool fileOk = json.Contains("老收音机·持久化标记"); // 文件字节级含新标题
+                bool fieldOk = b02 != null && b02.title == "老收音机·持久化标记"
+                    && b02.diary.text == "戏曲频道（R22 持久化标记正文）。";
+                // 恢复原值
+                MemoryCardEditService.Apply("frag_02", "老收音机", "2015-10-01", "戏曲频道永远开到最大声，她跟着哼，跑调也不许我们笑。");
+                if (rEdit == null || !rEdit.Ok || !fileOk || !fieldOk)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-E8: 持久化读回异常 (file=" + fileOk + " field=" + fieldOk + "）");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] E8 持久化读回 OK（appdata.json 字节级含新标题+LoadAppData 字段一致；原值已恢复）");
+                }
+            }
+
+            // ========== E9. 面板刷新数值一致（R22：frag_03 二次编辑 CurrentTitleText==读回 title，1 条断言+恢复） ==========
+            if (pass)
+            {
+                MemoryPanel e9Panel = FindFirst<MemoryPanel>();
+                AppData d9 = SaveDataService.LoadAppData();
+                MemoryFragment f03 = null;
+                for (int r = 0; r < d9.rooms.Count && f03 == null; r++)
+                    for (int f = 0; f < d9.rooms[r].fragments.Count && f03 == null; f++)
+                        if (d9.rooms[r].fragments[f].id == "frag_03") f03 = d9.rooms[r].fragments[f];
+                if (e9Panel == null || f03 == null)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-E9: 缺面板或 frag_03");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    string origTitle = f03.title, origDate = f03.diary != null ? f03.diary.date : "2008-07-20",
+                        origText = f03.diary != null && !string.IsNullOrEmpty(f03.diary.text) ? f03.diary.text : "原文";
+                    e9Panel.Show(f03);
+                    var rE = MemoryCardEditService.Apply("frag_03", "面板刷新一致性验证", "2008-07-20", "R22 面板刷新数值一致断言正文。");
+                    yield return new WaitForSecondsRealtime(0.3f);
+                    AppData back9 = SaveDataService.LoadAppData();
+                    MemoryFragment b03 = null;
+                    for (int r = 0; r < back9.rooms.Count && b03 == null; r++)
+                        for (int f = 0; f < back9.rooms[r].fragments.Count && b03 == null; f++)
+                            if (back9.rooms[r].fragments[f].id == "frag_03") b03 = back9.rooms[r].fragments[f];
+                    bool agreeOk = e9Panel.CurrentTitleText == "面板刷新一致性验证"
+                        && b03 != null && b03.title == "面板刷新一致性验证"
+                        && e9Panel.CurrentTitleText == b03.title; // 面板显示==落盘读回
+                    MemoryCardEditService.Apply("frag_03", origTitle, origDate, origText);
+                    if (rE == null || !rE.Ok || !agreeOk)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-E9: 面板刷新一致性异常 (panel=" + e9Panel.CurrentTitleText
+                            + " disk=" + (b03 != null ? b03.title : "null") + "）");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] E9 面板刷新一致 OK（frag_03 二次编辑：面板显示==落盘读回==新值；原值已恢复）");
+                    }
+                }
+            }
+
+            // ========== B9. 性能阈值快测（R22：出生点 10 帧 avg≤13ms 独立复证 P3，1 条断言） ==========
+            if (pass)
+            {
+                Camera bCam = Camera.main;
+                Vector3 bsp = bCam.transform.position;
+                Quaternion br = bCam.transform.rotation;
+                bCam.transform.position = new Vector3(0f, 1.4f, 0.5f);
+                bCam.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+                yield return new WaitForSecondsRealtime(0.3f);
+                float t0 = Time.realtimeSinceStartup;
+                for (int f = 0; f < 10; f++) yield return null;
+                float avg = (Time.realtimeSinceStartup - t0) / 10f * 1000f;
+                bCam.transform.position = bsp;
+                bCam.transform.rotation = br;
+                if (avg > 13f)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-B9: 性能阈值超限 avg=" + avg.ToString("F1") + "ms>13ms");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] B9 性能阈值 OK（出生点 10 帧 avg=" + avg.ToString("F1") + "ms≤13ms 硬线）");
+                }
+            }
+
 
             if (pass)
             {
@@ -1620,7 +1714,7 @@ namespace MemoryCorridor.Core
             }
 
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4)/主题选择(W1)/讲解控制(A2)/性能预算(P3)/时间轴回放(T5)/讲解音量(N1)/讲解字幕(N2)/音量即时生效(N3)/卡片编辑保存(E5)/非法输入拒(E6)/空标题兜底(E7) 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4)/主题选择(W1)/讲解控制(A2)/性能预算(P3)/时间轴回放(T5)/讲解音量(N1)/讲解字幕(N2)/音量即时生效(N3)/卡片编辑保存(E5)/非法输入拒(E6)/空标题兜底(E7)/持久化读回(E8)/面板刷新一致(E9)/性能阈值(B9) 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
             // R18：机器可读汇总行（验收口径：Temp/smoke*.log 末尾 SMOKE: N/N PASS）
             Debug.Log("[SmokeProbe] SMOKE: " + (TotalSections - failedSections) + "/" + TotalSections + " PASS"
