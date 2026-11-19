@@ -37,7 +37,7 @@ namespace MemoryCorridor.EditorTools
                 if (report.summary.result == BuildResult.Succeeded)
                 {
                     FileInfo apk = new FileInfo(OutputPath);
-                    Debug.Log("[AndroidBuild] 成功: " + OutputPath
+                    Debug.Log("[AndroidBuild] BUILD SUCCESSFUL: " + OutputPath
                         + " | " + apk.Length / (1024 * 1024) + " MB"
                         + " | 耗时 " + report.summary.totalTime.TotalMinutes.ToString("F1") + " 分钟"
                         + " | 警告数 " + report.summary.totalWarnings);

@@ -19,7 +19,7 @@ namespace MemoryCorridor.Core
         private bool selectedFired;
 
         /// <summary>断言段总数（R18 汇总行 SMOKE: N/N PASS 用；新增段必须同步更新）。</summary>
-        private const int TotalSections = 36;
+        private const int TotalSections = 37;
 
         private void Awake()
         {
@@ -1238,6 +1238,53 @@ namespace MemoryCorridor.Core
                 }
             }
 
+            // ========== T5. 时间轴回放（R19 P2：时间序串联重演，≥3 条断言） ==========
+            if (pass)
+            {
+                TimelineReplayController tr = FindFirst<TimelineReplayController>();
+                if (tr == null)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-T5: 缺 TimelineReplayController");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    int calls0 = TimelineReplayController.SequencerCalls;
+                    // 断言①：启动——排队数=当前房间碎片数、IsReplaying=true、首片已调 sequencer
+                    bool started = tr.StartReplay();
+                    yield return new WaitForSecondsRealtime(0.5f); // 等四拍首拍起播
+                    bool startOk = started && tr.IsReplaying && tr.QueueCount == 4
+                        && tr.CurrentIndex == 0
+                        && TimelineReplayController.SequencerCalls == calls0 + 1;
+                    string firstTitle = tr.CurrentTitle;
+
+                    // 断言②：手动推进——Advance×2 后 index=2、sequencer 累计 +3
+                    tr.Advance();
+                    tr.Advance();
+                    bool advanceOk = tr.IsReplaying && tr.CurrentIndex == 2
+                        && TimelineReplayController.SequencerCalls == calls0 + 3;
+
+                    // 断言③：HUD 截图（回放中进度+标题）后停止——IsReplaying=false
+                    byte[] hudShot = RenderMainCamera(800, 600);
+                    System.IO.File.WriteAllBytes("docs/evidence/r19_timeline_hud.png", hudShot);
+                    tr.StopReplay();
+                    bool stopOk = !tr.IsReplaying && tr.CurrentIndex == -1;
+
+                    if (!startOk || !advanceOk || !stopOk)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-T5: 时间轴回放异常 (start=" + startOk + " advance=" + advanceOk
+                            + " stop=" + stopOk + " queue=" + tr.QueueCount + " idx=" + tr.CurrentIndex
+                            + " calls=" + TimelineReplayController.SequencerCalls + "/" + calls0 + "）");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] T5 时间轴回放 OK（排队 4 片时间序首片=" + firstTitle
+                            + "/Advance×2 sequencer 累计+3/停止复位；HUD 截图已落盘）");
+                    }
+                }
+            }
+
 
             if (pass)
             {
@@ -1380,7 +1427,7 @@ namespace MemoryCorridor.Core
             }
 
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4)/主题选择(W1)/讲解控制(A2)/性能预算(P3) 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4)/主题选择(W1)/讲解控制(A2)/性能预算(P3)/时间轴回放(T5) 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
             // R18：机器可读汇总行（验收口径：Temp/smoke*.log 末尾 SMOKE: N/N PASS）
             Debug.Log("[SmokeProbe] SMOKE: " + (TotalSections - failedSections) + "/" + TotalSections + " PASS"

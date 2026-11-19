@@ -19,6 +19,7 @@ namespace MemoryCorridor.Media
         private TextMesh vignetteToggleText;
         private TextMesh locomotionToggleText;
         private TextMesh themeToggleText; // R17-1：场景主题选择行
+        private TextMesh timelineReplayText; // R19 P2：时间轴回放启停行
         private TextMesh volumeToggleText;
         private bool showPoints = true;
         private bool showLabels = true;
@@ -117,6 +118,23 @@ namespace MemoryCorridor.Media
             RefreshTexts();
         }
 
+        /// <summary>R19 P2：时间轴回放启停（点击切换，运行态由 TimelineReplayController.IsReplaying 决定文案）。</summary>
+        private void CycleTimelineReplay()
+        {
+            Media.TimelineReplayController tc = FindTimelineReplay();
+            if (tc == null) return;
+            if (tc.IsReplaying) tc.StopReplay();
+            else tc.StartReplay();
+            RefreshTexts();
+        }
+
+        private static Media.TimelineReplayController FindTimelineReplay()
+        {
+            var found = FindObjectsByType<Media.TimelineReplayController>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+            return found.Length > 0 ? found[0] : null;
+        }
+
         /// <summary>R17-1：场景主题循环切换（default→rain→default，0.3s 淡入即时生效）。</summary>
         private void CycleThemeRow()
         {
@@ -143,6 +161,11 @@ namespace MemoryCorridor.Media
             if (locomotionToggleText != null)
                 locomotionToggleText.text = "移动方式：" + (SettingsService.GetLocomotion() == "smooth" ? "平滑" : "传送");
             if (themeToggleText != null) themeToggleText.text = "场景主题：" + ThemeDisplayName();
+            if (timelineReplayText != null)
+            {
+                Media.TimelineReplayController tc = FindTimelineReplay();
+                timelineReplayText.text = "时间轴回放：" + (tc != null && tc.IsReplaying ? "回放中" : "关");
+            }
 
             if (pointsToggleText != null) pointsToggleText.color = showPoints ? OnColor : OffColor;
             if (labelsToggleText != null) labelsToggleText.color = showLabels ? OnColor : OffColor;
@@ -224,6 +247,7 @@ namespace MemoryCorridor.Media
             vignetteToggleText = BuildToggleRow("RowVignette", -100f, font, "舒适暗角：关", CycleVignette);
             locomotionToggleText = BuildToggleRow("RowLocomotion", -200f, font, "移动方式：传送", CycleLocomotion);
             themeToggleText = BuildToggleRow("RowTheme", -300f, font, "场景主题：默认", CycleThemeRow);
+            timelineReplayText = BuildToggleRow("RowTimelineReplay", -400f, font, "时间轴回放：关", CycleTimelineReplay);
 
             RefreshTexts();
         }

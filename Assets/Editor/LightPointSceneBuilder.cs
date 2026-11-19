@@ -281,6 +281,11 @@ namespace MemoryCorridor.EditorTools
                 .AddComponent<Media.AutoNarrationController>();
             narration.Configure(roomManager);
 
+            // R19 P2：时间轴回放（按 diary.date 升序串联重演，SettingsPanel 第 8 行启停）
+            Media.TimelineReplayController timelineReplay = new GameObject("TimelineReplayController")
+                .AddComponent<Media.TimelineReplayController>();
+            timelineReplay.Configure(roomManager, sequencer);
+
             XRIAnchorBridge bridge = new GameObject("XRIAnchorBridge").AddComponent<XRIAnchorBridge>();
             AudioClip chime = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/sfx_lightpoint_chime.wav");
 
