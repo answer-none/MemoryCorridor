@@ -43,3 +43,4 @@ node_modules/
 
 # 大体积原始素材加工中间产物（按需放开）
 assets_raw/**/processed/
+Temp_Evidence/
