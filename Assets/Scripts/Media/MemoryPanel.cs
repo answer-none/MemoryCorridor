@@ -45,6 +45,8 @@ namespace MemoryCorridor.Media
         /// <summary>按碎片内容刷新面板并显示于视线前方。</summary>
         /// <summary>R21：当前显示碎片的标题文本（探针断言刷新读取）。</summary>
         public string CurrentTitleText => titleText != null ? titleText.text : null;
+        /// <summary>R23 P1#10：归属徽标文本（"来自 我"，探针断言）。</summary>
+        public string OwnerBadgeText { get; private set; }
         /// <summary>R21：当前显示碎片 id（null=未显示）。</summary>
         public string CurrentFragmentId { get; private set; }
 
@@ -54,6 +56,7 @@ namespace MemoryCorridor.Media
             CurrentFragmentId = fragment.id;
             if (fragment == null) return;
             EnsureBuilt();
+            BuildOwnerBadge(); // R23 P1#10
             PositionInFrontOfGaze();
 
             if (titleText != null)
@@ -65,6 +68,13 @@ namespace MemoryCorridor.Media
                 bodyText.text = (fragment.diary != null && !string.IsNullOrEmpty(fragment.diary.text))
                     ? fragment.diary.date + "\n" + fragment.diary.text
                     : "";
+            }
+            // R23 P1#10：归属徽标（ownerMemberId→成员名，无归属者不显示）
+            OwnerBadgeText = ResolveOwnerName(fragment.ownerMemberId);
+            if (ownerBadgeTm != null)
+            {
+                ownerBadgeTm.text = OwnerBadgeText != null ? "来自 " + OwnerBadgeText : "";
+                ownerBadgeGo.SetActive(OwnerBadgeText != null);
             }
             ShowFirstImage(fragment);
             StartVideo(fragment); // R8：视频优先（有 video 项则 RT 接管照片区）
@@ -102,6 +112,42 @@ namespace MemoryCorridor.Media
         private void OnDestroy()
         {
             MemoryCardEditService.OnFragmentEdited -= RefreshFromData;
+        }
+
+        private GameObject ownerBadgeGo;
+        private TextMesh ownerBadgeTm;
+
+        /// <summary>ownerMemberId→成员显示名（无匹配/空→null）。</summary>
+        private string ResolveOwnerName(string ownerId)
+        {
+            if (string.IsNullOrEmpty(ownerId)) return null;
+            AppData data = SaveDataService.LoadAppData();
+            for (int i = 0; i < data.members.Count; i++)
+                if (data.members[i].id == ownerId) return data.members[i].name;
+            return null;
+        }
+
+        /// <summary>R23：归属徽标（标题行下小条，全令牌）。</summary>
+        private void BuildOwnerBadge()
+        {
+            if (ownerBadgeGo != null) return;
+            Shader spriteShader = Shader.Find("MemoryCorridor/Sprite3D");
+            if (spriteShader == null) return;
+            ownerBadgeGo = new GameObject("OwnerBadge");
+            ownerBadgeGo.transform.SetParent(transform, false);
+            Material bm = new Material(spriteShader);
+            bm.mainTexture = RoundedRectTexture.RoundedRect(240, 48, (int)UiTokens.BadgeRadius, UiTokens.LabelBg, UiTokens.LineSoft, 1);
+            GameObject board = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            Collider c = board.GetComponent<Collider>();
+            if (c != null) Destroy(c); // 坑-043
+            board.transform.SetParent(ownerBadgeGo.transform, false);
+            board.transform.localPosition = new Vector3(0, 148f, -0.01f);
+            board.transform.localScale = new Vector3(0.30f, 0.052f, 1);
+            board.GetComponent<MeshRenderer>().sharedMaterial = bm;
+            ownerBadgeTm = UiTextFactory.CreateTextMesh(ownerBadgeGo.transform, "Text",
+                new Vector3(0, 148f, -0.02f), 26, 0.010f, TextAnchor.MiddleCenter, TextAlignment.Center,
+                UiTokens.LabelInk, "");
+            ownerBadgeGo.SetActive(false);
         }
 
         private IEnumerator FadeIn(float duration)

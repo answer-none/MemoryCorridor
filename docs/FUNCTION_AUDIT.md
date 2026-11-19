@@ -82,6 +82,13 @@
 |---|---|---|---|
 | R21-a | **记忆卡片编辑**（P2 第三项：MemoryCardEditService 统一编辑入口——标题≤32 字/日期 yyyy-MM-dd/正文≤500 字校验+空标题兜底"未命名记忆"+落盘+OnFragmentEdited 事件；MemoryPanel.RefreshFromData 主线程刷新显示（CurrentTitleText 访问器）；ImportServer POST /diary 接线（payload+title，校验拒绝返回 400）——浏览器真实编辑链路复用） | ✅ | E5/E6/E7 三段 5 断言：①保存三值落盘读回一致+面板实时刷新 ②超长标题/非法日期均拒且不写盘 ③空标题兜底保存成功+原值恢复；坑-057 入 MEMORY（HTTP 线程 Unity API→主线程 Pump 队列派发）；截图 r21_edit_panel.png（亮度 91.68>8）；改动 4 文件（EditService 新/MemoryPanel/ImportServer/SmokeProbe） |
 
+## R23 落地轮（2026-11-20）
+
+| # | 功能 | 状态 | 断言/证据 |
+|---|---|---|---|
+| R23-0 | 证据链防污染（自查修复） | ✅ | ①16 张 PNG 覆盖根因=探针每轮写 docs/evidence+git add -A 带入——探针证据路径改 **Temp_Evidence/**（Unity 不清理），docs/evidence 改为验收轮手动 cp 快照；②EditorScene 4700 行重排根因=builder SaveScene 幂等重建——**跑后 git checkout 恢复**（运行期备份回写方案因 ImportAsset 重载副作用弃用，坑-058）；③恢复后 t2 复跑 46/46、docs/evidence 零 diff |
+| R23-a | **家庭多档案：成员切换+归属显示**（P1 #10 🟡 推进：SettingsPanel 第 10 行"当前成员"循环（currentMemberId 持久化）+MemoryPanel 归属徽标（ownerMemberId→成员名"来自 X"，无归属者隐藏）；光点按成员过滤记下一步） | ✅ | M1/M2/M3 三段：①补造 mem_02→Cycle→currentMemberId==mem_02 落盘读回（循环恢复）②mem_01→"我" 解析 ③Show(frag_01)→OwnerBadgeText=="我"+截图 r23_member_badge.png（亮度 91.68→91.91>8）；改动 3 文件（SettingsPanel/MemoryPanel/SmokeProbe） |
+
 ## 非功能项
 
 | 项 | 状态 | 证据 |

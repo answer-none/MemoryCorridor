@@ -21,6 +21,7 @@ namespace MemoryCorridor.Media
         private TextMesh themeToggleText; // R17-1：场景主题选择行
         private TextMesh timelineReplayText; // R19 P2：时间轴回放启停行
         private TextMesh narrationVolumeText; // R20：讲解音量档位行
+        private TextMesh memberText; // R23 P1#10：当前成员切换行
         private TextMesh volumeToggleText;
         private bool showPoints = true;
         private bool showLabels = true;
@@ -119,6 +120,22 @@ namespace MemoryCorridor.Media
             RefreshTexts();
         }
 
+        /// <summary>R23 P1#10：当前成员切换（循环 AppData.members，写 currentMemberId 持久化）。</summary>
+        public void CycleMember()
+        {
+            AppData data = SaveDataService.LoadAppData();
+            if (data == null || data.members == null || data.members.Count == 0) return;
+            int idx = 0;
+            for (int i = 0; i < data.members.Count; i++)
+                if (data.members[i].id == data.currentMemberId) idx = i;
+            data.currentMemberId = data.members[(idx + 1) % data.members.Count].id;
+            SaveDataService.SaveAppData(data);
+            RefreshTexts();
+        }
+
+        /// <summary>当前成员显示名（探针/文档断言）。</summary>
+        public string MemberRowText => memberText != null ? memberText.text : null;
+
         /// <summary>R20：讲解音量档位循环（0→50→100→0），即时生效（讲解源 Update 跟随 NarrationVolume）。</summary>
         private void CycleNarrationVolume()
         {
@@ -178,6 +195,14 @@ namespace MemoryCorridor.Media
             }
             if (narrationVolumeText != null)
                 narrationVolumeText.text = "讲解音量：" + AudioSettingsService.GetNarrationVolumePercent() + "%";
+            if (memberText != null)
+            {
+                AppData mdata = SaveDataService.LoadAppData();
+                string mName = "我";
+                for (int i = 0; i < mdata.members.Count; i++)
+                    if (mdata.members[i].id == mdata.currentMemberId) mName = mdata.members[i].name;
+                memberText.text = "当前成员：" + mName;
+            }
 
             if (pointsToggleText != null) pointsToggleText.color = showPoints ? OnColor : OffColor;
             if (labelsToggleText != null) labelsToggleText.color = showLabels ? OnColor : OffColor;
@@ -231,16 +256,16 @@ namespace MemoryCorridor.Media
             Shader spriteShader = Shader.Find("MemoryCorridor/Sprite3D");
             Material boardMat = new Material(spriteShader);
             boardMat.mainTexture = RoundedRectTexture.RoundedRect(
-                460, 1080, 18, UiTokens.CardBg, UiTokens.LineSoft, 2);
+                460, 1200, 18, UiTokens.CardBg, UiTokens.LineSoft, 2);
             boardMat.SetColor("_Color", Color.white);
             boardRenderer.material = boardMat;
-            transform.localScale = new Vector3(0.46f, 1.08f, 1f);
+            transform.localScale = new Vector3(0.46f, 1.20f, 1f);
 
             Font font = UiTextFactory.Legacy;
 
             GameObject titleGo = new GameObject("Title");
             titleGo.transform.SetParent(transform, false);
-            titleGo.transform.localPosition = new Vector3(0f, 380f, -0.01f);
+            titleGo.transform.localPosition = new Vector3(0f, 540f, -0.01f);
             MeshRenderer titleRenderer = titleGo.AddComponent<MeshRenderer>();
             TextMesh titleTm = titleGo.AddComponent<TextMesh>();
             titleTm.font = font;
@@ -252,15 +277,16 @@ namespace MemoryCorridor.Media
             titleTm.alignment = TextAlignment.Center;
             titleTm.color = UiTokens.Amber;
 
-            volumeToggleText = BuildToggleRow("RowVolume", 300f, font, "主音量：100%", CycleVolume);
-            pointsToggleText = BuildToggleRow("TogglePoints", 200f, font, "光点标记：开", TogglePoints);
-            labelsToggleText = BuildToggleRow("ToggleLabels", 100f, font, "星点标签：开", ToggleLabels);
-            distanceToggleText = BuildToggleRow("RowDistance", 0f, font, "面板距离：2.4 米", CycleDistance);
-            vignetteToggleText = BuildToggleRow("RowVignette", -100f, font, "舒适暗角：关", CycleVignette);
-            locomotionToggleText = BuildToggleRow("RowLocomotion", -200f, font, "移动方式：传送", CycleLocomotion);
-            themeToggleText = BuildToggleRow("RowTheme", -300f, font, "场景主题：默认", CycleThemeRow);
-            timelineReplayText = BuildToggleRow("RowTimelineReplay", -400f, font, "时间轴回放：关", CycleTimelineReplay);
-            narrationVolumeText = BuildToggleRow("RowNarrationVolume", -500f, font, "讲解音量：100%", CycleNarrationVolume);
+            volumeToggleText = BuildToggleRow("RowVolume", 450f, font, "主音量：100%", CycleVolume);
+            pointsToggleText = BuildToggleRow("TogglePoints", 340f, font, "光点标记：开", TogglePoints);
+            labelsToggleText = BuildToggleRow("ToggleLabels", 230f, font, "星点标签：开", ToggleLabels);
+            distanceToggleText = BuildToggleRow("RowDistance", 120f, font, "面板距离：2.4 米", CycleDistance);
+            vignetteToggleText = BuildToggleRow("RowVignette", 10f, font, "舒适暗角：关", CycleVignette);
+            locomotionToggleText = BuildToggleRow("RowLocomotion", -100f, font, "移动方式：传送", CycleLocomotion);
+            themeToggleText = BuildToggleRow("RowTheme", -210f, font, "场景主题：默认", CycleThemeRow);
+            timelineReplayText = BuildToggleRow("RowTimelineReplay", -320f, font, "时间轴回放：关", CycleTimelineReplay);
+            narrationVolumeText = BuildToggleRow("RowNarrationVolume", -430f, font, "讲解音量：100%", CycleNarrationVolume);
+            memberText = BuildToggleRow("RowMember", -520f, font, "当前成员：我", CycleMember);
 
             RefreshTexts();
         }

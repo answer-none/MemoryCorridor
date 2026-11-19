@@ -19,7 +19,7 @@ namespace MemoryCorridor.Core
         private bool selectedFired;
 
         /// <summary>断言段总数（R18 汇总行 SMOKE: N/N PASS 用；新增段必须同步更新）。</summary>
-        private const int TotalSections = 46;
+        private const int TotalSections = 49;
 
         private void Awake()
         {
@@ -28,6 +28,7 @@ namespace MemoryCorridor.Core
 
         private IEnumerator Start()
         {
+            System.IO.Directory.CreateDirectory("Temp_Evidence"); // R23：探针证据统一落 Temp（防覆盖 docs/evidence 入库快照）
             yield return null;
             yield return null; // 等全部 Start（RoomManager 生成光点、桥接懒接线首帧）
 
@@ -756,7 +757,7 @@ namespace MemoryCorridor.Core
                 else
                 {
                     // 证据：两张卡片并排对比图
-                    bool cmp = StitchPngs(m1.PngPath, m2.PngPath, "docs/evidence/r16_card_badge_compare.png");
+                    bool cmp = StitchPngs(m1.PngPath, m2.PngPath, "Temp_Evidence/r16_card_badge_compare.png");
                     Debug.Log("[SmokeProbe] Z4 音频角标 OK（WAV 头 1.5s→" + m1.BadgeDurationText + "，无音频不渲染；对比图="
                         + (cmp ? "已拼" : "FAIL") + "）");
                     if (!cmp) { pass = false; failedSections++; }
@@ -799,10 +800,10 @@ namespace MemoryCorridor.Core
                     bird.clearFlags = CameraClearFlags.SolidColor;
                     bird.backgroundColor = UiTokens.EvidenceBg;
 
-                    RenderCamToPng(bird, 800, 600, "docs/evidence/r16_density_before.png");
+                    RenderCamToPng(bird, 800, 600, "Temp_Evidence/r16_density_before.png");
                     bool trigger = LightPointDensityManager.Check(injected);
                     yield return null; // 等 Update 应用 dim
-                    RenderCamToPng(bird, 800, 600, "docs/evidence/r16_density_after.png");
+                    RenderCamToPng(bird, 800, 600, "Temp_Evidence/r16_density_after.png");
                     Object.Destroy(birdGo);
 
                     int dimAnchors = 0;
@@ -871,15 +872,15 @@ namespace MemoryCorridor.Core
 
                     // 证据：雨夜全景截图 + 路线卡片×2
                     byte[] roomShot = RenderMainCamera(800, 600);
-                    System.IO.File.WriteAllBytes("docs/evidence/r16_theme_rain_room.png", roomShot);
+                    System.IO.File.WriteAllBytes("Temp_Evidence/r16_theme_rain_room.png", roomShot);
                     MemoryCardComposer.CardMeta c1 = MemoryCardComposer.ComposeCard(rainData, rainRoute);
                     MemoryCardComposer.CardMeta c2 = MemoryCardComposer.ComposeCard(rainData, rainRoute);
                     bool cardsOk = c1 != null && c1.PngBytes > 0 && c2 != null && c2.PngBytes > 0
                         && System.IO.File.Exists(c1.PngPath) && System.IO.File.Exists(c2.PngPath);
                     if (cardsOk)
                     {
-                        System.IO.File.Copy(c1.PngPath, "docs/evidence/r16_card_campus_1.png", true);
-                        System.IO.File.Copy(c2.PngPath, "docs/evidence/r16_card_campus_2.png", true);
+                        System.IO.File.Copy(c1.PngPath, "Temp_Evidence/r16_card_campus_1.png", true);
+                        System.IO.File.Copy(c2.PngPath, "Temp_Evidence/r16_card_campus_2.png", true);
                     }
 
                     if (!symOk || !themeApplied || !cardsOk)
@@ -935,7 +936,7 @@ namespace MemoryCorridor.Core
                 {
                     d4CamGo.transform.position = rootPos + new Vector3(0.4f, 0, -dist);
                     byte[] png = MemoryCardComposer.RenderCardRoot(cardRoot, d4Cam, 800, 600);
-                    string path = "docs/evidence/r16_readability_" + dist.ToString("F0") + "m.png";
+                    string path = "Temp_Evidence/r16_readability_" + dist.ToString("F0") + "m.png";
                     System.IO.File.WriteAllBytes(path, png);
                     bool ok = png.Length > 5000;
                     allShot &= ok;
@@ -949,7 +950,7 @@ namespace MemoryCorridor.Core
                     d4CamGo.transform.position = rootPos + new Vector3(0f, -0.13f, -dist); // 对准 Keywords 行
                     d4CamGo.transform.rotation = Quaternion.identity;
                     byte[] png = MemoryCardComposer.RenderCardRoot(cardRoot, d4Cam, 800, 600);
-                    string path = "docs/evidence/r18_readability_body_" + dist.ToString("F0") + "m.png";
+                    string path = "Temp_Evidence/r18_readability_body_" + dist.ToString("F0") + "m.png";
                     System.IO.File.WriteAllBytes(path, png);
                     bool ok = png.Length > 5000;
                     allShot &= ok;
@@ -1056,11 +1057,11 @@ namespace MemoryCorridor.Core
                     w1Rm.SetTheme("default", false);
                     yield return null;
                     byte[] shotDefault = RenderMainCamera(800, 600);
-                    System.IO.File.WriteAllBytes("docs/evidence/r17_theme_default.png", shotDefault);
+                    System.IO.File.WriteAllBytes("Temp_Evidence/r17_theme_default.png", shotDefault);
                     w1Rm.SetTheme("rain", false);
                     yield return null;
                     byte[] shotRain = RenderMainCamera(800, 600);
-                    System.IO.File.WriteAllBytes("docs/evidence/r17_theme_rain.png", shotRain);
+                    System.IO.File.WriteAllBytes("Temp_Evidence/r17_theme_rain.png", shotRain);
                     w1Rm.SetTheme("default", false);
                     w1Rm.SwitchToRoom(0);
                     yield return null;
@@ -1068,7 +1069,7 @@ namespace MemoryCorridor.Core
                     // 量化差异硬门槛：平均色差 ≥20/255 且色差>25/255 像素占比 ≥30%（用户口径）
                     float avgDiff;
                     float diffRatio;
-                    ComputePngDiff("docs/evidence/r17_theme_default.png", "docs/evidence/r17_theme_rain.png",
+                    ComputePngDiff("Temp_Evidence/r17_theme_default.png", "Temp_Evidence/r17_theme_rain.png",
                         out avgDiff, out diffRatio);
                     bool diffOk = avgDiff >= 20f / 255f && diffRatio >= 0.30f;
 
@@ -1131,7 +1132,7 @@ namespace MemoryCorridor.Core
                     bool voiceOk = narr.AutoPlayed && narr.IsPlaying;
                     narr.SetHudVisible(true, "测试讲解点 · 缝纫机的故事");
                     byte[] hudShot = RenderMainCamera(800, 600);
-                    System.IO.File.WriteAllBytes("docs/evidence/r17_hud_playing.png", hudShot);
+                    System.IO.File.WriteAllBytes("Temp_Evidence/r17_hud_playing.png", hudShot);
 
                     // ④ 走远 >2m → 自动暂停
                     a2Cam.transform.position = origin + new Vector3(0f, 0.2f, -3.2f);
@@ -1266,7 +1267,7 @@ namespace MemoryCorridor.Core
 
                     // 断言③：HUD 截图（回放中进度+标题）后停止——IsReplaying=false
                     byte[] hudShot = RenderMainCamera(800, 600);
-                    System.IO.File.WriteAllBytes("docs/evidence/r19_timeline_hud.png", hudShot);
+                    System.IO.File.WriteAllBytes("Temp_Evidence/r19_timeline_hud.png", hudShot);
                     tr.StopReplay();
                     bool stopOk = !tr.IsReplaying && tr.CurrentIndex == -1;
 
@@ -1365,7 +1366,7 @@ namespace MemoryCorridor.Core
 
                 n3.SetHudVisible(true, "音量即时生效测试点 · 讲解字幕同步显示");
                 byte[] hudShot = RenderMainCamera(800, 600);
-                System.IO.File.WriteAllBytes("docs/evidence/r20_narration_subtitle.png", hudShot);
+                System.IO.File.WriteAllBytes("Temp_Evidence/r20_narration_subtitle.png", hudShot);
 
                 AudioSettingsService.SetNarrationVolumePercent(100);
                 n3Cam.transform.position = sp;
@@ -1417,7 +1418,7 @@ namespace MemoryCorridor.Core
                     else
                     {
                         byte[] editShot = RenderMainCamera(800, 600); // 编辑后面板实拍（新标题显示）
-                        System.IO.File.WriteAllBytes("docs/evidence/r21_edit_panel.png", editShot);
+                        System.IO.File.WriteAllBytes("Temp_Evidence/r21_edit_panel.png", editShot);
                         Debug.Log("[SmokeProbe] E5 卡片编辑保存 OK（title/date/text 三值落盘读回一致，面板实时刷新显示；截图 " + editShot.Length + " 字节）");
                     }
                 }
@@ -1572,6 +1573,93 @@ namespace MemoryCorridor.Core
                 }
             }
 
+            // ========== M1. 成员切换持久化（R23 P1#10：currentMemberId 循环写盘读回，1 条断言） ==========
+            if (pass)
+            {
+                Media.SettingsPanel mPanel = FindFirst<Media.SettingsPanel>();
+                AppData m0 = SaveDataService.LoadAppData();
+                string origMember = m0.currentMemberId;
+                bool m1Ok = false;
+                if (mPanel != null)
+                {
+                    // 多档案真实验证：不足 2 成员时补造 mem_02（家人）并落盘
+                    bool hasSecond = false;
+                    for (int i = 0; i < m0.members.Count; i++) if (m0.members[i].id == "mem_02") hasSecond = true;
+                    if (!hasSecond)
+                    {
+                        m0.members.Add(new MemberData { id = "mem_02", name = "家人", role = "family" });
+                        SaveDataService.SaveAppData(m0);
+                    }
+                    mPanel.CycleMember(); // mem 列表循环（含持久化）
+                    AppData m1 = SaveDataService.LoadAppData();
+                    m1Ok = m1.currentMemberId == "mem_02"; // 切换后=第二成员且落盘
+                    // 恢复
+                    while (SaveDataService.LoadAppData().currentMemberId != origMember) mPanel.CycleMember();
+                }
+                if (!m1Ok)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-M1: 成员切换异常 (orig=" + origMember + " members=" + m0.members.Count + "）");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] M1 成员切换 OK（currentMemberId 循环写盘读回一致，已恢复 " + origMember + "）");
+                }
+            }
+
+            // ========== M2. 成员名解析（R23 P1#10：ownerMemberId→显示名，1 条断言） ==========
+            if (pass)
+            {
+                AppData d2 = SaveDataService.LoadAppData();
+                string name1 = null;
+                for (int i = 0; i < d2.members.Count; i++)
+                    if (d2.members[i].id == "mem_01") name1 = d2.members[i].name;
+                bool resolveOk = name1 != null && name1.Length > 0; // mem_01→"我"
+                if (!resolveOk)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-M2: 成员名解析异常 (name=" + name1 + "）");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] M2 成员名解析 OK（mem_01→" + name1 + "）");
+                }
+            }
+
+            // ========== M3. 面板归属徽标（R23 P1#10：Show 后 OwnerBadge="来自 我"+截图，1 条断言） ==========
+            if (pass)
+            {
+                MemoryPanel m3Panel = FindFirst<MemoryPanel>();
+                AppData d3 = SaveDataService.LoadAppData();
+                MemoryFragment own01 = null;
+                for (int r = 0; r < d3.rooms.Count && own01 == null; r++)
+                    for (int f = 0; f < d3.rooms[r].fragments.Count && own01 == null; f++)
+                        if (d3.rooms[r].fragments[f].id == "frag_01") own01 = d3.rooms[r].fragments[f];
+                if (m3Panel == null || own01 == null)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-M3: 缺面板或 frag_01");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    m3Panel.Show(own01); // ownerMemberId=mem_01 → "我"
+                    yield return new WaitForSecondsRealtime(0.3f);
+                    string badge = m3Panel.OwnerBadgeText ?? "";
+                    bool badgeOk = badge == "我";
+                    byte[] shot = RenderMainCamera(800, 600);
+                    System.IO.File.WriteAllBytes("Temp_Evidence/r23_member_badge.png", shot);
+                    if (!badgeOk)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-M3: 归属徽标异常 (badge=" + badge + "）");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] M3 归属徽标 OK（frag_01 → \"来自 我\"；截图 " + shot.Length + " 字节落 Temp/evidence）");
+                    }
+                }
+            }
+
 
             if (pass)
             {
@@ -1714,7 +1802,7 @@ namespace MemoryCorridor.Core
             }
 
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4)/主题选择(W1)/讲解控制(A2)/性能预算(P3)/时间轴回放(T5)/讲解音量(N1)/讲解字幕(N2)/音量即时生效(N3)/卡片编辑保存(E5)/非法输入拒(E6)/空标题兜底(E7)/持久化读回(E8)/面板刷新一致(E9)/性能阈值(B9) 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4)/主题选择(W1)/讲解控制(A2)/性能预算(P3)/时间轴回放(T5)/讲解音量(N1)/讲解字幕(N2)/音量即时生效(N3)/卡片编辑保存(E5)/非法输入拒(E6)/空标题兜底(E7)/持久化读回(E8)/面板刷新一致(E9)/性能阈值(B9)/成员切换(M1)/成员名解析(M2)/归属徽标(M3) 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
             // R18：机器可读汇总行（验收口径：Temp/smoke*.log 末尾 SMOKE: N/N PASS）
             Debug.Log("[SmokeProbe] SMOKE: " + (TotalSections - failedSections) + "/" + TotalSections + " PASS"
@@ -2374,7 +2462,7 @@ namespace MemoryCorridor.Core
                 cam.targetTexture = null;
                 rt.Release();
 
-                string path = "docs/evidence/r15_symbol_" + types[i] + ".png";
+                string path = "Temp_Evidence/r15_symbol_" + types[i] + ".png";
                 System.IO.File.WriteAllBytes(path, shot.EncodeToPNG());
                 Destroy(shot);
                 Destroy(rootGo);
@@ -2534,7 +2622,7 @@ namespace MemoryCorridor.Core
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = UiTokens.EvidenceBg;
             byte[] png = MemoryCardComposer.RenderCardRoot(root, cam, 800, 600);
-            System.IO.File.WriteAllBytes("docs/evidence/r17_perf_panel.png", png);
+            System.IO.File.WriteAllBytes("Temp_Evidence/r17_perf_panel.png", png);
             Destroy(root);
             Destroy(camGo);
             Debug.Log("[SmokeProbe] P3 参数面板: docs/evidence/r17_perf_panel.png（" + png.Length + " 字节）");
@@ -2635,7 +2723,7 @@ namespace MemoryCorridor.Core
                 cam.clearFlags = CameraClearFlags.SolidColor;
                 cam.backgroundColor = UiTokens.EvidenceBg;
                 byte[] png = MemoryCardComposer.RenderCardRoot(root, cam, 1500, 960);
-                System.IO.File.WriteAllBytes("docs/evidence/r17_theme_compare.png", png);
+                System.IO.File.WriteAllBytes("Temp_Evidence/r17_theme_compare.png", png);
                 Destroy(root);
                 Destroy(camGo);
                 return png.Length > 20000;

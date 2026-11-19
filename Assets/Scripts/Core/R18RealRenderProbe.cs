@@ -111,11 +111,11 @@ namespace MemoryCorridor.Core
             rm.SetTheme("default", false);
             yield return new WaitForSecondsRealtime(0.5f);
             byte[] shotA = RenderMain(800, 600);
-            SavePng("docs/evidence/r18_theme_default.png", shotA);
+            SavePng("Temp_Evidence/r18_theme_default.png", shotA);
             rm.SetTheme("rain", false);
             yield return new WaitForSecondsRealtime(0.5f);
             byte[] shotB = RenderMain(800, 600);
-            SavePng("docs/evidence/r18_theme_rain.png", shotB);
+            SavePng("Temp_Evidence/r18_theme_rain.png", shotB);
 
             float avgDiff, ratio;
             ComputePngDiff(shotA, shotB, out avgDiff, out ratio);
@@ -235,7 +235,7 @@ namespace MemoryCorridor.Core
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = UiTokens.EvidenceBg;
             byte[] png = RenderCard(cam, 1500, 960, root);
-            System.IO.File.WriteAllBytes("docs/evidence/r18_theme_compare.png", png);
+            System.IO.File.WriteAllBytes("Temp_Evidence/r18_theme_compare.png", png);
             Debug.Log("[R18] 对照卡板: docs/evidence/r18_theme_compare.png（" + png.Length + " 字节）");
             Object.DestroyImmediate(root);
             Object.DestroyImmediate(cg);
