@@ -35,5 +35,24 @@ namespace MemoryCorridor.Core
         }
 
         public static bool IsWarmed => warmed;
+
+        /// <summary>R20 语音讲解增强：讲解音量档位（0/50/100，线性），写盘并刷新静态缓存。</summary>
+        public static int SetNarrationVolumePercent(int percent)
+        {
+            float v = Mathf.Clamp01(percent / 100f);
+            narrationVolume = v;
+            AppData data = SaveDataService.LoadAppData();
+            if (data != null && data.settings != null)
+            {
+                data.settings.narrationVolume = v;
+                SaveDataService.SaveAppData(data);
+            }
+            return Mathf.RoundToInt(v * 100f);
+        }
+
+        public static int GetNarrationVolumePercent()
+        {
+            return Mathf.RoundToInt(narrationVolume * 100f);
+        }
     }
 }

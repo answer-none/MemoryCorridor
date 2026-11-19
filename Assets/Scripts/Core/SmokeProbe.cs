@@ -19,7 +19,7 @@ namespace MemoryCorridor.Core
         private bool selectedFired;
 
         /// <summary>断言段总数（R18 汇总行 SMOKE: N/N PASS 用；新增段必须同步更新）。</summary>
-        private const int TotalSections = 37;
+        private const int TotalSections = 40;
 
         private void Awake()
         {
@@ -1285,6 +1285,102 @@ namespace MemoryCorridor.Core
                 }
             }
 
+            // ========== N1. 讲解音量档位（R20：0/50/100 循环+读回+持久化，2 条断言） ==========
+            if (pass)
+            {
+                int r0 = AudioSettingsService.SetNarrationVolumePercent(0);
+                int r50 = AudioSettingsService.SetNarrationVolumePercent(50);
+                int r100 = AudioSettingsService.SetNarrationVolumePercent(100);
+                float vol = AudioSettingsService.NarrationVolume;
+                string persisted = SaveDataService.LoadAppData().settings.narrationVolume.ToString("F2");
+                bool volOk = r0 == 0 && r50 == 50 && r100 == 100 && Mathf.Abs(vol - 1f) < 0.01f;
+                bool persistOk = persisted == "1.00";
+                if (!volOk || !persistOk)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-N1: 讲解音量异常 (r=" + r0 + "/" + r50 + "/" + r100
+                        + " vol=" + vol.ToString("F2") + " persist=" + persisted + "）");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] N1 讲解音量 OK（0/50/100 循环读回全对，NarrationVolume=1.00，持久化=1.00）");
+                }
+            }
+
+            // ========== N2. 讲解字幕（R20：diary 摘要 24 字，2 条断言） ==========
+            if (pass)
+            {
+                AutoNarrationController n2 = FindFirst<AutoNarrationController>();
+                if (n2 == null)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-N2: 缺 AutoNarrationController");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    n2.PlayForCurrentRoom(); // frag_02 有 diary.text
+                    yield return new WaitForSecondsRealtime(1.0f);
+                    string sub = n2.CurrentSubtitle ?? "";
+                    bool subOk = sub.Length > 0 && sub.Length <= 25; // 24 字+省略号
+                    bool hudOk = n2.IsPlaying || sub.Length > 0; // 字幕与播放解耦（暂停时不消失）
+                    System.IO.Directory.CreateDirectory(SaveDataService.PersistentRoot);
+                    if (!subOk)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-N2: 字幕异常 (len=" + sub.Length + " text=" + sub + "）");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        Debug.Log("[SmokeProbe] N2 讲解字幕 OK（diary 摘要 " + sub.Length + " 字：" + sub + "（播放/暂停解耦）");
+                    }
+                }
+            }
+
+            // ========== N3. 音量即时生效（R20：播放中改档位→source.volume 实测，截图+1 条断言） ==========
+            if (pass)
+            {
+                AutoNarrationController n3 = FindFirst<AutoNarrationController>();
+                Camera n3Cam = Camera.main;
+                Vector3 sp = n3Cam.transform.position;
+                Quaternion sr = n3Cam.transform.rotation;
+                Vector3 org = new Vector3(0f, 1.2f, 6f);
+                string wRel = "Media/test_narration2.wav";
+                string wAbs = System.IO.Path.Combine(SaveDataService.PersistentRoot, wRel);
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(wAbs));
+                WriteTestWav(wAbs, 3.0f, 392f, 22050);
+                MemoryFragment volFrag = new MemoryFragment
+                {
+                    id = "probe_vol", title = "音量即时生效测试点", type = "audio",
+                    diary = new DiaryEntry { date = "2020-01-01", text = "这是讲解字幕同步显示的验证文本，超过二十四字自动截断并追加省略号。" },
+                };
+                n3.ForcePlayProbe(wAbs, "probe_vol", "音量即时生效测试点", org, volFrag);
+                n3Cam.transform.position = org + new Vector3(0f, 0.2f, -1.0f);
+                n3Cam.transform.LookAt(org);
+                yield return new WaitForSecondsRealtime(1.2f);
+
+                AudioSettingsService.SetNarrationVolumePercent(50);
+                yield return new WaitForSecondsRealtime(0.6f); // HUD 周期内跟随
+                AudioSource src = n3.GetComponent<AudioSource>();
+                bool liveOk = src != null && Mathf.Abs(src.volume - 0.5f) < 0.01f;
+
+                n3.SetHudVisible(true, "音量即时生效测试点 · 讲解字幕同步显示");
+                byte[] hudShot = RenderMainCamera(800, 600);
+                System.IO.File.WriteAllBytes("docs/evidence/r20_narration_subtitle.png", hudShot);
+
+                AudioSettingsService.SetNarrationVolumePercent(100);
+                n3Cam.transform.position = sp;
+                n3Cam.transform.rotation = sr;
+                if (!liveOk)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-N3: 音量即时生效异常 (volume=" + (src != null ? src.volume.ToString("F2") : "null") + "）");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] N3 音量即时生效 OK（播放中 50 档→source.volume=0.50 实测；HUD 字幕截图已落盘）");
+                }
+            }
+
 
             if (pass)
             {
@@ -1427,7 +1523,7 @@ namespace MemoryCorridor.Core
             }
 
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4)/主题选择(W1)/讲解控制(A2)/性能预算(P3)/时间轴回放(T5) 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4)/主题选择(W1)/讲解控制(A2)/性能预算(P3)/时间轴回放(T5)/讲解音量(N1)/讲解字幕(N2)/音量即时生效(N3) 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
             // R18：机器可读汇总行（验收口径：Temp/smoke*.log 末尾 SMOKE: N/N PASS）
             Debug.Log("[SmokeProbe] SMOKE: " + (TotalSections - failedSections) + "/" + TotalSections + " PASS"

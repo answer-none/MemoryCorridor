@@ -29,6 +29,7 @@ namespace MemoryCorridor.Media
         public float ResumeFromOffset { get; private set; }
         public bool IsPlaying => source != null && source.isPlaying;
         public string CurrentTitle => currentTitle;
+        public string CurrentSubtitle { get; private set; } // R20：字幕文本（diary 摘要，探针断言）
         public float Progress01 => (source != null && source.clip != null && source.clip.length > 0f)
             ? Mathf.Clamp01(source.time / source.clip.length) : 0f;
 
@@ -36,6 +37,7 @@ namespace MemoryCorridor.Media
         private GameObject hudRoot;
         private TextMesh hudTitle;
         private TextMesh hudTime;      // R17：当前/总时长（"0:01 / 0:03"）
+        private TextMesh hudSubtitle;  // R20：讲解字幕（diary 摘要）
         private Transform hudProgressFill;
         private const float HudDist = 1.0f;
 
@@ -81,7 +83,7 @@ namespace MemoryCorridor.Media
                     Vector3 origin = Vector3.zero;
                     GameObject lp = GameObject.Find("LP_" + f.id); // 光点对象为判定基准（坑-049：LP_ 命名稳定且 active）
                     if (lp != null) origin = lp.transform.position;
-                    LoadAndPlay(resolved, f.id, f.title, origin);
+                    LoadAndPlay(resolved, f.id, f.title, origin, f);
                     return;
                 }
             }
@@ -92,6 +94,12 @@ namespace MemoryCorridor.Media
         public void ForcePlayProbe(string resolvedPath, string fragmentId, string title, Vector3 origin)
         {
             LoadAndPlay(resolvedPath, fragmentId, title, origin);
+        }
+
+        /// <summary>R20 探针 TestHook 重载：带碎片（字幕来源 diary.text）。</summary>
+        public void ForcePlayProbe(string resolvedPath, string fragmentId, string title, Vector3 origin, MemoryFragment fragment)
+        {
+            LoadAndPlay(resolvedPath, fragmentId, title, origin, fragment);
         }
 
         /// <summary>
@@ -109,14 +117,17 @@ namespace MemoryCorridor.Media
                 if (fragment.mediaItems[m].kind != "audio") continue;
                 string resolved = MediaResolver.ResolveExisting(fragment.mediaItems[m].path);
                 if (resolved == null) continue;
-                LoadAndPlay(resolved, fragment.id, fragment.title, origin);
+                LoadAndPlay(resolved, fragment.id, fragment.title, origin, fragment);
                 return;
             }
             AutoPlayed = false; // 有 mediaItems 但无音频项
         }
 
-        private void LoadAndPlay(string resolvedPath, string fragmentId, string title, Vector3 origin)
+        private MemoryFragment lastFragment; // R20：字幕来源
+
+        private void LoadAndPlay(string resolvedPath, string fragmentId, string title, Vector3 origin, MemoryFragment fragment = null)
         {
+            lastFragment = fragment;
             if (source == null)
             {
                 source = gameObject.AddComponent<AudioSource>();
@@ -128,6 +139,15 @@ namespace MemoryCorridor.Media
             currentTitle = title;
             narrationOrigin = new GameObject("NarrationOrigin_" + fragmentId).transform;
             narrationOrigin.position = origin;
+            // R20：字幕=碎片 diary 摘要（前 24 字）
+            string sub = "";
+            if (lastFragment != null && lastFragment.diary != null && !string.IsNullOrEmpty(lastFragment.diary.text))
+            {
+                sub = lastFragment.diary.text;
+                if (sub.Length > 24) sub = sub.Substring(0, 24) + "…";
+            }
+            CurrentSubtitle = sub;
+            if (hudSubtitle != null) hudSubtitle.text = sub;
             loadRoutine = StartCoroutine(LoadRoutine(resolvedPath, fragmentId, title));
         }
 
@@ -221,6 +241,7 @@ namespace MemoryCorridor.Media
                 {
                     hudTime.text = FormatTime(source.time) + " / " + FormatTime(source.clip.length);
                 }
+                if (source != null) source.volume = AudioSettingsService.NarrationVolume; // R20：音量即时跟随档位
             }
         }
 
@@ -251,6 +272,21 @@ namespace MemoryCorridor.Media
             hudTime = UiTextFactory.CreateTextMesh(hudRoot.transform, "HudTime",
                 new Vector3(0.26f, 0.030f, -0.01f), 22, 0.010f, TextAnchor.MiddleRight, TextAlignment.Right,
                 UiTokens.CaptionInk, "0:00 / 0:00");
+
+            // R20：字幕行（diary 摘要，板下方独立小条）
+            Material subMat = new Material(spriteShader);
+            subMat.mainTexture = RoundedRectTexture.RoundedRect(560, 72, (int)UiTokens.BadgeRadius, UiTokens.LabelBg, UiTokens.LineSoft, 2);
+            GameObject subBoard = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            Collider subCol = subBoard.GetComponent<Collider>();
+            if (subCol != null) Destroy(subCol);
+            subBoard.transform.SetParent(hudRoot.transform, false);
+            subBoard.transform.localPosition = new Vector3(0, -0.105f, 0);
+            subBoard.transform.localScale = new Vector3(0.56f, 0.072f, 1);
+            subBoard.GetComponent<MeshRenderer>().sharedMaterial = subMat;
+            // 字符高 = 20×0.010/10 = 0.020m @1m = 20 dmm ≥16 ✓（无二级缩放）
+            hudSubtitle = UiTextFactory.CreateTextMesh(hudRoot.transform, "HudSubtitle",
+                new Vector3(0, -0.105f, -0.01f), 20, 0.010f, TextAnchor.MiddleCenter, TextAlignment.Center,
+                UiTokens.LabelInk, "");
 
             // 进度条：槽 0.44×0.012 下行居中 + 左锚填充（Update 按 Progress01 更新）
             Material slotMat = new Material(spriteShader);

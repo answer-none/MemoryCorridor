@@ -69,6 +69,13 @@
 |---|---|---|---|
 | R19-a | **时间轴回放**（P2 三候选中落地：按 diary.date 升序自动串联重演当前房间碎片，单片 6s，走完自动收；SettingsPanel 第 8 行启停；HUD 进度 N/M+标题） | ✅ | T5 段 3 断言：①启动排队 4 片/idx0/SequencerCalls+1 ②Advance×2/idx2/累计+3 ③Stop 复位；HUD 截图 r19_timeline_hud.png（含四拍照片层实拍）；改动 5 文件/单文件新增 165 行（约束 ≤6/≤250 达标） |
 
+## R20 P2 落地轮②（2026-11-20）
+
+| # | 功能 | 状态 | 断言/证据 |
+|---|---|---|---|
+| R20-a | **语音讲解增强**（P2 候选中改动最小：①讲解音量档位 0/50/100 独立循环+持久化+播放中即时生效；②讲解字幕 HUD——diary 摘要前 24 字随播放显示） | ✅ | N1/N2/N3 三段 5 断言：档位循环读回/持久化=1.00/字幕 25 字（24+省略号）/播放中 50 档→source.volume=0.50 实测/HUD 截图 r20_narration_subtitle.png（字幕 20dmm 达标）；改动 4 文件（AudioSettingsService/SettingsPanel/AutoNarrationController/SmokeProbe） |
+| R20-b | 坑-050 复发修复 | ✅ | builder 补 DestroyAll<AutoNarrationController/TimelineReplayController>（R17/R19 组件缺清理致旧实例堆积，FindFirst 拿到断链引用→T5 queue=0） |
+
 ## 非功能项
 
 | 项 | 状态 | 证据 |

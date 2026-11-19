@@ -143,6 +143,8 @@ namespace MemoryCorridor.EditorTools
             DestroyAll<XRIAnchorBridge>("XRI桥");
             DestroyAll<Camera>("旧相机");
             DestroyAll<ImportServer>("导入服务");
+            DestroyAll<Media.AutoNarrationController>("讲解控制器"); // R20 补：坑-050 同型（R17 起缺清理致堆积）
+            DestroyAll<Media.TimelineReplayController>("时间轴回放");
             DestroyAll<AmbienceController>("环境音");
             DestroyAll<MemoryPanel>("记忆面板");
             DestroyAll<StardustField>("星尘");

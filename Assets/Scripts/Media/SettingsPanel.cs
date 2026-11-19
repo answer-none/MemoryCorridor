@@ -20,6 +20,7 @@ namespace MemoryCorridor.Media
         private TextMesh locomotionToggleText;
         private TextMesh themeToggleText; // R17-1：场景主题选择行
         private TextMesh timelineReplayText; // R19 P2：时间轴回放启停行
+        private TextMesh narrationVolumeText; // R20：讲解音量档位行
         private TextMesh volumeToggleText;
         private bool showPoints = true;
         private bool showLabels = true;
@@ -118,6 +119,15 @@ namespace MemoryCorridor.Media
             RefreshTexts();
         }
 
+        /// <summary>R20：讲解音量档位循环（0→50→100→0），即时生效（讲解源 Update 跟随 NarrationVolume）。</summary>
+        private void CycleNarrationVolume()
+        {
+            int cur = AudioSettingsService.GetNarrationVolumePercent();
+            int next = cur == 0 ? 50 : (cur == 50 ? 100 : 0);
+            AudioSettingsService.SetNarrationVolumePercent(next);
+            RefreshTexts();
+        }
+
         /// <summary>R19 P2：时间轴回放启停（点击切换，运行态由 TimelineReplayController.IsReplaying 决定文案）。</summary>
         private void CycleTimelineReplay()
         {
@@ -166,6 +176,8 @@ namespace MemoryCorridor.Media
                 Media.TimelineReplayController tc = FindTimelineReplay();
                 timelineReplayText.text = "时间轴回放：" + (tc != null && tc.IsReplaying ? "回放中" : "关");
             }
+            if (narrationVolumeText != null)
+                narrationVolumeText.text = "讲解音量：" + AudioSettingsService.GetNarrationVolumePercent() + "%";
 
             if (pointsToggleText != null) pointsToggleText.color = showPoints ? OnColor : OffColor;
             if (labelsToggleText != null) labelsToggleText.color = showLabels ? OnColor : OffColor;
@@ -219,10 +231,10 @@ namespace MemoryCorridor.Media
             Shader spriteShader = Shader.Find("MemoryCorridor/Sprite3D");
             Material boardMat = new Material(spriteShader);
             boardMat.mainTexture = RoundedRectTexture.RoundedRect(
-                460, 940, 18, UiTokens.CardBg, UiTokens.LineSoft, 2);
+                460, 1080, 18, UiTokens.CardBg, UiTokens.LineSoft, 2);
             boardMat.SetColor("_Color", Color.white);
             boardRenderer.material = boardMat;
-            transform.localScale = new Vector3(0.46f, 0.90f, 1f);
+            transform.localScale = new Vector3(0.46f, 1.08f, 1f);
 
             Font font = UiTextFactory.Legacy;
 
@@ -248,6 +260,7 @@ namespace MemoryCorridor.Media
             locomotionToggleText = BuildToggleRow("RowLocomotion", -200f, font, "移动方式：传送", CycleLocomotion);
             themeToggleText = BuildToggleRow("RowTheme", -300f, font, "场景主题：默认", CycleThemeRow);
             timelineReplayText = BuildToggleRow("RowTimelineReplay", -400f, font, "时间轴回放：关", CycleTimelineReplay);
+            narrationVolumeText = BuildToggleRow("RowNarrationVolume", -500f, font, "讲解音量：100%", CycleNarrationVolume);
 
             RefreshTexts();
         }

@@ -241,6 +241,8 @@
 - **坑-052（R16）**：**运行时素材必须落 StreamingAssets 或 persistentDataPath**——MediaResolver.ResolveExisting 只解析这两根；程序化全景生成到 Assets/Art 下运行时解析不到（穹顶静默保留旧图）。资产路径：Assets/StreamingAssets/Panoramas/、Assets/StreamingAssets/Media/。
 - **坑-053（R16）**：**同秒产物文件名冲突**——PNG 落盘用 yyyyMMdd_HHmmss 时间戳，同一秒两张卡第二个覆盖第一个（对比图读到两张同图）。文件名加毫秒 _fff 或用序号。
 - **坑-054（R17）**：**FrameDebuggerUtility 在 Unity 2022.3 已移出公开 API**（CS0234）——batchmode 无运行时 Draw Call 计数 API，P3 段用「视锥内可见 Renderer 数」作上界近似口径（SRP batcher 下单 renderer≈1-2 DC，断言 ≤120 按上界收紧），真机 Profiler 复核。另：**try 块内不能 yield**（CS1626）——协程里 try-catch 包 yield 必拆两段。
+- **坑-055（R20）**：**坑-050 复发**——新增场景常驻组件必须同步加 builder DestroyAll 清理清单：R17 AutoNarrationController/R19 TimelineReplayController 漏加 → 多轮 smoke 后场景序列化堆积旧实例（FindFirst 拿到 roomManager 断链引用→StartReplay queue=0 假失败）。**铁律：builder 新挂组件的同一提交里必须加 DestroyAll<同类型>**。
+- **坑-056（R20）**：**TextMesh 空 text 渲豆腐块**——字幕 hudSubtitle text="" 时板中央渲染缺字形方块；根治=探针传带 diary.text 的真碎片（字幕有真字）。另：TextMesh 二级 localScale 缩放会把 dmm 打折（0.56×22px→12dmm <16）——字符高一律 fontSize×charSize/10×父缩放，无二级缩放。
 - **坑-043（R7 走查发现，R8 修复实证）**：**Quad 的 MeshCollider（凹面）设 isTrigger → PhysX abort → Unity 整体闪退**（Windows 事件日志 0x40000015 / KERNELBASE.dll 实证，用户 GUI Play 触发）。修复：trigger 一律用凸面 BoxCollider（SettingsPanel 开关行已换）。**通用铁律：世界空间 UI 牌（Quad+Sprite3D）挂 XRSimpleInteractable 时，一律 Destroy MeshCollider + AddComponent<BoxCollider>**。
 - **坑-041**：**batchmode Play 下 ScreenCapture 不产出文件**（截图请求被接受但写入依赖 GUI 设备呈现）——"实测画面证据"在批处理环境不可行，改用：①断言级证据（25 段）②用户 GUI 目检截图 ③真机录屏。CaptureProbe 代码保留（GUI Play 可用）
 - **坑-037**：**Play 模式中弹 TMP Importer 模态窗 = UI 卡死**（导入触发资源重载与 Play 冲突）——已根治：builder 静默导入 TMP Essentials（AssetDatabase.ImportPackage(path, false)），GUI 永不再弹。用户卡死时处置：任务管理器杀 Unity.exe → 删 Temp/UnityLockfile → 重跑流水线。
