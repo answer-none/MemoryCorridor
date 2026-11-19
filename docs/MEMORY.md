@@ -245,6 +245,7 @@
 - **坑-056（R20）**：**TextMesh 空 text 渲豆腐块**——字幕 hudSubtitle text="" 时板中央渲染缺字形方块；根治=探针传带 diary.text 的真碎片（字幕有真字）。另：TextMesh 二级 localScale 缩放会把 dmm 打折（0.56×22px→12dmm <16）——字符高一律 fontSize×charSize/10×父缩放，无二级缩放。
 - **坑-057（R21）**：**HTTP 监听线程调 Unity API → get_isActiveAndEnabled 500**——ImportServer POST 处理里触发事件→面板刷新（Unity API 仅主线程）。根治：跨线程事件一律**入队+主线程 Pump 派发**（MemoryCardEditService.refreshQueue + MemoryPanel.Update 调 Pump()）；静态服务无 Update 的 Pump 挂在消费方 MonoBehaviour。另：python 批量改 C# 时 `"
 - **坑-058（R23）**：**证据链污染两源**：①探针每轮写 docs/evidence/ + git add -A → 入库快照被每轮重写（字节微变）——**探针证据统一写 Temp_Evidence/（注意 Unity 退出清 Temp/，目录名不能叫 Temp/evidence），docs/evidence 为验收轮手动 cp 快照**；②builder SaveScene 幂等重建每轮重排场景 YAML——**跑后 git checkout -- 场景文件恢复**（运行期备份回写方案有 ImportAsset 重载副作用：回写+重导入使 OpenScene 内存场景失效→Play 不进，已弃用）。
+- **坑-059（R23）**：**python 批量改文档的 replace 静默失败**——锚串与文件实际内容漂移（如轮次行尾"待提交"被前轮回填改动）时 replace 无匹配但 print 照打，造成"已更新"假象。**铁律：批量替换后必须 grep 复核目标串落盘**；插入行类操作用 Edit 工具（锚可见）不用 python replace。
 "` 易写成真换行（CS1010 Newline in constant）——批量替换后必须 grep 复核。
 - **坑-043（R7 走查发现，R8 修复实证）**：**Quad 的 MeshCollider（凹面）设 isTrigger → PhysX abort → Unity 整体闪退**（Windows 事件日志 0x40000015 / KERNELBASE.dll 实证，用户 GUI Play 触发）。修复：trigger 一律用凸面 BoxCollider（SettingsPanel 开关行已换）。**通用铁律：世界空间 UI 牌（Quad+Sprite3D）挂 XRSimpleInteractable 时，一律 Destroy MeshCollider + AddComponent<BoxCollider>**。
 - **坑-041**：**batchmode Play 下 ScreenCapture 不产出文件**（截图请求被接受但写入依赖 GUI 设备呈现）——"实测画面证据"在批处理环境不可行，改用：①断言级证据（25 段）②用户 GUI 目检截图 ③真机录屏。CaptureProbe 代码保留（GUI Play 可用）
