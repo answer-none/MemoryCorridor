@@ -43,8 +43,15 @@ namespace MemoryCorridor.Media
         }
 
         /// <summary>按碎片内容刷新面板并显示于视线前方。</summary>
+        /// <summary>R21：当前显示碎片的标题文本（探针断言刷新读取）。</summary>
+        public string CurrentTitleText => titleText != null ? titleText.text : null;
+        /// <summary>R21：当前显示碎片 id（null=未显示）。</summary>
+        public string CurrentFragmentId { get; private set; }
+
         public void Show(MemoryFragment fragment)
         {
+            if (fragment == null) return;
+            CurrentFragmentId = fragment.id;
             if (fragment == null) return;
             EnsureBuilt();
             PositionInFrontOfGaze();
@@ -68,6 +75,33 @@ namespace MemoryCorridor.Media
             if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
             if (fadeRoutine != null) StopCoroutine(fadeRoutine);
             fadeRoutine = StartCoroutine(FadeIn(0.25f));
+        }
+
+        /// <summary>R21 P2：编辑保存后刷新文字显示（不重播媒体；仅当正在显示同一碎片）。</summary>
+        public void RefreshFromData(MemoryFragment fragment)
+        {
+            if (fragment == null || CurrentFragmentId != fragment.id) return;
+            if (titleText != null)
+            {
+                titleText.text = string.IsNullOrEmpty(fragment.title) ? MemoryCardEditService.FallbackTitle : fragment.title;
+            }
+            if (bodyText != null)
+            {
+                bodyText.text = (fragment.diary != null && !string.IsNullOrEmpty(fragment.diary.text))
+                    ? fragment.diary.date + "\n" + fragment.diary.text
+                    : "";
+            }
+            Debug.Log("[MemoryPanel] 编辑刷新: " + fragment.id + " → \"" + fragment.title + "\"");
+        }
+
+        private void Start()
+        {
+            MemoryCardEditService.OnFragmentEdited += RefreshFromData; // 坑-026：Play 期订阅
+        }
+
+        private void OnDestroy()
+        {
+            MemoryCardEditService.OnFragmentEdited -= RefreshFromData;
         }
 
         private IEnumerator FadeIn(float duration)
@@ -389,6 +423,7 @@ namespace MemoryCorridor.Media
 
         private void Update()
         {
+            MemoryCardEditService.Pump(); // R21：主线程派发编辑刷新（坑-057）
             Camera cam = Camera.main;
             if (cam != null)
             {

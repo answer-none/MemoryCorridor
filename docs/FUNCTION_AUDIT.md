@@ -76,6 +76,12 @@
 | R20-a | **语音讲解增强**（P2 候选中改动最小：①讲解音量档位 0/50/100 独立循环+持久化+播放中即时生效；②讲解字幕 HUD——diary 摘要前 24 字随播放显示） | ✅ | N1/N2/N3 三段 5 断言：档位循环读回/持久化=1.00/字幕 25 字（24+省略号）/播放中 50 档→source.volume=0.50 实测/HUD 截图 r20_narration_subtitle.png（字幕 20dmm 达标）；改动 4 文件（AudioSettingsService/SettingsPanel/AutoNarrationController/SmokeProbe） |
 | R20-b | 坑-050 复发修复 | ✅ | builder 补 DestroyAll<AutoNarrationController/TimelineReplayController>（R17/R19 组件缺清理致旧实例堆积，FindFirst 拿到断链引用→T5 queue=0） |
 
+## R21 P2 落地轮③（2026-11-20）
+
+| # | 功能 | 状态 | 断言/证据 |
+|---|---|---|---|
+| R21-a | **记忆卡片编辑**（P2 第三项：MemoryCardEditService 统一编辑入口——标题≤32 字/日期 yyyy-MM-dd/正文≤500 字校验+空标题兜底"未命名记忆"+落盘+OnFragmentEdited 事件；MemoryPanel.RefreshFromData 主线程刷新显示（CurrentTitleText 访问器）；ImportServer POST /diary 接线（payload+title，校验拒绝返回 400）——浏览器真实编辑链路复用） | ✅ | E5/E6/E7 三段 5 断言：①保存三值落盘读回一致+面板实时刷新 ②超长标题/非法日期均拒且不写盘 ③空标题兜底保存成功+原值恢复；坑-057 入 MEMORY（HTTP 线程 Unity API→主线程 Pump 队列派发）；截图 r21_edit_panel.png（亮度 91.68>8）；改动 4 文件（EditService 新/MemoryPanel/ImportServer/SmokeProbe） |
+
 ## 非功能项
 
 | 项 | 状态 | 证据 |

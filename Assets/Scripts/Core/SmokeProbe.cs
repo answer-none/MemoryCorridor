@@ -19,7 +19,7 @@ namespace MemoryCorridor.Core
         private bool selectedFired;
 
         /// <summary>断言段总数（R18 汇总行 SMOKE: N/N PASS 用；新增段必须同步更新）。</summary>
-        private const int TotalSections = 40;
+        private const int TotalSections = 43;
 
         private void Awake()
         {
@@ -1381,6 +1381,103 @@ namespace MemoryCorridor.Core
                 }
             }
 
+            // ========== E5. 卡片编辑保存→读回一致（R21 P2：title/date/text 三值+面板刷新，2 条断言） ==========
+            if (pass)
+            {
+                MemoryPanel ePanel = FindFirst<MemoryPanel>();
+                MemoryFragment e01 = null;
+                AppData eData = SaveDataService.LoadAppData();
+                for (int r = 0; r < eData.rooms.Count && e01 == null; r++)
+                    for (int f = 0; f < eData.rooms[r].fragments.Count && e01 == null; f++)
+                        if (eData.rooms[r].fragments[f].id == "frag_01") e01 = eData.rooms[r].fragments[f];
+                if (ePanel == null || e01 == null)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-E5: 缺面板或 frag_01");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    ePanel.Show(e01); // 保证面板正显示 frag_01（刷新断言前提）
+                    var r1 = MemoryCardEditService.Apply("frag_01", "奶奶的缝纫机·新名", "2020-01-02", "编辑保存验证正文。");
+                    yield return new WaitForSecondsRealtime(0.3f);
+                    AppData back = SaveDataService.LoadAppData();
+                    MemoryFragment b01 = null;
+                    for (int r = 0; r < back.rooms.Count && b01 == null; r++)
+                        for (int f = 0; f < back.rooms[r].fragments.Count && b01 == null; f++)
+                            if (back.rooms[r].fragments[f].id == "frag_01") b01 = back.rooms[r].fragments[f];
+                    bool saveOk = r1.Ok && b01.title == "奶奶的缝纫机·新名"
+                        && b01.diary.date == "2020-01-02" && b01.diary.text == "编辑保存验证正文。";
+                    bool refreshOk = ePanel.CurrentFragmentId == "frag_01" && ePanel.CurrentTitleText == "奶奶的缝纫机·新名";
+                    if (!saveOk || !refreshOk)
+                    {
+                        Debug.LogError("[SmokeProbe] FAIL-E5: 编辑保存/刷新异常 (save=" + saveOk + " refresh=" + refreshOk
+                            + " title=" + (b01 != null ? b01.title : "null") + "）");
+                        pass = false; failedSections++;
+                    }
+                    else
+                    {
+                        byte[] editShot = RenderMainCamera(800, 600); // 编辑后面板实拍（新标题显示）
+                        System.IO.File.WriteAllBytes("docs/evidence/r21_edit_panel.png", editShot);
+                        Debug.Log("[SmokeProbe] E5 卡片编辑保存 OK（title/date/text 三值落盘读回一致，面板实时刷新显示；截图 " + editShot.Length + " 字节）");
+                    }
+                }
+            }
+
+            // ========== E6. 非法输入被拒（R21 P2：超长标题+非法日期，2 条断言） ==========
+            if (pass)
+            {
+                string longTitle = new string('长', MemoryCardEditService.MaxTitleLen + 1);
+                var rLong = MemoryCardEditService.Apply("frag_01", longTitle, "2020-01-02", "x");
+                var rBad = MemoryCardEditService.Apply("frag_01", "合法标题", "2020/13/99", "x");
+                AppData back = SaveDataService.LoadAppData();
+                MemoryFragment b01 = null;
+                for (int r = 0; r < back.rooms.Count && b01 == null; r++)
+                    for (int f = 0; f < back.rooms[r].fragments.Count && b01 == null; f++)
+                        if (back.rooms[r].fragments[f].id == "frag_01") b01 = back.rooms[r].fragments[f];
+                bool longRejected = !rLong.Ok && b01.title == "奶奶的缝纫机·新名"; // 拒后不写盘
+                bool dateRejected = !rBad.Ok && b01.title == "奶奶的缝纫机·新名" && b01.diary.date == "2020-01-02";
+                if (!longRejected || !dateRejected)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-E6: 非法输入未被拒 (long=" + rLong.Ok + " bad=" + rBad.Ok
+                        + " title=" + b01.title + "）");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] E6 非法输入拒 OK（超长标题/非法日期均拒且不写盘，原值保留）");
+                }
+            }
+
+            // ========== E7. 空标题兜底（R21 P2：兜底"未命名记忆"保存成功，1 条断言+恢复原值） ==========
+            if (pass)
+            {
+                var rEmpty = MemoryCardEditService.Apply("frag_01", "", "2020-01-02", "空标题兜底验证。");
+                AppData back = SaveDataService.LoadAppData();
+                MemoryFragment b01 = null;
+                for (int r = 0; r < back.rooms.Count && b01 == null; r++)
+                    for (int f = 0; f < back.rooms[r].fragments.Count && b01 == null; f++)
+                        if (back.rooms[r].fragments[f].id == "frag_01") b01 = back.rooms[r].fragments[f];
+                bool fallbackOk = rEmpty.Ok && b01.title == MemoryCardEditService.FallbackTitle;
+                // 恢复原值（防污染 Y 段时间排序/后续轮次数据）
+                MemoryCardEditService.Apply("frag_01", "缝纫机", "2012-06-18", "她的蝴蝶牌缝纫机，夏天总在窗边响。");
+                AppData restored = SaveDataService.LoadAppData();
+                MemoryFragment r01 = null;
+                for (int r = 0; r < restored.rooms.Count && r01 == null; r++)
+                    for (int f = 0; f < restored.rooms[r].fragments.Count && r01 == null; f++)
+                        if (restored.rooms[r].fragments[f].id == "frag_01") r01 = restored.rooms[r].fragments[f];
+                bool restoreOk = r01.title == "缝纫机" && r01.diary.date == "2012-06-18";
+                if (!fallbackOk || !restoreOk)
+                {
+                    Debug.LogError("[SmokeProbe] FAIL-E7: 空标题兜底异常 (fallback=" + fallbackOk
+                        + " applied=" + rEmpty.AppliedTitle + " restore=" + restoreOk + "）");
+                    pass = false; failedSections++;
+                }
+                else
+                {
+                    Debug.Log("[SmokeProbe] E7 空标题兜底 OK（空→未命名记忆保存成功；原值已恢复防污染）");
+                }
+            }
+
 
             if (pass)
             {
@@ -1523,7 +1620,7 @@ namespace MemoryCorridor.Core
             }
 
             Debug.Log(pass
-                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4)/主题选择(W1)/讲解控制(A2)/性能预算(P3)/时间轴回放(T5)/讲解音量(N1)/讲解字幕(N2)/音量即时生效(N3) 全部通过"
+                ? "[SmokeProbe] PASS: 房间/XRI/悬停/选中/褪色/排序/走读/回访/切换/重演/星河墙×2/转场/传送/面板/星尘/导入/导出导入/设置开关/多维排序/安全扫描/舒适性/记忆点符号(Y5)/回忆卡片(Z3)/音频角标(Z4)/密度上限(D3)/雨夜主题(R2)/可读性实测(D4)/主题选择(W1)/讲解控制(A2)/性能预算(P3)/时间轴回放(T5)/讲解音量(N1)/讲解字幕(N2)/音量即时生效(N3)/卡片编辑保存(E5)/非法输入拒(E6)/空标题兜底(E7) 全部通过"
                 : "[SmokeProbe] 结果: FAIL（失败段数=" + failedSections + "）");
             // R18：机器可读汇总行（验收口径：Temp/smoke*.log 末尾 SMOKE: N/N PASS）
             Debug.Log("[SmokeProbe] SMOKE: " + (TotalSections - failedSections) + "/" + TotalSections + " PASS"

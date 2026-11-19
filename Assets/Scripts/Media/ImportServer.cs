@@ -173,11 +173,15 @@ namespace MemoryCorridor.Media
                 return;
             }
 
-            if (target.diary == null) target.diary = new DiaryEntry();
-            target.diary.date = payload.date ?? DateTime.Now.ToString("yyyy-MM-dd");
-            target.diary.text = payload.text ?? "";
-            SaveDataService.SaveAppData(data);
-            statusQueue.Enqueue($"日记已并入 {payload.fragmentId}（{target.diary.date}）");
+            // R21 P2：统一走 MemoryCardEditService（校验/空标题兜底/事件刷新面板）
+            var edit = MemoryCardEditService.Apply(data, payload.fragmentId,
+                payload.title, payload.date ?? DateTime.Now.ToString("yyyy-MM-dd"), payload.text ?? "");
+            if (!edit.Ok)
+            {
+                WriteResponse(ctx, 400, "text/plain", Encoding.UTF8.GetBytes("edit rejected: " + edit.Message));
+                return;
+            }
+            statusQueue.Enqueue($"日记已并入 {payload.fragmentId}（{edit.AppliedTitle}）");
             WriteResponse(ctx, 200, "text/plain", Encoding.UTF8.GetBytes("ok"));
         }
 
@@ -238,6 +242,7 @@ namespace MemoryCorridor.Media
         private class DiaryPayload
         {
             public string fragmentId;
+            public string title; // R21
             public string date;
             public string text;
         }
